@@ -43,14 +43,14 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
   };
 
   if (isEmpty && !rowData.isSummary) {
-    return <div className="w-full h-full stripe-pattern min-h-[28px]" />;
+    return <div className="w-full h-full stripe-pattern min-h-[26px]" />;
   }
 
   // If grouped, show as read-only text div to prevent confusing edits
   if (isGrouped) {
     return (
       <div className={clsx(
-        "w-full h-full text-right py-2 px-1 font-mono text-[13px]",
+        "w-full h-full text-right py-1.5 px-1 font-mono text-[11px] flex items-center justify-end",
         meta?.isLast ? "text-indigo-600 font-semibold" : "text-slate-500"
       )}>
         {value === 0 || value === null ? "" : value.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}
@@ -87,17 +87,17 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
 
 const EditableNoteCell = ({ getValue, row }: any) => {
   const initialValue = getValue();
-  const [value, setValue] = React.useState(initialValue === "특이사항 없음" ? "" : (initialValue || ""));
+  const [value, setValue] = React.useState(initialValue || "");
   const updateRoomNote = useAppStore((state) => state.updateRoomNote);
   const roomId = row.original.isGrouped ? row.original.originalRoomIds : row.original.id;
 
   React.useEffect(() => {
-    setValue(initialValue === "특이사항 없음" ? "" : (initialValue || ""));
+    setValue(initialValue || "");
   }, [initialValue]);
 
   const onBlur = () => {
     if (value !== initialValue) {
-      updateRoomNote(roomId, value === "" ? "특이사항 없음" : value);
+      updateRoomNote(roomId, value);
     }
   };
 
@@ -106,10 +106,10 @@ const EditableNoteCell = ({ getValue, row }: any) => {
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onBlur={onBlur}
-      placeholder="특이사항 입력"
+      placeholder=""
       className={clsx(
-        "w-full h-full bg-transparent outline-none py-2 px-2 text-[11px] text-slate-700",
-        "focus:bg-yellow-50 focus:ring-1 focus:ring-indigo-400 italic"
+        "w-full h-full bg-transparent outline-none py-1.5 px-2 text-[11px] text-slate-700",
+        "focus:bg-yellow-50 focus:ring-1 focus:ring-indigo-400"
       )}
     />
   );
@@ -187,6 +187,7 @@ export default function DetailTable() {
     comparison,
     medicalOnly,
     floorWardOverrides,
+    isPdfExportMode,
   } = useAppStore();
   const tableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -206,7 +207,7 @@ export default function DetailTable() {
        }
        
        // 3. Fallback: look in ANY room's note for this floor
-       const roomsInDept = rooms.filter(r => r.departmentId === deptId && (floorId === "all" || r.floorId === floorId));
+       const roomsInDept = rooms.filter(r => r.departmentId === deptId && (floorId === "all" || r.floorId.toUpperCase().replace(/F$/i, '').trim() === floorId.toUpperCase().replace(/F$/i, '').trim()));
        for (const r of roomsInDept) {
          const match = r.note?.match(/(\d+)\s*개\s*병동/);
          if (match) return parseInt(match[1]);
@@ -231,7 +232,7 @@ export default function DetailTable() {
     const roomsByFloor =
       activeFloorId === "all"
         ? rooms
-        : rooms.filter((r) => r.floorId === activeFloorId);
+        : rooms.filter((r) => r.floorId.toUpperCase().replace(/F$/i, '').trim() === activeFloorId.toUpperCase().replace(/F$/i, '').trim());
 
     let filteredRooms = roomsByFloor;
 
@@ -481,7 +482,7 @@ export default function DetailTable() {
           </div>
         ),
         cell: (info) => (
-          <div className="text-center font-inter text-[11px] text-slate-500 pt-1.5">
+          <div className="text-center font-inter text-[11px] text-slate-500 h-full flex items-center justify-center">
             {info.getValue()}
           </div>
         ),
@@ -494,7 +495,7 @@ export default function DetailTable() {
           </div>
         ),
         cell: (info) => (
-          <div className="px-2 font-medium text-slate-800 text-[13px] pt-1.5">
+          <div className="px-2 font-medium text-slate-800 text-[12px] h-full flex items-center">
             {info.getValue()}
           </div>
         ),
@@ -514,17 +515,21 @@ export default function DetailTable() {
           header: () => (
             <div
               className={clsx(
-                "h-full flex items-center justify-center text-xs font-bold text-center border-b border-[#CBD5E1] uppercase tracking-widest transition-colors text-[#334155]",
+                "h-full flex items-center justify-center text-xs font-bold text-center border-b border-[#CBD5E1] uppercase tracking-widest transition-colors text-[#334155] gap-2",
               )}
             >
-              {s.name}
-              {s.code ? `[${s.code}]` : ""}
+              {s.code && (
+                <span className="flex items-center justify-center bg-slate-700 text-white text-[9px] font-black w-5 h-5 rounded-full shadow-sm">
+                  {s.code}
+                </span>
+              )}
+              <span className="tracking-tight">{s.name}</span>
             </div>
           ),
           columns: [
             columnHelper.accessor(`${s.id}_unitArea`, {
               header: () => (
-                <div className="h-full flex items-center justify-center text-[9px] font-bold text-[#334155] text-center uppercase">
+                <div className="h-full flex items-center justify-center text-[10px] font-inter font-bold text-slate-600 text-center uppercase tracking-tighter">
                   Net
                 </div>
               ),
@@ -534,7 +539,7 @@ export default function DetailTable() {
             }),
             columnHelper.accessor(`${s.id}_quantity`, {
               header: () => (
-                <div className="h-full flex items-center justify-center text-[9px] font-bold text-[#334155] text-center uppercase">
+                <div className="h-full flex items-center justify-center text-[10px] font-inter font-bold text-slate-600 text-center uppercase tracking-tighter">
                   Qty
                 </div>
               ),
@@ -554,10 +559,10 @@ export default function DetailTable() {
                 const row = info.row.original;
                 const isEmpty = row[`${s.id}_isEmpty`];
                 if (isEmpty && !row.isSummary) {
-                  return <div className="w-full h-full stripe-pattern min-h-[28px]" />;
+                  return <div className="w-full h-full stripe-pattern min-h-[26px]" />;
                 }
                 return (
-                  <div className="text-right px-1 font-inter text-[11px] font-semibold h-full pt-1.5 flex items-center justify-end">
+                  <div className="text-right px-1 font-inter text-[11px] font-semibold h-full flex items-center justify-end">
                     {val !== null && val > 0 ? formatNum(val) : ""}
                   </div>
                 );
@@ -594,14 +599,14 @@ export default function DetailTable() {
             const val = info.getValue() as number;
             if (val === 0)
               return (
-                <div className="text-right px-1 font-inter text-[11px] font-bold text-slate-400 pt-1.5">
+                <div className="text-right px-1 font-inter text-[11px] font-bold text-slate-400 h-full flex items-center justify-end">
                   0.00
                 </div>
               );
             return (
               <div
                 className={clsx(
-                  "text-right px-1 font-inter text-[11px] font-bold pt-1.5",
+                  "text-right px-1 font-inter text-[11px] font-bold h-full flex items-center justify-end",
                   val > 0 ? "text-blue-600" : "text-red-500",
                 )}
               >
@@ -673,10 +678,10 @@ export default function DetailTable() {
       if (row.isFloorHeader) return 36;
       if (row.isGroupHeader) return 32;
       if (row.isSpacer) return 12;
-      if (row.isSummary) return 28;
-      return 28;
+      if (row.isSummary) return 26;
+      return 26;
     },
-    overscan: 200,
+    overscan: isPdfExportMode ? rows.length : 200,
     rangeExtractor,
   });
 
@@ -810,7 +815,7 @@ export default function DetailTable() {
               className="relative w-full min-w-full"
             >
               <table
-                id="area-table"
+                id="pdf-export-table"
                 className="border-separate border-spacing-0 table-fixed text-[11px] w-full"
                 style={{ minWidth: table.getTotalSize() }}
               >
@@ -908,6 +913,8 @@ export default function DetailTable() {
                               </tr>
                             )}
                             <tr
+                              ref={rowVirtualizer.measureElement}
+                              data-index={virtualRow.index}
                               className="bg-slate-50/50"
                               style={{ height: "12px" }}
                             >
@@ -932,6 +939,8 @@ export default function DetailTable() {
                               </tr>
                             )}
                             <tr
+                              ref={rowVirtualizer.measureElement}
+                              data-index={virtualRow.index}
                               className="sticky z-20 shadow-sm top-[60px]"
                               style={{ height: "32px" }}
                             >
@@ -975,13 +984,15 @@ export default function DetailTable() {
                             </tr>
                           )}
                           <tr
+                            ref={rowVirtualizer.measureElement}
+                            data-index={virtualRow.index}
                             className={clsx(
-                              "group transition-colors border-b border-lv1",
+                              "group transition-colors",
                               isSummary
                                 ? "border-lv4"
                                 : "bg-white hover:bg-lv1",
                             )}
-                            style={{ height: "28px" }}
+                            style={{ height: "26px" }}
                           >
                             {row.getVisibleCells().map((cell: any, i) => {
                               const isSticky = i < 2;
@@ -1006,10 +1017,11 @@ export default function DetailTable() {
                                   }}
                                   className={clsx(
                                     "overflow-hidden p-0 m-0",
+                                    !isSummary && "border-b border-slate-200/70",
                                     cell.column.id === "name" &&
                                       "border-r border-lv1",
                                     isSummary &&
-                                      "py-2.5 border-lv4 text-slate-900",
+                                      "py-2.5 border-b-2 border-slate-300 text-slate-900",
                                     isSummary && !isSticky && "bg-lv2/80",
                                     cell.column.columnDef.meta?.isStageEnd &&
                                       "border-r-2 border-lv4",

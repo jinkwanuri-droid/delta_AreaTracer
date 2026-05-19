@@ -347,7 +347,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     setSpreadsheetId,
     fetchData,
   } = useAppStore();
-  const [activeTab, setActiveTab] = useState<"stages" | "areas" | "mapping" | "sheets">(
+  const [activeTab, setActiveTab] = useState<"stages" | "areas" | "mapping">(
     "stages",
   );
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -527,19 +527,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
             <Network className="w-4 h-4" />
             부문/부서 매핑 정보
           </button>
-          <button
-            onClick={() => setActiveTab("sheets")}
-            className={clsx(
-              "px-6 py-3 text-sm font-bold flex items-center gap-2 transition-colors",
-              activeTab === "sheets"
-                ? "text-indigo-600 border-b-2 border-indigo-600"
-                : "text-slate-400 hover:text-slate-600",
-            )}
-          >
-            <Link className="w-4 h-4" />
-            구글 시트 연동
-          </button>
-        </div>
+
+         </div>
 
         <div className="p-6 flex-1 overflow-y-auto">
           {activeTab === "areas" ? (
@@ -830,110 +819,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </p>
                   </div>
                 </div>
-              </div>
-            </div>
-          ) : activeTab === "sheets" ? (
-            <div className="flex flex-col h-full space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-slate-800">Google Sheets 연동 설정</h3>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  구글 시트에서 데이터를 직접 가져오도록 설정합니다. 각 시트의 이름이 설계 단계의 이름과 일치해야 합니다.
-                </p>
-              </div>
-
-              <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">인증 상태</span>
-                    {getAccessToken() ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                          인증됨
-                        </span>
-                        <button
-                          onClick={async () => {
-                            await logout();
-                            setActiveTab("sheets"); // Re-render
-                          }}
-                          className="text-[10px] text-slate-400 hover:text-red-500 font-bold underline"
-                        >
-                          로그아웃
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        disabled={isLoggingIn}
-                        onClick={async () => {
-                          setIsLoggingIn(true);
-                          try {
-                            await googleSignIn();
-                            await fetchData(true);
-                          } catch (e) {
-                            console.error(e);
-                          } finally {
-                            setIsLoggingIn(false);
-                          }
-                        }}
-                        className="gsi-material-button scale-75 origin-right"
-                        style={{ margin: 0 }}
-                      >
-                         <div className="gsi-material-button-state"></div>
-                         <div className="gsi-material-button-content-wrapper">
-                           <div className="gsi-material-button-icon">
-                             <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ display: "block" }}>
-                               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                               <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                               <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                               <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                               <path fill="none" d="M0 0h48v48H0z"></path>
-                             </svg>
-                           </div>
-                           <span className="gsi-material-button-contents font-bold">Sign in with Google</span>
-                         </div>
-                       </button>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-slate-700">Spreadsheet ID</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={spreadsheetId || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const match = val.match(/\/d\/([a-zA-Z0-9-_]+)/);
-                          setSpreadsheetId(match ? match[1] : val);
-                        }}
-                        placeholder="https://docs.google.com/spreadsheets/d/[ID_HERE]/edit"
-                        className="flex-1 text-[11px] border border-slate-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                      />
-                      <button
-                        onClick={() => fetchData(true)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded text-[11px] font-bold hover:bg-indigo-700"
-                      >
-                        가져오기
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      URL의 /d/ 와 /edit 사이의 문자열이 Spreadsheet ID입니다.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                <h4 className="text-[11px] font-bold text-indigo-800 mb-2 flex items-center gap-1.5">
-                  <Table size={14} />
-                  데이터 시트 구성 방법
-                </h4>
-                <ul className="text-[10px] text-indigo-700/80 space-y-1.5 list-disc pl-4 leading-relaxed">
-                  <li><strong>시트 이름</strong>: '{stages.map(s => s.name).join("', '")}' 처럼 각 단계의 이름과 일치해야 합니다.</li>
-                  <li><strong>헤더 구성</strong>: 첫 번째 행에 '층'(level), '실번호'(no), '실명'(name), '면적'(area) 컬럼이 포함되어야 합니다.</li>
-                  <li><strong>한글 지원</strong>: '층/floor', '실번호/no', '실명/name', '면적/area' 모두 자동으로 인식됩니다.</li>
-                  <li><strong>공유 설정</strong>: 본인 구글 계정에 로그인하여 사용 가능합니다.</li>
-                </ul>
               </div>
             </div>
           ) : (

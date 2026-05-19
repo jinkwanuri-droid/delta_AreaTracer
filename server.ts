@@ -1,12 +1,45 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
+import puppeteer from "puppeteer";
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+
+  app.post("/api/export-pdf", async (req, res) => {
+    try {
+      const { html, width, height } = req.body;
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
+      
+      // We will emulate media type print
+      await page.emulateMediaType('print');
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      // Convert to PDF
+      const pdfBuffer = await page.pdf({
+        printBackground: true,
+        width: width || 'A4',
+        height: height || 'A4',
+        margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' }
+      });
+      
+      await browser.close();
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=export.pdf');
+      res.send(Buffer.from(pdfBuffer));
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      res.status(500).send('Error generating PDF');
+    }
+  });
 
   // Mock Data
   const mockProject = { id: "p1", name: "경상남도 서부의료원" };

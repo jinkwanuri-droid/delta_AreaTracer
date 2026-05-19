@@ -13,58 +13,95 @@ import { Download } from 'lucide-react';
 
 const columnHelper = createColumnHelper<any>();
 
-const EditableTextCell = ({ getValue, row, column, table }: any) => {
-  const initialValue = getValue() || '';
-  const [value, setValue] = React.useState(initialValue);
-  const updateDepartment = useAppStore(state => state.updateDepartment);
-  const field = column.columnDef.meta?.field;
-
-  React.useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  const onBlur = () => {
-    if (value !== initialValue && field) {
-      updateDepartment(row.original.deptId, field, value);
-    }
+  const EditableTextCell = ({ getValue, row, column, table }: any) => {
+    const initialValue = getValue() || '';
+    const [value, setValue] = React.useState(initialValue);
+    const updateDepartment = useAppStore(state => state.updateDepartment);
+    const updateSummaryNote = useAppStore(state => state.updateSummaryNote);
+    const field = column.columnDef.meta?.field;
+  
+    React.useEffect(() => {
+      setValue(initialValue);
+    }, [initialValue]);
+  
+    const onBlur = () => {
+      if (value !== initialValue) {
+        if (row.original.isSummaryRow) {
+          updateSummaryNote(row.original.id, value);
+        } else if (field) {
+          updateDepartment(row.original.deptId, field, value);
+        }
+      }
+    };
+  
+    return (
+      <input
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        onBlur={onBlur}
+        className={clsx(
+          "w-full bg-transparent outline-none px-2 py-1 text-[13px] min-h-[28px]",
+          row.original.isSummaryRow ? "text-slate-400 italic" : "text-slate-700" 
+        )}
+        placeholder=""
+      />
+    );
   };
+  
+  const EditableSummaryCell = ({ initialValue, stageId, floorId, isTotal }: { initialValue: number, stageId: string, floorId: string, isTotal?: boolean }) => {
+    const formatValue = (num: number) => {
+      if (num === 0) return '0';
+      return num.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+    };
 
-  return (
-    <input
-      value={value}
-      onChange={e => setValue(e.target.value)}
-      onBlur={onBlur}
-      className="w-full bg-transparent outline-none px-2 py-1 text-[11px] text-slate-700 min-h-[28px]"
-      placeholder={field === 'code' ? '코드를 입력하세요' : '변경사항을 입력하세요'}
-    />
-  );
-};
+    const [displayValue, setDisplayValue] = React.useState(formatValue(initialValue));
+    const updateFloorArea = useAppStore(state => state.updateFloorArea);
+  
+    React.useEffect(() => {
+      setDisplayValue(formatValue(initialValue));
+    }, [initialValue]);
+  
+    const onBlur = () => {
+      const cleanValue = displayValue.replace(/,/g, '');
+      const num = parseFloat(cleanValue);
+      if (!isNaN(num) && num !== initialValue) {
+        updateFloorArea(stageId, floorId, num);
+      }
+      setDisplayValue(formatValue(isNaN(num) ? 0 : num));
+    };
 
-const EditableSummaryCell = ({ initialValue, stageId, floorId }: { initialValue: number, stageId: string, floorId: string }) => {
-  const [value, setValue] = React.useState(initialValue?.toString() || '0');
-  const updateFloorArea = useAppStore(state => state.updateFloorArea);
-
-  React.useEffect(() => {
-    setValue(initialValue?.toString() || '0');
-  }, [initialValue]);
-
-  const onBlur = () => {
-    const num = parseFloat(value);
-    if (!isNaN(num) && num !== initialValue) {
-      updateFloorArea(stageId, floorId, num);
-    }
+    const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const raw = e.target.value.replace(/,/g, '');
+      if (raw === '' || raw === '-') {
+        setDisplayValue(raw);
+        return;
+      }
+      const num = parseFloat(raw);
+      if (!isNaN(num)) {
+        // If it ends with a dot, or has a dot with nothing after yet, keep it raw-ish
+        if (raw.includes('.')) {
+          const [int, dec] = raw.split('.');
+          const formattedInt = parseInt(int || '0').toLocaleString('ko-KR');
+          setDisplayValue(`${formattedInt}.${dec !== undefined ? dec : ''}`);
+        } else {
+          setDisplayValue(num.toLocaleString('ko-KR'));
+        }
+      }
+    };
+  
+    return (
+      <input
+        value={displayValue === '0' ? '' : displayValue}
+        onChange={onChange}
+        onBlur={onBlur}
+        className={clsx(
+          "w-full bg-transparent text-right outline-none px-4 py-0 font-inter text-[14px] tracking-tighter hover:bg-slate-100 focus:bg-white focus:ring-1 focus:ring-indigo-300 rounded",
+          isTotal ? "font-bold text-slate-900" : "text-slate-800"
+        )}
+        placeholder="0"
+      />
+    );
   };
-
-  return (
-    <input
-      value={value === '0' ? '' : value}
-      onChange={e => setValue(e.target.value)}
-      onBlur={onBlur}
-      className="w-full bg-transparent text-right outline-none px-4 py-1 font-inter text-[11px] font-black tracking-tighter text-indigo-700 bg-indigo-50/30 rounded focus:bg-white focus:ring-1 focus:ring-indigo-300"
-      placeholder="입력"
-    />
-  );
-};
 
 export default function DepartmentSummary() {
   const { 
@@ -74,6 +111,7 @@ export default function DepartmentSummary() {
     values, 
     stages, 
     floorAreasByStage, 
+    summaryNotes,
     visibleStageIds, 
     comparison,
     medicalOnly,
@@ -193,13 +231,20 @@ export default function DepartmentSummary() {
     });
 
     // Grand Total Row
+    rows.push({
+      id: 'spacer-grand-total',
+      isSpacer: true,
+      isSmall: false
+    });
+
     const targetGrandVal = grandStageTotals[targetStageId] || 0;
     const baseGrandVal = grandStageTotals[baseStageId] || 0;
 
     rows.push({
       id: 'grand-total',
       isGrandTotal: true,
-      department: '의료시설 전용면적 합계 [가]',
+      code: '가',
+      department: '의료시설 전용면적 합계',
       stageAreas: grandStageTotals,
       diff: targetGrandVal - baseGrandVal,
       variant: 'dark-grey'
@@ -246,6 +291,7 @@ export default function DepartmentSummary() {
       }
       
       const commonAreaB = permitAreaVal > 0 ? (permitAreaVal - netAreaA - stageGarageArea - stageOutdoorArea) : 0;
+      // Formula: (가+나)/가
       const gnRatio = netAreaA > 0 ? ((netAreaA + commonAreaB) / netAreaA) : 0;
 
       commonAreaStageTotals[s.id] = commonAreaB;
@@ -261,76 +307,95 @@ export default function DepartmentSummary() {
     rows.push({
       id: 'common-area-sum',
       isSummaryRow: true,
-      department: '공용면적 [나]',
+      code: '나',
+      department: '공용면적',
       stageAreas: commonAreaStageTotals,
       diff: commonAreaStageTotals[targetStageId] - commonAreaStageTotals[baseStageId],
-      notes: '[참고 1] 종합병원 적정 공용비/공용면적 검토',
-      variant: 'white'
+      notes: summaryNotes['common-area-sum'] ?? '[참고 1] 종합병원 적정 공용비/공용면적 검토',
+      variant: 'white',
+      noBold: true
     });
 
     rows.push({
       id: 'gn-ratio',
       isSummaryRow: true,
+      code: '(가+나)/가',
       department: '공용비(G/N비)',
       stageAreas: gnRatioStageTotals,
       diff: 0,
       isRatio: true,
-      notes: '종합병원 평균값 1.50~1.60 사잇값으로 제안',
-      variant: 'white'
+      notes: summaryNotes['gn-ratio'] ?? '종합병원 평균값 1.50~1.60 사잇값으로 제안',
+      variant: 'white',
+      noBold: true
     });
 
     rows.push({
       id: 'med-area-sum',
       isSummaryRow: true,
-      department: '의료시설 면적 [가+나]',
+      code: '가+나',
+      department: '의료시설 면적',
       stageAreas: medAreaSumStageTotals,
       diff: medAreaSumStageTotals[targetStageId] - medAreaSumStageTotals[baseStageId],
+      notes: summaryNotes['med-area-sum'] ?? '',
       variant: 'grey'
     });
 
     rows.push({
       id: 'garage-area',
       isSummaryRow: true,
-      department: '옥내 주차공간 [다]',
+      code: '다',
+      department: '옥내 주차공간',
       stageAreas: garageAreaStageTotals,
       diff: garageAreaStageTotals[targetStageId] - garageAreaStageTotals[baseStageId],
-      notes: '주차대수 100대 내외 계획하여 면적 제안',
-      variant: 'white'
+      notes: summaryNotes['garage-area'] ?? '주차대수 100대 내외 계획하여 면적 제안',
+      variant: 'white',
+      noBold: true
     });
 
     rows.push({
       id: 'med-total-area',
       isSummaryRow: true,
-      department: '의료시설 총면적 [가+나+다]',
+      code: '가+나+다',
+      department: '의료시설 총면적',
       stageAreas: medTotalAreaStageTotals,
       diff: medTotalAreaStageTotals[targetStageId] - medTotalAreaStageTotals[baseStageId],
+      notes: summaryNotes['med-total-area'] ?? '',
       variant: 'dark-grey'
     });
 
     rows.push({
       id: 'outdoor-area',
       isSummaryRow: true,
-      department: '옥외 공용면적 [라]',
+      code: '라',
+      department: '옥외 공용면적',
       stageAreas: outdoorAreaStageTotals,
       diff: outdoorAreaStageTotals[targetStageId] - outdoorAreaStageTotals[baseStageId],
-      notes: '-',
-      variant: 'white'
+      notes: summaryNotes['outdoor-area'] ?? '-',
+      variant: 'white',
+      noBold: true
     });
 
     rows.push({
       id: 'permit-area',
       isSummaryRow: true,
-      department: '건축허가 면적 [가+나+다+라]',
+      code: '가~라',
+      department: '건축허가 면적',
       stageAreas: permitAreaStageTotals,
       diff: permitAreaStageTotals[targetStageId] - permitAreaStageTotals[baseStageId],
+      notes: summaryNotes['permit-area'] ?? '',
       variant: 'dark-grey'
     });
 
     return rows;
-  }, [divisions, departments, rooms, values, stages, floorAreasByStage, visibleStageIds, comparison]);
+  }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, visibleStageIds, comparison]);
 
   const formatNum = (val: number | undefined | null, isRatio = false) => {
-    if (val === undefined || val === null || isNaN(val)) return '-';
+    if (val === undefined || val === null || isNaN(val) || val === 0) {
+      if (isRatio) return "-";
+      // For normal areas, 0 might be valid, but in summary table if it's not set it might be better to show '-' or '0'
+      // Given the screenshot shows '-' for gnRatio when not calculated, I'll return '-' for 0 ratio.
+      return val === 0 ? "0" : "-";
+    }
     if (isRatio) return val.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return val.toLocaleString('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   };
@@ -341,8 +406,17 @@ export default function DepartmentSummary() {
         header: '코 드',
         cell: info => {
           const row = info.row.original;
-          if (row.isHeader || row.isSubtotal || row.isGrandTotal || row.isSummaryRow || row.isSpacer) return null;
-          return <div className="text-center font-inter text-[11px] text-slate-500 py-1">{info.getValue() || row.id}</div>;
+          if (row.isHeader || row.isSpacer) return null;
+          if (row.isSubtotal) return null;
+          
+          return (
+            <div className={clsx(
+              "text-center font-inter text-[13px] py-1",
+              (row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-bold text-slate-900" : "text-slate-500"
+            )}>
+              {info.getValue() || ''}
+            </div>
+          );
         },
         size: 70,
       }),
@@ -350,11 +424,12 @@ export default function DepartmentSummary() {
         header: '부 서 명',
         cell: info => {
           const row = info.row.original;
-          const val = info.getValue();
+          const val = info.getValue() as string;
           return (
             <div className={clsx(
-              "px-4 py-1 text-[11px]",
-              (row.isSubtotal || row.isGrandTotal || row.isSummaryRow) ? "font-black" : "font-semibold text-slate-700"
+              "px-4 py-1 text-[14px]",
+              (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-black" : "font-semibold text-slate-700",
+              "flex items-center gap-2"
             )}>
               {val}
             </div>
@@ -371,7 +446,16 @@ export default function DepartmentSummary() {
       cols.push(
         columnHelper.display({
           id: `stage-${s.id}`,
-          header: `${s.name}${s.code ? `[${s.code}]` : ''}`,
+          header: () => (
+            <div className="flex items-center justify-center gap-1.5 px-1">
+              {s.code && (
+                <span className="flex items-center justify-center bg-slate-700 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full shadow-sm shrink-0">
+                  {s.code}
+                </span>
+              )}
+              <span className="tracking-tight whitespace-nowrap">{s.name}</span>
+            </div>
+          ),
           cell: info => {
             const row = info.row.original;
             const val = row.stageAreas?.[s.id] as number;
@@ -379,18 +463,16 @@ export default function DepartmentSummary() {
             
             // Allow editing Permit Area for "Total Area Only" stages (like Competition Guidelines)
             if (row.id === 'permit-area' && s.isTotalAreaOnly) {
-              return <EditableSummaryCell initialValue={val} stageId={s.id} floorId="_TOTAL_" />;
+              return <EditableSummaryCell initialValue={val} stageId={s.id} floorId="_TOTAL_" isTotal={true} />;
             }
-
-            if (row.isRatio && s.id !== (comparison.targetId || stages[stages.length-1].id)) return <div className="text-right px-4 font-inter text-[11px]">-</div>;
             
             // Summary rows might only have specific stages populated (all summary rows now populate all stages in my logic above)
-            if (row.isSummaryRow && val === undefined) return <div className="text-right px-4 font-inter text-[11px]">-</div>;
+            if (row.isSummaryRow && val === undefined) return <div className="text-right px-4 font-inter text-[14px]">-</div>;
 
             return (
               <div className={clsx(
-                "text-right px-4 font-inter text-[11px] tracking-tighter",
-                (row.isSubtotal || row.isGrandTotal || row.isSummaryRow) && "font-bold"
+                "text-right px-4 font-inter text-[14px] tracking-tighter",
+                (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) && "font-bold"
               )}>
                 {formatNum(val, row.isRatio)}
               </div>
@@ -421,7 +503,7 @@ export default function DepartmentSummary() {
           const isActuallyDark = variant === 'dark' || variant === 'dark-ext';
           return (
             <div className={clsx(
-              "text-right px-4 font-inter text-[11px] tracking-tighter font-bold",
+              "text-right px-4 font-inter text-[14px] tracking-tighter font-bold",
               !isActuallyDark && val > 0 ? "text-blue-600" : !isActuallyDark && val < 0 ? "text-red-500" : isActuallyDark ? "text-blue-400" : "text-slate-400"
             )}>
               {val > 0 ? '+' : ''}{formatNum(val)}
@@ -439,9 +521,6 @@ export default function DepartmentSummary() {
           const row = info.row.original;
           if (row.isHeader || row.isSpacer) return null;
           if (row.isSubtotal || row.isGrandTotal) return null;
-          if (row.isSummaryRow && row.notes) {
-            return <div className="px-4 py-1.5 text-[10px] text-slate-400 italic">{row.notes}</div>;
-          }
           return <EditableTextCell {...info} />;
         },
         meta: { field: 'note' },
@@ -472,7 +551,7 @@ export default function DepartmentSummary() {
       <div className="flex-1 overflow-hidden p-6">
         <div className="h-full bg-white border border-slate-300 rounded shadow-sm overflow-hidden flex flex-col">
           <div className="flex-1 overflow-auto">
-            <table className="w-full border-separate border-spacing-0 table-fixed">
+            <table id="pdf-export-table" className="w-full border-separate border-spacing-0 table-fixed">
               <thead className="sticky top-0 z-10">
                 {table.getHeaderGroups().map(headerGroup => (
                   <tr key={headerGroup.id}>
@@ -480,7 +559,7 @@ export default function DepartmentSummary() {
                       <th 
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] px-2 py-2 text-[11px] font-bold text-[#334155] uppercase tracking-tight text-center"
+                        className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] px-2 py-2 text-[12px] font-bold text-[#334155] uppercase tracking-tight text-center"
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </th>
@@ -490,18 +569,19 @@ export default function DepartmentSummary() {
               </thead>
               <tbody>
                 {table.getRowModel().rows.map(row => {
-                  const isHeader = row.original.isHeader;
-                  const isSubtotal = row.original.isSubtotal;
-                  const isGrandTotal = row.original.isGrandTotal;
-                  const isSummaryRow = row.original.isSummaryRow;
-                  const isSpacer = row.original.isSpacer;
-                  const isSmallSpacer = row.original.isSmall;
-                  const variant = row.original.variant;
+                  const rowData = row.original;
+                  const isHeader = rowData.isHeader;
+                  const isSubtotal = rowData.isSubtotal;
+                  const isGrandTotal = rowData.isGrandTotal;
+                  const isSummaryRow = rowData.isSummaryRow;
+                  const isSpacer = rowData.isSpacer;
+                  const isSmallSpacer = rowData.isSmall;
+                  const variant = rowData.variant;
 
                   if (isSpacer) {
                     return (
-                      <tr key={row.id} className={clsx(isSmallSpacer ? "h-2" : "h-4", "bg-slate-50/50")}>
-                        <td colSpan={columns.length} className="border-b border-r border-[#CBD5E1]"></td>
+                      <tr key={row.id} className={clsx(isSmallSpacer ? "h-2" : "h-[28px]", !isSmallSpacer ? "bg-white" : "bg-slate-50/50")}>
+                        <td colSpan={columns.length} className={clsx(!isSmallSpacer ? "border-none" : "border-b border-r border-[#CBD5E1]")}></td>
                       </tr>
                     );
                   }
@@ -510,8 +590,8 @@ export default function DepartmentSummary() {
                     <tr 
                       key={row.id}
                       style={isHeader ? { 
-                        background: row.original.color 
-                          ? `linear-gradient(to right, ${row.original.color}15, ${row.original.color}05)` 
+                        background: rowData.color 
+                          ? `linear-gradient(to right, ${rowData.color}15, ${rowData.color}05)` 
                           : '#F1F5F9' 
                       } : {}}
                       className={clsx(
@@ -524,30 +604,34 @@ export default function DepartmentSummary() {
                         variant === 'dark-ext' && "bg-[#0F172A] text-white font-bold"
                       )}
                     >
-                      {row.getVisibleCells().map(cell => {
-                        const rowData = row.original;
-                        const isFirstCell = cell.column.id === 'code';
-                        
-                        return (
-                          <td 
-                            key={cell.id}
-                            className={clsx(
-                              "border-b border-r border-[#CBD5E1] p-0",
-                              (variant === 'dark' || variant === 'dark-ext') && "border-[#334155]",
-                              (isSubtotal || variant === 'grey' || variant === 'dark-grey') && "border-slate-300"
-                            )}
-                          >
-                            {isHeader ? (
-                              isFirstCell ? (
-                                 <div className="px-3 py-0.5 flex items-center gap-2">
-                                    <div className="w-1.5 h-3 rounded-full" style={{ backgroundColor: rowData.color || '#6366f1' }}></div>
-                                    <span className="font-extrabold text-[#1E293B] text-[11px] whitespace-nowrap">{rowData.divisionName}</span>
-                                 </div>
-                              ) : null
-                            ) : flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        );
-                      })}
+                      {isHeader ? (
+                        <td 
+                          colSpan={columns.length}
+                          className="border-b border-[#CBD5E1] p-0"
+                        >
+                           <div className="px-3 py-1.5 flex items-center gap-2">
+                              {rowData.color || rowData.divColor ? (
+                                <div className="w-1.5 h-4 rounded-full shrink-0" style={{ backgroundColor: rowData.color || rowData.divColor }}></div>
+                              ) : null}
+                              <span className="font-extrabold text-slate-800 text-[14px] tracking-tight">{rowData.divisionName}</span>
+                           </div>
+                        </td>
+                      ) : (
+                        row.getVisibleCells().map(cell => {
+                          return (
+                            <td 
+                              key={cell.id}
+                              className={clsx(
+                                "border-b border-r border-[#CBD5E1] p-0",
+                                (variant === 'dark' || variant === 'dark-ext') && "border-[#334155]",
+                                (isSubtotal || variant === 'grey' || variant === 'dark-grey') && "border-slate-300"
+                              )}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          );
+                        })
+                      )}
                     </tr>
                   );
                 })}

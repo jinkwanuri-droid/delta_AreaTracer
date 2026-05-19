@@ -72,6 +72,7 @@ export interface AppState {
   rooms: Room[];
   values: RoomValue[];
   floorAreasByStage: Record<string, Record<string, number>>;
+  summaryNotes: Record<string, string>;
   visibleStageIds: string[];
   comparison: {
     baseId: string | null;
@@ -79,6 +80,7 @@ export interface AppState {
   };
   activeTab: "dashboard" | "summary" | "detail";
   activeFloorId: string | "all" | null;
+  isPdfExportMode: boolean;
   filters: {
     divisionIds: string[];
     departmentIds: string[];
@@ -112,6 +114,7 @@ export interface AppState {
   deleteStage: (id: string) => void;
   setActiveTab: (tab: "dashboard" | "summary" | "detail") => void;
   setActiveFloorId: (id: string | null) => void;
+  setIsPdfExportMode: (val: boolean) => void;
   toggleDivisionFilter: (id: string) => void;
   toggleDepartmentFilter: (id: string) => void;
   fetchData: (force?: boolean) => Promise<void>;
@@ -138,6 +141,7 @@ export interface AppState {
   ) => void;
   updateDepartment: (id: string, field: "code" | "note", val: string) => void;
   updateRoomNote: (roomId: string, note: string) => void;
+  updateSummaryNote: (summaryId: string, note: string) => void;
 }
 
 export const getFloorVal = (name: string) => {
@@ -161,10 +165,12 @@ export const useAppStore = create<AppState>()(
       rooms: [],
       values: [],
       floorAreasByStage: {},
+      summaryNotes: {},
       visibleStageIds: [],
       comparison: { baseId: null, targetId: null },
       activeTab: "detail",
       activeFloorId: "all",
+      isPdfExportMode: false,
       filters: { divisionIds: [], departmentIds: [] },
       snapshots: [],
       availableTables: [],
@@ -178,6 +184,7 @@ export const useAppStore = create<AppState>()(
         set({ comparison: { baseId, targetId } }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setActiveFloorId: (id) => set({ activeFloorId: id }),
+      setIsPdfExportMode: (val) => set({ isPdfExportMode: val }),
       toggleDivisionFilter: (id) =>
         set((state) => {
           const ids = state.filters.divisionIds;
@@ -218,6 +225,7 @@ export const useAppStore = create<AppState>()(
       fetchData: async (force = false) => {
         const state = get();
         if (!force && state.stages.length > 0 && state.rooms.length > 2) {
+          set({ project: { id: "p1", name: "경상남도 서부의료원" } });
           return;
         }
 
@@ -275,73 +283,10 @@ export const useAppStore = create<AppState>()(
           if (state.spreadsheetId) {
             const sheetData = await fetchAllStagesFromSheets(state.spreadsheetId, stagesToUse);
             Object.assign(rawDataByStage, sheetData);
-          } else if (supabase) {
-            // Fetch data concurrently from all tables using exact stage mappings
-            const availableTables = available || [];
-            
-            await Promise.all(
-              stagesToUse.map(async (st) => {
-                if (!st.tableName) return;
-                
-                // Only try to fetch if table exists in available list
-                if (availableTables.length > 0 && !availableTables.includes(st.tableName.trim())) {
-                  // Fallback for permit stage even if main table missing
-                  const isPermitStage = st.id === "s4" || st.name.includes("인허가") || st.code === "P";
-                  if (!isPermitStage) return;
-                }
-
-                // Try the designated table name
-                let activeTable = st.tableName.trim();
-                
-                const tryFetch = async (tableName: string) => {
-                  const target = tableName.trim();
-                  if (!supabase) return { data: null, error: new Error("No supabase client") };
-                  try {
-                    const { data, error } = await supabase
-                      .from(target)
-                      .select("*");
-                    return { data, error };
-                  } catch (err: any) {
-                    return { data: null, error: err };
-                  }
-                };
-
-                let { data, error } = await tryFetch(activeTable);
-                
-                // Fallback for 인허가 stage if it fails or returns no data
-                const isPermitStage = st.id === "s4" || st.name.includes("인허가") || st.code === "P";
-                
-                if (isPermitStage && (error || !data || data.length === 0)) {
-                  const permitTables = ["area_permit", "permit_design", "permit_area", "area_pm", "area_master", "area_guideline"];
-                  
-                  for (const table of permitTables) {
-                    if (table === activeTable) continue; // Already tried
-                    const fallback = await tryFetch(table);
-                    if (!fallback.error && fallback.data && fallback.data.length > 0) {
-                      data = fallback.data;
-                      error = null;
-                      // Auto-update the stage's tableName in the store so it's persistent
-                      set((state) => ({
-                        stages: state.stages.map(s => s.id === st.id ? { ...s, tableName: table } : s)
-                      }));
-                      break;
-                    }
-                  }
-                }
-
-                if (error) {
-                  // Only log if we really couldn't find any data after fallbacks
-                  if (!data || data.length === 0) {
-                    console.error(`Error fetching ${activeTable} for stage ${st.name}:`, error.message || error);
-                  }
-                } else if (data) {
-                  rawDataByStage[st.id] = data || [];
-                }
-              }),
-            );
           } else {
+            console.warn("No Spreadsheet ID configured.");
             set({ isLoading: false });
-            return; // No data source available
+            return;
           }
 
           const roomMap: Record<
@@ -396,9 +341,9 @@ export const useAppStore = create<AppState>()(
               // Handle "B1", "1F", "FLOOR 3", "LEVEL 4", etc.
               const levelMatch = levelStr.match(/(B)?\s*(\d+)/);
               if (levelMatch) {
-                const prefix = levelMatch[1] || "";
+                const prefix = (levelMatch[1] || "").toUpperCase();
                 const num = parseInt(levelMatch[2]);
-                levelStr = `${prefix}${num}F`;
+                levelStr = prefix === "B" ? `B${num}` : `${num}F`;
               }
               
               if (levelStr) floorSet.add(levelStr);
@@ -447,7 +392,10 @@ export const useAppStore = create<AppState>()(
           const departments: Department[] = Array.from(deptSet)
             .sort()
             .map((d, i) => {
-              const divCode = d.charAt(0);
+              const existingDept = state.departments.find(
+                (dept) => dept.id === d,
+              );
+              const divCode = existingDept?.divisionId || d.charAt(0);
               const existingDiv = state.divisions.find(
                 (div) => div.id === divCode,
               );
@@ -459,9 +407,6 @@ export const useAppStore = create<AppState>()(
                   color: existingDiv?.color,
                 });
               }
-              const existingDept = state.departments.find(
-                (dept) => dept.id === d,
-              );
               return {
                 id: d,
                 divisionId: divCode,
@@ -482,13 +427,16 @@ export const useAppStore = create<AppState>()(
             const deptCode = deptMatch ? deptMatch[1].toUpperCase() : "";
             const floorId = r.level;
 
+            // Preserve existing note if it exists
+            const existingRoom = state.rooms.find(er => er.id === roomId);
+
             generatedRooms.push({
               id: roomId,
               no: r.no,
               name: r.name,
               floorId: floorId,
               departmentId: deptCode,
-              note: "",
+              note: existingRoom ? existingRoom.note : "",
             });
 
             // Create values
@@ -505,17 +453,21 @@ export const useAppStore = create<AppState>()(
             });
           });
 
-          // Compute floor Areas if needed, but initially 0
+          // Compute floor Areas if needed, preserve existing data (especially _TOTAL_)
           const floorAreasByStage: Record<string, Record<string, number>> = {};
           stagesToUse.forEach((s) => {
-            floorAreasByStage[s.id] = {};
+            const existingForStage = state.floorAreasByStage[s.id] || {};
+            floorAreasByStage[s.id] = { ...existingForStage };
+            
             floors.forEach((f) => {
-              floorAreasByStage[s.id][f.id] = (state.floorAreasByStage[s.id] || {})[f.id] || 0;
+              if (floorAreasByStage[s.id][f.id] === undefined) {
+                floorAreasByStage[s.id][f.id] = 0;
+              }
             });
           });
 
           set({
-            project: { id: "p1", name: "delta : Area tracer" },
+            project: { id: "p1", name: "경상남도 서부의료원" },
             stages: stagesToUse,
             floors,
             divisions,
@@ -668,6 +620,10 @@ export const useAppStore = create<AppState>()(
               : r,
           ),
         })),
+      updateSummaryNote: (summaryId, note) =>
+        set((state) => ({
+          summaryNotes: { ...state.summaryNotes, [summaryId]: note },
+        })),
       batchUpdateMapping: (mappings) =>
         set((state) => {
           // Collect existing to merge
@@ -745,6 +701,7 @@ export const useAppStore = create<AppState>()(
           divisions: state.divisions,
           departments: state.departments,
           floorAreasByStage: state.floorAreasByStage,
+          summaryNotes: state.summaryNotes,
           visibleStageIds: state.visibleStageIds,
           comparison: state.comparison,
         };
@@ -799,6 +756,7 @@ export const useAppStore = create<AppState>()(
                       .floorAreas,
                   }
                 : state.floorAreasByStage),
+            summaryNotes: (snapshot.data as any).summaryNotes || state.summaryNotes,
             visibleStageIds:
               (snapshot.data as any).visibleStageIds ||
               (snapshot.data.stages
@@ -939,10 +897,16 @@ export const useAppStore = create<AppState>()(
     {
       name: "hospital-area-settings-v8",
       partialize: (state) => ({
+        project: state.project,
         stages: state.stages,
+        rooms: state.rooms,
+        divisions: state.divisions,
+        departments: state.departments,
+        floors: state.floors,
         comparison: state.comparison,
         visibleStageIds: state.visibleStageIds,
         values: state.values,
+        summaryNotes: state.summaryNotes,
         spreadsheetId: state.spreadsheetId,
         activeTab: state.activeTab,
         activeFloorId: state.activeFloorId,

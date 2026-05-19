@@ -20,11 +20,14 @@ const COLUMN_MAPPINGS: Record<string, string> = {
   'area': 'area',
 };
 
-async function fetchSheetData(spreadsheetId: string, sheetName: string): Promise<any[]> {
+async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]): Promise<Record<string, any[]>> {
   const apiKey = (import.meta as any).env.VITE_GOOGLE_SHEETS_API_KEY;
   if (!apiKey) throw new Error('Google Sheets API Key not configured');
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}`;
+  if (sheetNames.length === 0) return {};
+
+  const rangesQuery = sheetNames.map(name => `ranges=${encodeURIComponent(name)}`).join('&');
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}&${rangesQuery}`;
   
   const response = await fetch(url);
 
@@ -34,36 +37,49 @@ async function fetchSheetData(spreadsheetId: string, sheetName: string): Promise
   }
 
   const data = await response.json();
-  if (!data.values || data.values.length < 2) return [];
+  const results: Record<string, any[]> = {};
 
-  const headers = data.values[0].map((h: any) => h?.toString().toLowerCase().trim());
-  const rows = data.values.slice(1);
+  if (data.valueRanges) {
+    data.valueRanges.forEach((rangeData: any, idx: number) => {
+      const sheetName = sheetNames[idx];
+      if (!rangeData.values || rangeData.values.length < 2) {
+        results[sheetName] = [];
+        return;
+      }
 
-  return rows.map((row: any[]) => {
-    const obj: any = {};
-    headers.forEach((h: string, i: number) => {
-      const mappedKey = COLUMN_MAPPINGS[h] || h;
-      obj[mappedKey] = row[i];
+      const headers = rangeData.values[0].map((h: any) => h?.toString().toLowerCase().trim());
+      const rows = rangeData.values.slice(1);
+
+      results[sheetName] = rows.map((row: any[]) => {
+        const obj: any = {};
+        headers.forEach((h: string, i: number) => {
+          const mappedKey = COLUMN_MAPPINGS[h] || h;
+          obj[mappedKey] = row[i];
+        });
+        return obj;
+      }).filter((r: any) => r.room_no && r.room_no.toString().trim() !== "");
     });
-    return obj;
-  }).filter((r: any) => r.room_no && r.room_no.toString().trim() !== "");
-}
+  }
 
+  return results;
+}
 
 export const fetchAllStagesFromSheets = async (spreadsheetId: string, stages: { name: string, id: string }[]) => {
   const results: Record<string, any[]> = {};
   
-  // Use user's specific sheet names if they don't match stage names exactly
-  // Or just try to match by name
-  await Promise.all(stages.map(async (stage) => {
-    try {
-      const data = await fetchSheetData(spreadsheetId, stage.name);
-      results[stage.id] = data;
-    } catch (e) {
-      console.warn(`Could not fetch sheet for stage ${stage.name}:`, e);
+  try {
+    const sheetNames = stages.map(s => s.name);
+    const batchData = await fetchSheetDataBatch(spreadsheetId, sheetNames);
+    
+    stages.forEach(stage => {
+      results[stage.id] = batchData[stage.name] || [];
+    });
+  } catch (e) {
+    console.warn("Could not fetch sheets in batch:", e);
+    stages.forEach(stage => {
       results[stage.id] = [];
-    }
-  }));
+    });
+  }
 
   return results;
 };
