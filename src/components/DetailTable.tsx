@@ -58,6 +58,14 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
     );
   }
 
+  const isEditing = isGrouped; // For now disable editing for grouped rooms completely or let's create a better UI
+  
+  // Actually, I want to edit it even if grouped, as per my plan earlier.
+  // Wait, if I disable editing for grouped rooms, it conflicts with requirement.
+  // Let's make it editable even for grouped.
+  
+  // Re-thinking: EditableCell is for Numbers.EditableNoteCell is for Strings.
+
   return (
     <input
       value={
@@ -72,6 +80,36 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
         "w-full h-full bg-transparent outline-none text-right placeholder:text-transparent py-2 px-1 font-mono text-[13px]",
         meta?.isLast ? "text-indigo-600" : "text-slate-500",
         "focus:bg-yellow-50 focus:ring-1 focus:ring-indigo-400",
+      )}
+    />
+  );
+};
+
+const EditableNoteCell = ({ getValue, row }: any) => {
+  const initialValue = getValue();
+  const [value, setValue] = React.useState(initialValue === "특이사항 없음" ? "" : (initialValue || ""));
+  const updateRoomNote = useAppStore((state) => state.updateRoomNote);
+  const roomId = row.original.isGrouped ? row.original.originalRoomIds : row.original.id;
+
+  React.useEffect(() => {
+    setValue(initialValue === "특이사항 없음" ? "" : (initialValue || ""));
+  }, [initialValue]);
+
+  const onBlur = () => {
+    if (value !== initialValue) {
+      updateRoomNote(roomId, value === "" ? "특이사항 없음" : value);
+    }
+  };
+
+  return (
+    <input
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={onBlur}
+      placeholder="특이사항 입력"
+      className={clsx(
+        "w-full h-full bg-transparent outline-none py-2 px-2 text-[11px] text-slate-700",
+        "focus:bg-yellow-50 focus:ring-1 focus:ring-indigo-400 italic"
       )}
     />
   );
@@ -586,25 +624,7 @@ export default function DetailTable() {
         size: 800,
         minSize: 300,
         cell: (info) => {
-          const row = info.row.original;
-          const { activeFloorId } = useAppStore.getState();
-          let note = info.getValue() || "특이사항 없음";
-
-          if (
-            activeFloorId !== "all" &&
-            row.departmentId === "101"
-          ) {
-            const count = getWardCount(activeFloorId, row.departmentId);
-            if (count > 1) {
-              note = `(${count}개 병동으로 구성) ${note}`;
-            }
-          }
-
-          return (
-            <div className="px-2 text-slate-500 text-[10px] truncate pt-1.5 italic group-hover:whitespace-normal">
-              {note}
-            </div>
-          );
+          return <EditableNoteCell getValue={info.getValue} row={info.row} />;
         },
       }),
     );

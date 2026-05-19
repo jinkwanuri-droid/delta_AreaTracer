@@ -137,6 +137,7 @@ export interface AppState {
     }[],
   ) => void;
   updateDepartment: (id: string, field: "code" | "note", val: string) => void;
+  updateRoomNote: (roomId: string, note: string) => void;
 }
 
 export const getFloorVal = (name: string) => {
@@ -272,16 +273,8 @@ export const useAppStore = create<AppState>()(
           const rawDataByStage: Record<string, any[]> = {};
 
           if (state.spreadsheetId) {
-            const token = getAccessToken();
-            if (token) {
-              const sheetData = await fetchAllStagesFromSheets(state.spreadsheetId, stagesToUse);
-              Object.assign(rawDataByStage, sheetData);
-            } else {
-              // We have a spreadsheetId but no token yet. 
-              // Don't fall back to Supabase to avoid confusing errors.
-              set({ isLoading: false });
-              return;
-            }
+            const sheetData = await fetchAllStagesFromSheets(state.spreadsheetId, stagesToUse);
+            Object.assign(rawDataByStage, sheetData);
           } else if (supabase) {
             // Fetch data concurrently from all tables using exact stage mappings
             const availableTables = available || [];
@@ -667,6 +660,14 @@ export const useAppStore = create<AppState>()(
           );
           return { departments: newDepts };
         }),
+      updateRoomNote: (roomId, note) =>
+        set((state) => ({
+          rooms: state.rooms.map((r) =>
+            (Array.isArray(roomId) ? roomId.includes(r.id) : r.id === roomId)
+              ? { ...r, note }
+              : r,
+          ),
+        })),
       batchUpdateMapping: (mappings) =>
         set((state) => {
           // Collect existing to merge

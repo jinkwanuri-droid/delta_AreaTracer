@@ -21,22 +21,15 @@ const COLUMN_MAPPINGS: Record<string, string> = {
 };
 
 async function fetchSheetData(spreadsheetId: string, sheetName: string): Promise<any[]> {
-  const token = getAccessToken();
-  if (!token) throw new Error('Authentication required');
+  const apiKey = (import.meta as any).env.VITE_GOOGLE_SHEETS_API_KEY;
+  if (!apiKey) throw new Error('Google Sheets API Key not configured');
 
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?valueRenderOption=UNFORMATTED_VALUE`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetName)}?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}`;
   
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  const response = await fetch(url);
 
   if (!response.ok) {
     const err = await response.json();
-    if (response.status === 401) {
-      localStorage.removeItem('google_sheet_access_token');
-    }
     throw new Error(err.error?.message || 'Failed to fetch sheet data');
   }
 
@@ -55,6 +48,7 @@ async function fetchSheetData(spreadsheetId: string, sheetName: string): Promise
     return obj;
   }).filter((r: any) => r.room_no && r.room_no.toString().trim() !== "");
 }
+
 
 export const fetchAllStagesFromSheets = async (spreadsheetId: string, stages: { name: string, id: string }[]) => {
   const results: Record<string, any[]> = {};
