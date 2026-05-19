@@ -477,7 +477,7 @@ export const useAppStore = create<AppState>()(
             floorAreasByStage: floorAreasByStage,
             visibleStageIds: stagesToUse.map((s) => s.id),
             comparison: {
-              baseId: stagesToUse[0]?.id || null,
+              baseId: stagesToUse.find(s => s.name === '중간설계')?.id || stagesToUse[0]?.id || null,
               targetId: stagesToUse[stagesToUse.length - 1]?.id || null,
             },
             activeFloorId: "all",
