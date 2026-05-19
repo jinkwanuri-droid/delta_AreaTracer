@@ -1,0 +1,71 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stages    Stage[]
+}
+
+model Stage {
+  id        String   @id @default(cuid())
+  projectId String
+  name      String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  values  RoomStageValue[]
+}
+
+model Floor {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int
+  rooms Room[]
+}
+
+model Department {
+  id    String @id @default(cuid())
+  name  String @unique
+  order Int
+  rooms Room[]
+}
+
+model Room {
+  id           String @id @default(cuid())
+  departmentId String
+  floorId      String
+  no           String
+  name         String
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  floor      Floor      @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  values     RoomStageValue[]
+}
+
+model RoomStageValue {
+  id        String @id @default(cuid())
+  roomId    String
+  stageId   String
+  unitArea  Float  @default(0)
+  quantity  Int    @default(0)
+
+  room  Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  stage Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, stageId])
+}
