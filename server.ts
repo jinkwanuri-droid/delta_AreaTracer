@@ -1,13 +1,114 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import puppeteer from "puppeteer";
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
+
+  // Global Settings Persistence API (using Supabase)
+  app.get("/api/global-settings", async (req, res) => {
+    try {
+      // Fetch core config
+      const { data: configData } = await supabase
+        .from("app_config")
+        .select("*");
+      
+      const config: any = {};
+      configData?.forEach(item => {
+        config[item.key] = item.value;
+      });
+
+      // Fetch dept notes
+      const { data: deptNotesData } = await supabase
+        .from("dept_notes")
+        .select("*");
+      
+      const deptNotes: Record<string, string> = {};
+      deptNotesData?.forEach(item => {
+        deptNotes[item.dept_no] = item.content;
+      });
+
+      // Fetch room notes
+      const { data: roomNotesData } = await supabase
+        .from("room_notes")
+        .select("*");
+      
+      const roomNotes: Record<string, string> = {};
+      roomNotesData?.forEach(item => {
+        roomNotes[item.room_no] = item.content;
+      });
+
+      // Combine into the expected structure for useAppStore
+      const result = {
+        ...config,
+        departmentNotes: deptNotes,
+        roomNotes: roomNotes
+      };
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error reading settings from Supabase:", error);
+      res.status(500).json({ error: "Failed to read settings" });
+    }
+  });
+
+  app.post("/api/global-settings", async (req, res) => {
+    try {
+      const settings = req.body;
+      
+      // 1. Save core config (excluding large notes records)
+      const { departmentNotes, roomNotes, ...coreConfig } = settings;
+      
+      const configEntries = Object.entries(coreConfig).map(([key, value]) => ({
+        key,
+        value
+      }));
+
+      if (configEntries.length > 0) {
+        await supabase.from("app_config").upsert(configEntries);
+      }
+
+      // 2. Save dept notes
+      if (departmentNotes) {
+        const deptEntries = Object.entries(departmentNotes).map(([dept_no, content]) => ({
+          dept_no,
+          content: content as string
+        }));
+        if (deptEntries.length > 0) {
+          await supabase.from("dept_notes").upsert(deptEntries);
+        }
+      }
+
+      // 3. Save room notes
+      if (roomNotes) {
+        const roomEntries = Object.entries(roomNotes).map(([room_no, content]) => ({
+          room_no,
+          content: content as string
+        }));
+        if (roomEntries.length > 0) {
+          await supabase.from("room_notes").upsert(roomEntries);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving settings to Supabase:", error);
+      res.status(500).json({ error: "Failed to save settings" });
+    }
+  });
 
   app.post("/api/export-pdf", async (req, res) => {
     try {
@@ -20,14 +121,20 @@ async function startServer() {
       
       // We will emulate media type print
       await page.emulateMediaType('print');
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      await page.setContent(html, { waitUntil: 'load' });
+      
+      // Wait for network requests to be idle (useful for loading external CDN webfonts)
+      await page.waitForNetworkIdle().catch(() => {});
+      
+      // Ensure web fonts are download and loaded by wait for documents fonts ready state
+      await page.evaluateHandle(() => document.fonts.ready);
       
       // Convert to PDF
       const pdfBuffer = await page.pdf({
         printBackground: true,
-        width: width || 'A4',
-        height: height || 'A4',
-        margin: { top: '10mm', bottom: '10mm', left: '10mm', right: '10mm' }
+        width: width || 'A3',
+        height: height || 'A3',
+        margin: { top: '0', bottom: '0', left: '0', right: '0' }
       });
       
       await browser.close();

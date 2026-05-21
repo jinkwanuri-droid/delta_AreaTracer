@@ -40,7 +40,7 @@ const columnHelper = createColumnHelper<any>();
         onChange={e => setValue(e.target.value)}
         onBlur={onBlur}
         className={clsx(
-          "w-full bg-transparent outline-none px-2 py-1 text-[13px] min-h-[28px]",
+          "w-full bg-transparent outline-none px-2 py-1 text-[12px] min-h-[28px]",
           row.original.isSummaryRow ? "text-slate-400 italic" : "text-slate-700" 
         )}
         placeholder=""
@@ -49,9 +49,14 @@ const columnHelper = createColumnHelper<any>();
   };
   
   const EditableSummaryCell = ({ initialValue, stageId, floorId, isTotal }: { initialValue: number, stageId: string, floorId: string, isTotal?: boolean }) => {
+    const stages = useAppStore(state => state.stages);
     const formatValue = (num: number) => {
       if (num === 0) return '0';
-      return num.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+      const stage = stages.find(s => s.id === stageId);
+      if (stage?.code === 'A') {
+        return Math.round(num).toLocaleString('ko-KR');
+      }
+      return num.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     const [displayValue, setDisplayValue] = React.useState(formatValue(initialValue));
@@ -95,7 +100,7 @@ const columnHelper = createColumnHelper<any>();
         onChange={onChange}
         onBlur={onBlur}
         className={clsx(
-          "w-full bg-transparent text-right outline-none px-4 py-0 font-inter text-[14px] tracking-tighter hover:bg-slate-100 focus:bg-white focus:ring-1 focus:ring-indigo-300 rounded",
+          "w-full bg-transparent text-right outline-none px-4 py-0 font-inter text-[12px] tracking-tighter hover:bg-slate-100 focus:bg-white focus:ring-1 focus:ring-indigo-300 rounded",
           isTotal ? "font-bold text-slate-900" : "text-slate-800"
         )}
         placeholder="0"
@@ -104,18 +109,19 @@ const columnHelper = createColumnHelper<any>();
   };
 
 export default function DepartmentSummary() {
-  const { 
-    divisions, 
-    departments, 
-    rooms, 
-    values, 
-    stages, 
-    floorAreasByStage, 
-    summaryNotes,
-    visibleStageIds, 
-    comparison,
-    medicalOnly,
-  } = useAppStore();
+  const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
+  const divisions = useAppStore(state => state.divisions);
+  const departments = useAppStore(state => state.departments);
+  const rooms = useAppStore(state => state.rooms);
+  const values = useAppStore(state => state.values);
+  const stages = useAppStore(state => state.stages);
+  const floorAreasByStage = useAppStore(state => state.floorAreasByStage);
+  const summaryNotes = useAppStore(state => state.summaryNotes);
+  const visibleStageIds = useAppStore(state => state.visibleStageIds);
+  const comparison = useAppStore(state => state.comparison);
+  const medicalOnly = useAppStore(state => state.medicalOnly);
+
+  const departmentNotes = useAppStore(state => state.departmentNotes);
 
   const data = useMemo(() => {
     if (stages.length < 1) return [];
@@ -311,7 +317,7 @@ export default function DepartmentSummary() {
       department: '공용면적',
       stageAreas: commonAreaStageTotals,
       diff: commonAreaStageTotals[targetStageId] - commonAreaStageTotals[baseStageId],
-      notes: summaryNotes['common-area-sum'] ?? '[참고 1] 종합병원 적정 공용비/공용면적 검토',
+      notes: summaryNotes['common-area-sum'] ?? departmentNotes['common-area-sum'] ?? '[참고 1] 종합병원 적정 공용비/공용면적 검토',
       variant: 'white',
       noBold: true
     });
@@ -322,9 +328,9 @@ export default function DepartmentSummary() {
       code: '(가+나)/가',
       department: '공용비(G/N비)',
       stageAreas: gnRatioStageTotals,
-      diff: 0,
+      diff: gnRatioStageTotals[targetStageId] - gnRatioStageTotals[baseStageId],
       isRatio: true,
-      notes: summaryNotes['gn-ratio'] ?? '종합병원 평균값 1.50~1.60 사잇값으로 제안',
+      notes: summaryNotes['gn-ratio'] ?? departmentNotes['gn-ratio'] ?? '종합병원 평균값 1.50~1.60 사잇값으로 제안',
       variant: 'white',
       noBold: true
     });
@@ -336,7 +342,7 @@ export default function DepartmentSummary() {
       department: '의료시설 면적',
       stageAreas: medAreaSumStageTotals,
       diff: medAreaSumStageTotals[targetStageId] - medAreaSumStageTotals[baseStageId],
-      notes: summaryNotes['med-area-sum'] ?? '',
+      notes: summaryNotes['med-area-sum'] ?? departmentNotes['med-area-sum'] ?? '',
       variant: 'grey'
     });
 
@@ -347,7 +353,7 @@ export default function DepartmentSummary() {
       department: '옥내 주차공간',
       stageAreas: garageAreaStageTotals,
       diff: garageAreaStageTotals[targetStageId] - garageAreaStageTotals[baseStageId],
-      notes: summaryNotes['garage-area'] ?? '주차대수 100대 내외 계획하여 면적 제안',
+      notes: summaryNotes['garage-area'] ?? departmentNotes['garage-area'] ?? '주차대수 100대 내외 계획하여 면적 제안',
       variant: 'white',
       noBold: true
     });
@@ -359,7 +365,7 @@ export default function DepartmentSummary() {
       department: '의료시설 총면적',
       stageAreas: medTotalAreaStageTotals,
       diff: medTotalAreaStageTotals[targetStageId] - medTotalAreaStageTotals[baseStageId],
-      notes: summaryNotes['med-total-area'] ?? '',
+      notes: summaryNotes['med-total-area'] ?? departmentNotes['med-total-area'] ?? '',
       variant: 'dark-grey'
     });
 
@@ -370,7 +376,7 @@ export default function DepartmentSummary() {
       department: '옥외 공용면적',
       stageAreas: outdoorAreaStageTotals,
       diff: outdoorAreaStageTotals[targetStageId] - outdoorAreaStageTotals[baseStageId],
-      notes: summaryNotes['outdoor-area'] ?? '-',
+      notes: summaryNotes['outdoor-area'] ?? departmentNotes['outdoor-area'] ?? '-',
       variant: 'white',
       noBold: true
     });
@@ -387,17 +393,27 @@ export default function DepartmentSummary() {
     });
 
     return rows;
-  }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, visibleStageIds, comparison]);
+  }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, visibleStageIds, comparison, medicalOnly]);
 
-  const formatNum = (val: number | undefined | null, isRatio = false) => {
-    if (val === undefined || val === null || isNaN(val) || val === 0) {
-      if (isRatio) return "-";
-      // For normal areas, 0 might be valid, but in summary table if it's not set it might be better to show '-' or '0'
-      // Given the screenshot shows '-' for gnRatio when not calculated, I'll return '-' for 0 ratio.
-      return val === 0 ? "0" : "-";
+  const formatNum = (val: number | undefined | null, isRatio = false, stageId?: string) => {
+    if (val === undefined || val === null || isNaN(val)) {
+      return "-";
     }
+    
+    const checkVal = isRatio ? Number(val.toFixed(4)) : Number(val.toFixed(2));
+    if (checkVal === 0) {
+      if (isRatio) return "-";
+      return "0";
+    }
+    
     if (isRatio) return val.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return val.toLocaleString('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    
+    const stage = stages.find(s => s.id === stageId);
+    if (stage?.code === 'A') {
+      return Math.round(val).toLocaleString('ko-KR');
+    }
+
+    return val.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const columns = useMemo(() => {
@@ -411,8 +427,8 @@ export default function DepartmentSummary() {
           
           return (
             <div className={clsx(
-              "text-center font-inter text-[13px] py-1",
-              (row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-bold text-slate-900" : "text-slate-500"
+              "text-center font-inter text-[12px] py-1",
+              (row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-bold text-slate-900 text-[13px]" : "text-slate-500"
             )}>
               {info.getValue() || ''}
             </div>
@@ -425,12 +441,29 @@ export default function DepartmentSummary() {
         cell: info => {
           const row = info.row.original;
           const val = info.getValue() as string;
+          const color = row.divColor || row.deptColor || row.color;
+          const showColorSymbol = color && !row.isHeader && !row.isSpacer && !row.isGrandTotal && !row.isSummaryRow;
+
           return (
             <div className={clsx(
-              "px-4 py-1 text-[14px]",
-              (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-black" : "font-semibold text-slate-700",
+              "px-3 py-1 text-[12px]",
+              (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-black text-[13px]" : "font-semibold text-slate-700",
               "flex items-center gap-2"
             )}>
+              {showColorSymbol && (
+                <span 
+                  className={clsx(
+                    "inline-block rounded-full flex-shrink-0",
+                    row.isSubtotal ? "w-2 h-2" : "w-1.5 h-3 rounded-sm"
+                  )}
+                  style={{ 
+                    backgroundColor: color, 
+                    borderColor: color,
+                    display: "inline-block",
+                    WebkitPrintColorAdjust: "exact" 
+                  }}
+                />
+              )}
               {val}
             </div>
           );
@@ -440,6 +473,7 @@ export default function DepartmentSummary() {
     ];
 
     const visibleStages = stages.filter(s => visibleStageIds.includes(s.id));
+    const targetStageId = comparison.targetId || stages[stages.length - 1]?.id;
     
     // Dynamic stage columns
     visibleStages.forEach((s, idx) => {
@@ -449,7 +483,12 @@ export default function DepartmentSummary() {
           header: () => (
             <div className="flex items-center justify-center gap-1.5 px-1">
               {s.code && (
-                <span className="flex items-center justify-center bg-slate-700 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full shadow-sm shrink-0">
+                <span className={clsx(
+                  "flex items-center justify-center text-[9px] font-black w-5 h-5 rounded-md shadow-sm border transition-all duration-300 shrink-0",
+                  s.id === targetStageId
+                    ? "bg-gradient-to-br from-indigo-500 to-purple-600 text-white border-transparent font-bold"
+                    : "bg-white text-slate-500 border-slate-300"
+                )}>
                   {s.code}
                 </span>
               )}
@@ -467,14 +506,14 @@ export default function DepartmentSummary() {
             }
             
             // Summary rows might only have specific stages populated (all summary rows now populate all stages in my logic above)
-            if (row.isSummaryRow && val === undefined) return <div className="text-right px-4 font-inter text-[14px]">-</div>;
+            if (row.isSummaryRow && val === undefined) return <div className="text-right px-4 font-inter text-[12px]">-</div>;
 
             return (
               <div className={clsx(
-                "text-right px-4 font-inter text-[14px] tracking-tighter",
-                (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) && "font-bold"
+                "text-right px-4 font-inter text-[12px] tracking-tighter",
+                (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "font-bold text-[13px]" : "text-slate-700"
               )}>
-                {formatNum(val, row.isRatio)}
+                {formatNum(val, row.isRatio, s.id)}
               </div>
             );
           },
@@ -498,15 +537,16 @@ export default function DepartmentSummary() {
           const val = info.getValue() as number;
           const row = info.row.original;
           if (row.isHeader || row.isSpacer) return null;
-          if (row.isSummaryRow) return null; // Simplified
+          
           const variant = row.variant;
           const isActuallyDark = variant === 'dark' || variant === 'dark-ext';
           return (
             <div className={clsx(
-              "text-right px-4 font-inter text-[14px] tracking-tighter font-bold",
+              "text-right px-4 font-inter text-[12px] tracking-tighter font-bold",
+              (row.isSubtotal || row.isGrandTotal || (row.isSummaryRow && !row.noBold)) ? "text-[13px]" : "",
               !isActuallyDark && val > 0 ? "text-blue-600" : !isActuallyDark && val < 0 ? "text-red-500" : isActuallyDark ? "text-blue-400" : "text-slate-400"
             )}>
-              {val > 0 ? '+' : ''}{formatNum(val)}
+              {val > 0 ? '+' : ''}{formatNum(val, row.isRatio)}
             </div>
           );
         },
@@ -529,7 +569,7 @@ export default function DepartmentSummary() {
     );
 
     return cols;
-  }, [stages, visibleStageIds, comparison]);
+  }, [stages, visibleStageIds, comparison, departments, summaryNotes, departmentNotes]);
 
   const table = useReactTable({
     data,
@@ -551,7 +591,7 @@ export default function DepartmentSummary() {
       <div className="flex-1 overflow-hidden p-6">
         <div className="h-full bg-white border border-slate-300 rounded shadow-sm overflow-hidden flex flex-col">
           <div className="flex-1 overflow-auto">
-            <table id="pdf-export-table" className="w-full border-separate border-spacing-0 table-fixed">
+            <table className={clsx("w-full border-separate border-spacing-0 table-fixed", !isPdfExportMode && "text-[11px]")}>
               <thead className="sticky top-0 z-10">
                 {table.getHeaderGroups().map(headerGroup => (
                   <tr key={headerGroup.id}>
@@ -559,7 +599,10 @@ export default function DepartmentSummary() {
                       <th 
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] px-2 py-2 text-[12px] font-bold text-[#334155] uppercase tracking-tight text-center"
+                        className={clsx(
+                          "bg-[#E2E8F0] border-b border-r border-[#CBD5E1] px-2 py-2 font-bold text-[#334155] uppercase tracking-tight text-center",
+                          !isPdfExportMode && "text-[12px]"
+                        )}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </th>

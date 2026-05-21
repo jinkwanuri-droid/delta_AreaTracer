@@ -1,6 +1,6 @@
 {
-  "name": "delta",
-  "description": "Area tracing and management tool for medical facilities",
+  "name": "서부의료원 면적 관리 플랫폼",
+  "description": "경상남도 서부의료원 프로젝트의 설계 단계별 면적 추적 및 관리 도구 (Google Sheets 데이터 연동)",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

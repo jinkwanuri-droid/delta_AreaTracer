@@ -10,7 +10,7 @@ interface Option {
 }
 
 interface SelectorPopoverProps {
-  label: string;
+  label?: string;
   options: Option[];
   value: string;
   onChange: (value: string) => void;
@@ -29,22 +29,28 @@ export default function SelectorPopover({
   placeholder = "선택하세요" 
 }: SelectorPopoverProps) {
   const selectedOption = options.find(o => o.id === value);
+  const [open, setOpen] = React.useState(false);
 
   return (
-    <Popover.Root>
+    <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button className={clsx(
           "group flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 outline-none focus:ring-2 focus:ring-indigo-500/20",
           className
         )}>
-          {icon && <span className="text-slate-400 group-hover:text-indigo-500 transition-colors">{icon}</span>}
-          <div className="flex flex-col items-start leading-tight">
-            {label && <span className="text-[9px] text-slate-400 font-medium uppercase tracking-tighter">{label}</span>}
-            <span className="truncate max-w-[120px] py-0.5">
+          {icon && <span className="text-slate-400 group-hover:text-indigo-500 transition-colors shrink-0">{icon}</span>}
+          <div className="flex-1 flex items-center gap-1.5 leading-none text-[11px] font-bold text-left overflow-hidden">
+            {label && (
+              <>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-tighter shrink-0">{label}</span>
+                <span className="text-slate-300 shrink-0">|</span>
+              </>
+            )}
+            <span className="truncate text-slate-700 flex-1">
               {selectedOption ? selectedOption.name : placeholder}
             </span>
           </div>
-          <ChevronDown size={12} className="text-slate-300 group-hover:text-indigo-400 transition-colors ml-auto" />
+          <ChevronDown size={12} className="text-slate-300 group-hover:text-indigo-400 transition-colors ml-1 shrink-0" />
         </button>
       </Popover.Trigger>
 
@@ -60,7 +66,10 @@ export default function SelectorPopover({
               return (
                 <button
                   key={option.id}
-                  onClick={() => onChange(option.id)}
+                  onClick={() => {
+                    onChange(option.id);
+                    setOpen(false);
+                  }}
                   className={clsx(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-bold transition-all text-left mb-0.5 last:mb-0",
                     isSelected 

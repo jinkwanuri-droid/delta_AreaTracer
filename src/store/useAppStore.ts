@@ -16,7 +16,6 @@ export interface Stage {
   order: number;
   isTotalAreaOnly?: boolean;
   code?: string;
-  tableName?: string;
 }
 export interface Floor {
   id: string;
@@ -73,6 +72,8 @@ export interface AppState {
   values: RoomValue[];
   floorAreasByStage: Record<string, Record<string, number>>;
   summaryNotes: Record<string, string>;
+  roomNotes: Record<string, string>; // roomKey -> note
+  departmentNotes: Record<string, string>; // deptId -> note
   visibleStageIds: string[];
   comparison: {
     baseId: string | null;
@@ -81,18 +82,25 @@ export interface AppState {
   activeTab: "dashboard" | "summary" | "detail";
   activeFloorId: string | "all" | null;
   isPdfExportMode: boolean;
+  pdfExportOptions: {
+    dashboard: boolean;
+    summary: boolean;
+    detail: boolean;
+  };
   filters: {
     divisionIds: string[];
     departmentIds: string[];
   };
   snapshots: Snapshot[];
-  availableTables: string[];
   medicalOnly: boolean;
   isLoading: boolean;
   spreadsheetId: string | null;
   floorWardOverrides: Record<string, number>; // floorId|deptId -> count
+  fetchGlobalSettings: () => Promise<void>;
+  saveGlobalSettings: () => Promise<void>;
   setVisibleStageIds: (ids: string[]) => void;
   setSpreadsheetId: (id: string | null) => void;
+  verifyAndSetSpreadsheetId: (id: string) => Promise<void>;
   setComparisonStages: (baseId: string | null, targetId: string | null) => void;
   fetchSnapshots: () => Promise<void>;
   saveSnapshot: (name: string, id?: string) => Promise<void>;
@@ -106,7 +114,6 @@ export interface AppState {
     id: string,
     name: string,
     code?: string,
-    tableName?: string,
   ) => void;
   toggleStageTotalAreaOnly: (id: string, isTotalAreaOnly: boolean) => void;
   toggleMedicalOnly: (val: boolean) => void;
@@ -115,10 +122,10 @@ export interface AppState {
   setActiveTab: (tab: "dashboard" | "summary" | "detail") => void;
   setActiveFloorId: (id: string | null) => void;
   setIsPdfExportMode: (val: boolean) => void;
+  setPdfExportOptions: (val: { dashboard: boolean; summary: boolean; detail: boolean; }) => void;
   toggleDivisionFilter: (id: string) => void;
   toggleDepartmentFilter: (id: string) => void;
   fetchData: (force?: boolean) => Promise<void>;
-  fetchTableList: () => Promise<void>;
   updateValue: (
     roomId: string,
     stageId: string,
@@ -154,6 +161,54 @@ export const getFloorVal = (name: string) => {
   return num;
 };
 
+export const standardizeFloorId = (val: string | undefined | null): string => {
+  if (!val) return "";
+  let levelStr = val.toString().trim().toUpperCase();
+  const levelMatch = levelStr.match(/(B)?\s*(\d+)/);
+  if (levelMatch) {
+    const prefix = (levelMatch[1] || "").toUpperCase();
+    const num = parseInt(levelMatch[2]);
+    return prefix === "B" ? `B${num}` : `${num}F`;
+  }
+  return levelStr;
+};
+
+export const findRoomNote = (roomNotes: Record<string, string> | undefined | null, rNo: string | number, rLevel: string | number): string => {
+  if (!roomNotes) return "";
+  
+  const targetNo = String(rNo).trim().toUpperCase();
+  const targetLevel = standardizeFloorId(String(rLevel));
+  const targetKey = `${targetNo}|${targetLevel}`;
+  
+  // 1. Direct key match
+  if (roomNotes[targetKey]) {
+    return roomNotes[targetKey];
+  }
+  
+  // 2. Flexible match across all keys
+  const keys = Object.keys(roomNotes);
+  for (const key of keys) {
+    const parts = key.split("|");
+    if (parts.length === 2) {
+      const keyNo = parts[0].trim().toUpperCase();
+      const keyLevel = parts[1].trim().toUpperCase();
+      
+      if (keyNo === targetNo) {
+        if (standardizeFloorId(keyLevel) === targetLevel) {
+          return roomNotes[key];
+        }
+        const cleanKeyLevel = keyLevel.replace(/F$/i, '');
+        const cleanTargetLevel = targetLevel.replace(/F$/i, '');
+        if (cleanKeyLevel === cleanTargetLevel) {
+          return roomNotes[key];
+        }
+      }
+    }
+  }
+  
+  return "";
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -166,25 +221,103 @@ export const useAppStore = create<AppState>()(
       values: [],
       floorAreasByStage: {},
       summaryNotes: {},
+      roomNotes: {},
+      departmentNotes: {},
       visibleStageIds: [],
       comparison: { baseId: null, targetId: null },
       activeTab: "detail",
       activeFloorId: "all",
       isPdfExportMode: false,
+      pdfExportOptions: { dashboard: true, summary: true, detail: true },
       filters: { divisionIds: [], departmentIds: [] },
       snapshots: [],
-      availableTables: [],
       medicalOnly: true,
       isLoading: false,
       spreadsheetId: null,
       floorWardOverrides: {},
+      fetchGlobalSettings: async () => {
+        try {
+          const res = await fetch("/api/global-settings");
+          if (res.ok) {
+            const data = await res.json();
+            if (data && Object.keys(data).length > 0) {
+              set({
+                spreadsheetId: data.spreadsheetId || get().spreadsheetId,
+                stages: data.stages || get().stages,
+                floors: data.floors || get().floors,
+                divisions: data.divisions || get().divisions,
+                departments: data.departments || get().departments,
+                floorAreasByStage: data.floorAreasByStage || get().floorAreasByStage,
+                comparison: data.comparison || get().comparison,
+                roomNotes: data.roomNotes || get().roomNotes,
+                departmentNotes: data.departmentNotes || get().departmentNotes,
+                floorWardOverrides: data.floorWardOverrides || get().floorWardOverrides,
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch global settings:", e);
+        }
+      },
+      saveGlobalSettings: async () => {
+        const state = get();
+        const dataToSave = {
+          spreadsheetId: state.spreadsheetId,
+          stages: state.stages,
+          floors: state.floors,
+          divisions: state.divisions,
+          departments: state.departments,
+          floorAreasByStage: state.floorAreasByStage,
+          comparison: state.comparison,
+          roomNotes: state.roomNotes,
+          departmentNotes: state.departmentNotes,
+          floorWardOverrides: state.floorWardOverrides,
+        };
+        try {
+          await fetch("/api/global-settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dataToSave),
+          });
+        } catch (e) {
+          console.error("Failed to save global settings:", e);
+        }
+      },
       setVisibleStageIds: (ids) => set({ visibleStageIds: ids }),
-      setSpreadsheetId: (id) => set({ spreadsheetId: id }),
-      setComparisonStages: (baseId, targetId) =>
-        set({ comparison: { baseId, targetId } }),
+      setSpreadsheetId: (id) => {
+        set({ spreadsheetId: id });
+        get().saveGlobalSettings().catch(console.error);
+      },
+      verifyAndSetSpreadsheetId: async (id) => {
+        const state = get();
+        const stagesToUse = state.stages.length > 0 ? state.stages : [
+          { id: "s1", name: "공모지침", code: "G", order: 0 },
+          { id: "s2", name: "계획설계", code: "S", order: 1 },
+          { id: "s3", name: "중간설계", code: "D", order: 2 },
+          { id: "s4", name: "인허가", code: "P", order: 3 },
+          { id: "s5", name: "실시설계90", code: "C", order: 4 },
+        ];
+        
+        // 1. Dry Run Validation
+        const sheetData = await fetchAllStagesFromSheets(id, stagesToUse);
+        const totalRowsLoaded = Object.values(sheetData).reduce((acc, rows) => acc + (rows?.length || 0), 0);
+        
+        if (totalRowsLoaded === 0) {
+          throw new Error("스프레드시트 탭 명칭이 현재 설정된 설계 단계명('공모지침', '계획설계' 등)과 하나도 일치하지 않거나, 실 데이터 행이 전혀 없습니다.");
+        }
+        
+        // 2. Success - apply spreadsheetId and fetch and populate
+        set({ spreadsheetId: id });
+        await get().fetchData(true);
+      },
+      setComparisonStages: (baseId, targetId) => {
+        set({ comparison: { baseId, targetId } });
+        get().saveGlobalSettings().catch(console.error);
+      },
       setActiveTab: (tab) => set({ activeTab: tab }),
       setActiveFloorId: (id) => set({ activeFloorId: id }),
       setIsPdfExportMode: (val) => set({ isPdfExportMode: val }),
+      setPdfExportOptions: (val) => set({ pdfExportOptions: val }),
       toggleDivisionFilter: (id) =>
         set((state) => {
           const ids = state.filters.divisionIds;
@@ -223,55 +356,16 @@ export const useAppStore = create<AppState>()(
           };
         }),
       fetchData: async (force = false) => {
-        const state = get();
-        if (!force && state.stages.length > 0 && state.rooms.length > 2) {
-          set({ project: { id: "p1", name: "경상남도 서부의료원" } });
-          return;
-        }
-
         set({ isLoading: true });
-
-        // Await table list fetch to know what's available
-        await get().fetchTableList();
-        const available = get().availableTables;
-
-        // Default stages definition matching Sheet tab names
-        const defaultStages: Stage[] = [
-          {
-            id: "s1",
-            name: "공모지침",
-            code: "G",
-            tableName: "area_guideline",
-            order: 0,
-          },
-          {
-            id: "s2",
-            name: "계획설계",
-            code: "S",
-            tableName: "area_sd",
-            order: 1,
-          },
-          {
-            id: "s3",
-            name: "중간설계",
-            code: "D",
-            tableName: "area_dd",
-            order: 2,
-          },
-          {
-            id: "s4",
-            name: "인허가",
-            code: "P",
-            tableName: "area_permit",
-            order: 3,
-          },
-          {
-            id: "s5",
-            name: "실시설계90",
-            code: "C",
-            tableName: "area_cd90",
-            order: 4,
-          },
+        const state = get();
+        
+        // Define default stages in case none exist in state yet
+        const defaultStages = [
+          { id: "s1", name: "공모지침", code: "G", order: 0 },
+          { id: "s2", name: "계획설계", code: "S", order: 1 },
+          { id: "s3", name: "중간설계", code: "D", order: 2 },
+          { id: "s4", name: "인허가", code: "P", order: 3 },
+          { id: "s5", name: "실시설계90", code: "C", order: 4 },
         ];
 
         // Use existing stages if available, else use defaults
@@ -283,6 +377,12 @@ export const useAppStore = create<AppState>()(
           if (state.spreadsheetId) {
             const sheetData = await fetchAllStagesFromSheets(state.spreadsheetId, stagesToUse);
             Object.assign(rawDataByStage, sheetData);
+            
+            // Check if we got any data at all from Sheets to avoid blanking current screens
+            const totalRowsLoaded = Object.values(rawDataByStage).reduce((acc, rows) => acc + (rows?.length || 0), 0);
+            if (totalRowsLoaded === 0) {
+              throw new Error("구글 시트로부터 실(Room) 데이터를 불러올 수 없습니다. 스프레드시트의 탭(Tab) 명칭이 설계 단계명('공모지침', '계획설계' 등)과 맞는지, 혹은 시트에 데이터가 올바른 형식으로 기재되어 있는지 확인해주세요.");
+            }
           } else {
             console.warn("No Spreadsheet ID configured.");
             set({ isLoading: false });
@@ -291,7 +391,7 @@ export const useAppStore = create<AppState>()(
 
           const roomMap: Record<
             string,
-            { no: string; name: string; level: string; maxStageIdx: number }
+            { no: string; name: string; level: string; maxStageIdx: number; note?: string }
           > = {};
           const valuesMap: Record<
             string,
@@ -309,6 +409,7 @@ export const useAppStore = create<AppState>()(
               let level = row.level || row.floor || row.lv || row.floor_id || row.LEVEL;
               let name = row.name || row.room_name || row.NAME || row.ROOM_NAME;
               let area = row.area || row.net_area || row.total_area || row.AREA;
+              let noteVal = row.note || row.notes || row.memo || row.비고 || row.MEMO || row.NOTE || row.NOTES || "";
 
               if (!room_no) return;
               room_no = room_no.toString().trim();
@@ -321,30 +422,11 @@ export const useAppStore = create<AppState>()(
               const numArea = typeof area === "string" ? parseFloat(area) : area;
               const validArea = !isNaN(numArea);
 
-              // Standardize room number: remove ALL non-alphanumeric and common prefixes
-              let normalizedNo = room_no.toString().trim();
+              // Standardize room number: just trim and uppercase for stable matching
+              let sanitizedNo = room_no.toString().trim().toUpperCase();
               
-              // Handle ranges like "101-103" - if the base room is "101", we should match it?
-              // Or just keep the full string but normalize separators
-              let sanitizedNo = normalizedNo
-                .replace(/[^A-Z0-9]/gi, '')
-                .toUpperCase();
-              
-              // Strip leading common prefixes
-              sanitizedNo = sanitizedNo.replace(/^(RM|ROOM|NO|N|R)/i, '');
-              
-              // If empty after stripping, use original (some rooms might be named just "R" or "N")
-              if (!sanitizedNo) sanitizedNo = normalizedNo.toUpperCase();
-
-              // Standardize level: extract number and prefix (B), normalize to #F or B#F
-              let levelStr = level ? level.toString().trim().toUpperCase() : "";
-              // Handle "B1", "1F", "FLOOR 3", "LEVEL 4", etc.
-              const levelMatch = levelStr.match(/(B)?\s*(\d+)/);
-              if (levelMatch) {
-                const prefix = (levelMatch[1] || "").toUpperCase();
-                const num = parseInt(levelMatch[2]);
-                levelStr = prefix === "B" ? `B${num}` : `${num}F`;
-              }
+              // Standardize level using standard helper
+              let levelStr = standardizeFloorId(level);
               
               if (levelStr) floorSet.add(levelStr);
               
@@ -356,19 +438,26 @@ export const useAppStore = create<AppState>()(
                   name: name || "",
                   level: levelStr,
                   maxStageIdx: idx,
+                  note: noteVal ? noteVal.toString().trim() : "",
                 };
               } else {
                 if (idx >= roomMap[roomKey].maxStageIdx) {
                   if (idx > roomMap[roomKey].maxStageIdx) {
                     if (name) roomMap[roomKey].name = name;
                     if (levelStr) roomMap[roomKey].level = levelStr;
+                    if (noteVal) roomMap[roomKey].note = noteVal.toString().trim();
                     roomMap[roomKey].maxStageIdx = idx;
-                  } else if (
-                    idx === roomMap[roomKey].maxStageIdx &&
-                    name &&
-                    !roomMap[roomKey].name
-                  ) {
-                    roomMap[roomKey].name = name;
+                  } else if (idx === roomMap[roomKey].maxStageIdx) {
+                    if (name && !roomMap[roomKey].name) {
+                      roomMap[roomKey].name = name;
+                    }
+                    if (noteVal && !roomMap[roomKey].note) {
+                      roomMap[roomKey].note = noteVal.toString().trim();
+                    }
+                  }
+                } else {
+                  if (noteVal && !roomMap[roomKey].note) {
+                    roomMap[roomKey].note = noteVal.toString().trim();
                   }
                 }
               }
@@ -393,7 +482,7 @@ export const useAppStore = create<AppState>()(
             .sort()
             .map((d, i) => {
               const existingDept = state.departments.find(
-                (dept) => dept.id === d,
+                (dept) => dept.id.toUpperCase() === d.toUpperCase(),
               );
               const divCode = existingDept?.divisionId || d.charAt(0);
               const existingDiv = state.divisions.find(
@@ -407,16 +496,28 @@ export const useAppStore = create<AppState>()(
                   color: existingDiv?.color,
                 });
               }
+              
+              const findDeptNote = (deptCode: string) => {
+                const foundKey = Object.keys(state.departmentNotes).find(
+                  k => k.toUpperCase() === deptCode.toUpperCase()
+                );
+                return foundKey ? state.departmentNotes[foundKey] : "";
+              };
+              const note = findDeptNote(d) || existingDept?.note || "";
+
               return {
                 id: d,
                 divisionId: divCode,
                 code: d,
                 name: existingDept?.name || `부서 ${d}`,
                 order: i,
+                note,
               };
             });
 
           const divisions = Array.from(divisionsMap.values());
+
+          const newRoomNotes = { ...state.roomNotes };
 
           const generatedRooms: Room[] = [];
           const generatedValues: RoomValue[] = [];
@@ -427,8 +528,17 @@ export const useAppStore = create<AppState>()(
             const deptCode = deptMatch ? deptMatch[1].toUpperCase() : "";
             const floorId = r.level;
 
-            // Preserve existing note if it exists
-            const existingRoom = state.rooms.find(er => er.id === roomId);
+            const existingRoom = state.rooms.find(er => 
+              er.id === roomId || 
+              (er.no.trim().toUpperCase() === r.no.trim().toUpperCase() && 
+               standardizeFloorId(er.floorId) === standardizeFloorId(r.level))
+            );
+
+              // Use roomNotes as primary source, fallback to sheet note or existingRoom note
+            // Try matching by room number first (DB preference)
+            const roomNoKey = r.no.trim().toUpperCase();
+            const compositeKey = `${roomNoKey}|${standardizeFloorId(r.level)}`;
+            const note = newRoomNotes[roomNoKey] || findRoomNote(newRoomNotes, r.no, r.level) || r.note || existingRoom?.note || "";
 
             generatedRooms.push({
               id: roomId,
@@ -436,8 +546,13 @@ export const useAppStore = create<AppState>()(
               name: r.name,
               floorId: floorId,
               departmentId: deptCode,
-              note: existingRoom ? existingRoom.note : "",
+              note,
             });
+            
+            // Auto-populate roomNotes if it was found in existingRoom or sheet for future stability
+            if (note && !newRoomNotes[roomNoKey]) {
+              newRoomNotes[roomNoKey] = note;
+            }
 
             // Create values
             stagesToUse.forEach((s) => {
@@ -446,7 +561,7 @@ export const useAppStore = create<AppState>()(
                 generatedValues.push({
                   roomId,
                   stageId: s.id,
-                  unitArea: Number((v.totalArea / v.qty).toFixed(2)),
+                  unitArea: v.totalArea / v.qty,
                   quantity: v.qty,
                 });
               }
@@ -475,6 +590,7 @@ export const useAppStore = create<AppState>()(
             rooms: generatedRooms,
             values: generatedValues,
             floorAreasByStage: floorAreasByStage,
+            roomNotes: newRoomNotes,
             visibleStageIds: stagesToUse.map((s) => s.id),
             comparison: {
               baseId: stagesToUse.find(s => s.name === '중간설계')?.id || stagesToUse[0]?.id || null,
@@ -482,53 +598,19 @@ export const useAppStore = create<AppState>()(
             },
             activeFloorId: "all",
           });
-        } catch (e) {
+        } catch (e: any) {
+          if (e?.message?.includes("구글 스프레드시트")) {
+            set({ spreadsheetId: null, isLoading: false });
+            // Soft reset to allow app to function without the invalid spreadsheet
+            return;
+          }
           console.error("Data fetch error:", e);
+          throw e;
         } finally {
           set({ isLoading: false });
         }
       },
-      fetchTableList: async () => {
-        if (!supabase || get().spreadsheetId) return;
-
-        const candidateTables = [
-          "area_guideline",
-          "area_sd",
-          "area_dd",
-          "area_permit",
-          "area_cd90",
-          "area_master",
-          "permit_design",
-          "permit_area",
-          "area_pm",
-          "area_pre",
-          "area_final",
-        ];
-
-        try {
-          const results = await Promise.all(
-            candidateTables.map(async (table) => {
-              const { error } = await supabase!
-                .from(table)
-                .select("count", { count: "exact", head: true });
-              return error ? null : table;
-            }),
-          );
-
-          const found = results.filter((t): t is string => t !== null);
-          set({ availableTables: found });
-        } catch (e) {
-          console.error("Error fetching table list:", e);
-          set({
-            availableTables: [
-              "area_guideline",
-              "area_sd",
-              "area_dd",
-              "area_permit",
-            ],
-          });
-        }
-      },
+      fetchTableList: async () => {}, // No-op, removed
       updateValue: (roomId, stageId, field, val) =>
         set((state) => {
           const newValues = [...state.values];
@@ -545,18 +627,21 @@ export const useAppStore = create<AppState>()(
               quantity: field === "quantity" ? val : 0,
             });
           }
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { values: newValues };
         }),
       updateFloorArea: (stageId, floorId, area) =>
-        set((state) => ({
-          floorAreasByStage: {
+        set((state) => {
+          const newFloorAreasByStage = {
             ...state.floorAreasByStage,
             [stageId]: {
               ...(state.floorAreasByStage[stageId] || {}),
               [floorId]: area,
             },
-          },
-        })),
+          };
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
+          return { floorAreasByStage: newFloorAreasByStage };
+        }),
       batchUpdateFloors: (floorData, stageId) =>
         set((state) => {
           const getVal = (name: string) => {
@@ -584,13 +669,14 @@ export const useAppStore = create<AppState>()(
           });
 
           // If stageId provided, only update that stage. Otherwise initialize all stages with same data?
-          // Let's assume if it's a batch update from settings, we either apply to a specific stage or the "first"
           const targetStageId = stageId || state.stages[0]?.id;
           const newFloorAreasByStage = { ...state.floorAreasByStage };
 
           if (targetStageId) {
             newFloorAreasByStage[targetStageId] = newFloorAreasForStage;
           }
+
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
 
           return {
             floors: newFloors,
@@ -603,27 +689,68 @@ export const useAppStore = create<AppState>()(
           const newDivs = state.divisions.map((d) =>
             d.id === divId ? { ...d, color } : d,
           );
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { divisions: newDivs };
         }),
       updateDepartment: (id, field, val) =>
         set((state) => {
+          const newDepartmentNotes = { ...state.departmentNotes };
+          if (field === "note") {
+            newDepartmentNotes[id] = val;
+          }
           const newDepts = state.departments.map((d) =>
             d.id === id ? { ...d, [field]: val } : d,
           );
-          return { departments: newDepts };
+          
+          // Explicitly sync to DB
+          get().saveGlobalSettings().catch(console.error);
+          
+          return { departments: newDepts, departmentNotes: newDepartmentNotes };
         }),
       updateRoomNote: (roomId, note) =>
-        set((state) => ({
-          rooms: state.rooms.map((r) =>
-            (Array.isArray(roomId) ? roomId.includes(r.id) : r.id === roomId)
-              ? { ...r, note }
-              : r,
-          ),
-        })),
+        set((state) => {
+          const newRoomNotes = { ...state.roomNotes };
+          
+          if (Array.isArray(roomId)) {
+            roomId.forEach(rid => {
+               const room = state.rooms.find(r => r.id === rid);
+               if (room) {
+                 // Using room number as the key for DB consistency as requested
+                 const key = room.no.trim().toUpperCase();
+                 newRoomNotes[key] = note;
+               }
+            });
+          } else {
+             const room = state.rooms.find(r => r.id === roomId);
+             if (room) {
+               const key = room.no.trim().toUpperCase();
+               newRoomNotes[key] = note;
+             }
+          }
+
+          // Explicitly sync to DB
+          get().saveGlobalSettings().catch(console.error);
+
+          return {
+            roomNotes: newRoomNotes,
+            rooms: state.rooms.map((r) =>
+              (Array.isArray(roomId) ? roomId.includes(r.id) : r.id === roomId)
+                ? { ...r, note }
+                : r,
+            ),
+          };
+        }),
       updateSummaryNote: (summaryId, note) =>
-        set((state) => ({
-          summaryNotes: { ...state.summaryNotes, [summaryId]: note },
-        })),
+        set((state) => {
+          const newSummaryNotes = { ...state.summaryNotes, [summaryId]: note };
+          
+          // Explicitly sync to DB
+          get().saveGlobalSettings().catch(console.error);
+          
+          return {
+            summaryNotes: newSummaryNotes,
+          };
+        }),
       batchUpdateMapping: (mappings) =>
         set((state) => {
           // Collect existing to merge
@@ -652,6 +779,8 @@ export const useAppStore = create<AppState>()(
               order: existingDept ? existingDept.order : departmentsMap.size,
             });
           });
+
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
 
           return {
             divisions: Array.from(divisionsMap.values()).sort(
@@ -702,6 +831,8 @@ export const useAppStore = create<AppState>()(
           departments: state.departments,
           floorAreasByStage: state.floorAreasByStage,
           summaryNotes: state.summaryNotes,
+          roomNotes: state.roomNotes,
+          departmentNotes: state.departmentNotes,
           visibleStageIds: state.visibleStageIds,
           comparison: state.comparison,
         };
@@ -757,6 +888,8 @@ export const useAppStore = create<AppState>()(
                   }
                 : state.floorAreasByStage),
             summaryNotes: (snapshot.data as any).summaryNotes || state.summaryNotes,
+            roomNotes: (snapshot.data as any).roomNotes || state.roomNotes,
+            departmentNotes: (snapshot.data as any).departmentNotes || state.departmentNotes,
             visibleStageIds:
               (snapshot.data as any).visibleStageIds ||
               (snapshot.data.stages
@@ -825,6 +958,7 @@ export const useAppStore = create<AppState>()(
             delete stageAreas[id];
             newFloorAreasByStage[sId] = stageAreas;
           });
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { floors: newFloors, floorAreasByStage: newFloorAreasByStage };
         }),
       deleteDivision: (id) =>
@@ -833,10 +967,12 @@ export const useAppStore = create<AppState>()(
           const newDepartments = state.departments.filter(
             (d) => d.divisionId !== id,
           );
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { divisions: newDivisions, departments: newDepartments };
         }),
       deleteDepartment: (id) =>
         set((state) => {
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { departments: state.departments.filter((d) => d.id !== id) };
         }),
       addStage: (name, code) =>
@@ -850,47 +986,57 @@ export const useAppStore = create<AppState>()(
             const codeB = b.code || b.name;
             return codeA.localeCompare(codeB);
           });
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return {
             stages: newStages,
             visibleStageIds: [...state.visibleStageIds, id],
           };
         }),
-  updateStage: (id, name, code, tableName) => {
-    set((state) => {
-      const newStages = state.stages
-        .map((s) =>
-          s.id === id
-            ? { ...s, name, code, tableName: tableName ?? s.tableName }
-            : s,
-        )
-        .sort((a, b) => {
-          const codeA = a.code || a.name;
-          const codeB = b.code || b.name;
-          return codeA.localeCompare(codeB);
+      updateStage: (id, name, code) => {
+        set((state) => {
+          const newStages = state.stages
+            .map((s) =>
+              s.id === id
+                ? { ...s, name, code }
+                : s,
+            )
+            .sort((a, b) => {
+              const codeA = a.code || a.name;
+              const codeB = b.code || b.name;
+              return codeA.localeCompare(codeB);
+            });
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
+          return { stages: newStages };
         });
-      return { stages: newStages };
-    });
-    // Trigger re-fetch after stage update to apply new table mappings
-    get().fetchData(true).catch(console.error);
-  },
+        // Trigger re-fetch after stage update
+        get().fetchData(true).catch(console.error);
+      },
       toggleStageTotalAreaOnly: (id, isTotalAreaOnly) =>
         set((state) => {
           const newStages = state.stages.map((s) =>
             s.id === id ? { ...s, isTotalAreaOnly } : s,
           );
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { stages: newStages };
         }),
-      toggleMedicalOnly: (medicalOnly) => set({ medicalOnly }),
+      toggleMedicalOnly: (medicalOnly) => {
+        set({ medicalOnly });
+        get().saveGlobalSettings().catch(console.error);
+      },
       setFloorWardOverride: (floorId, deptId, count) =>
-        set((state) => ({
-          floorWardOverrides: {
-            ...state.floorWardOverrides,
-            [`${floorId}|${deptId}`]: count,
-          },
-        })),
+        set((state) => {
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
+          return {
+            floorWardOverrides: {
+              ...state.floorWardOverrides,
+              [`${floorId}|${deptId}`]: count,
+            },
+          };
+        }),
       deleteStage: (id) =>
         set((state) => {
           const newStages = state.stages.filter((s) => s.id !== id);
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 0);
           return { stages: newStages };
         }),
     }),
@@ -907,6 +1053,8 @@ export const useAppStore = create<AppState>()(
         visibleStageIds: state.visibleStageIds,
         values: state.values,
         summaryNotes: state.summaryNotes,
+        roomNotes: state.roomNotes,
+        departmentNotes: state.departmentNotes,
         spreadsheetId: state.spreadsheetId,
         activeTab: state.activeTab,
         activeFloorId: state.activeFloorId,

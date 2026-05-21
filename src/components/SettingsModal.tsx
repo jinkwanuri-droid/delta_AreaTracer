@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useAppStore, Snapshot } from "@/store/useAppStore";
-import { googleSignIn, logout, getAccessToken } from "@/lib/auth";
 import {
   X,
   Upload,
@@ -13,7 +13,8 @@ import {
   Trash2,
   Clock,
   Link,
-  Table,
+  Sheet,
+  RefreshCw,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -35,13 +36,11 @@ const COLORS = [
 ];
 
 function SnapshotManager() {
-  const {
-    snapshots,
-    saveSnapshot,
-    loadSnapshot,
-    deleteSnapshot,
-    fetchSnapshots,
-  } = useAppStore();
+  const snapshots = useAppStore(state => state.snapshots);
+  const saveSnapshot = useAppStore(state => state.saveSnapshot);
+  const loadSnapshot = useAppStore(state => state.loadSnapshot);
+  const deleteSnapshot = useAppStore(state => state.deleteSnapshot);
+  const fetchSnapshots = useAppStore(state => state.fetchSnapshots);
   const [isOpen, setIsOpen] = useState(false);
   const [newSnapName, setNewSnapName] = useState("");
 
@@ -60,7 +59,7 @@ function SnapshotManager() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-md text-[11px] font-bold hover:bg-indigo-100 transition-colors shadow-sm"
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-[11px] font-bold hover:bg-indigo-700 transition-all shadow-sm"
       >
         <FolderOpen size={14} />
         세팅값 저장/불러오기
@@ -268,6 +267,224 @@ function SnapshotManager() {
   );
 }
 
+function GoogleSheetsManager() {
+  const spreadsheetId = useAppStore(state => state.spreadsheetId);
+  const verifyAndSetSpreadsheetId = useAppStore(state => state.verifyAndSetSpreadsheetId);
+  const setSpreadsheetId = useAppStore(state => state.setSpreadsheetId);
+  const fetchData = useAppStore(state => state.fetchData);
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempId, setTempId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+
+  React.useEffect(() => {
+    setTempId("");
+    setShowDisconnectConfirm(false);
+  }, [isOpen]);
+
+  const handleApply = async () => {
+    let targetId = tempId.trim();
+    if (!targetId) {
+      alert("구글 스프레드시트 URL 또는 ID를 입력해야 연동할 수 있습니다.");
+      return;
+    }
+
+    // Convert full URL to ID if pasted
+    const match = targetId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (match) {
+      targetId = match[1];
+    }
+
+    setIsLoading(true);
+    try {
+      await verifyAndSetSpreadsheetId(targetId);
+      alert("구글 시트 연동 및 데이터 정합성 검증이 완료되었습니다!\n총괄 및 세부 면적표 데이터가 정상적으로 수집/동기화되었습니다.");
+      setTempId("");
+      setIsOpen(false);
+    } catch (err: any) {
+      let errMsg = err.message || "원인을 알 수 없는 오류가 발생했습니다.";
+      if (
+        errMsg.includes("entity was not found") || 
+        errMsg.includes("Requested entity was not found") || 
+        errMsg.includes("404")
+      ) {
+        errMsg = "구글 스프레드시트 파일(ID)을 찾을 수 없거나 공유 접근 권한이 없습니다.\n\n[주요 점검 사항]\n1. 입력한 주소(링크)가 올바른 구글 스프레드시트 본체인지 확인하세요.\n2. 구글 스프레드시트 우측 상단 '공유' 버튼을 클릭한 후, 일반 액세스 권한 설정을 '링크가 있는 모든 사용자' 및 '뷰어' 상태로 변경했는지 반드시 확인해보시기 바랍니다.";
+      }
+      alert("구글 시트 연동 실패:\n\n" + errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!spreadsheetId) return;
+    setIsLoading(true);
+    try {
+      await fetchData(true);
+      alert("실시간 구글 시트 데이터를 성공적으로 갱신하고 연동을 완료하였습니다.");
+    } catch (err: any) {
+      let errMsg = err.message || "동기화 오류가 발생했습니다.";
+      if (errMsg.includes("entity was not found")) {
+        errMsg = "활성화된 구글 스프레드시트를 찾을 수 없습니다. 시트가 삭제되었거나 공유 권한(링크가 있는 모든 사용자에게 뷰어로 공개)이 취소되었는지 확인해 보세요.";
+      }
+      alert("새로고침 실패:\n\n" + errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDisconnect = () => {
+    setSpreadsheetId(null);
+    setShowDisconnectConfirm(false);
+    alert("구글 시트 연동이 해제되었습니다.\n기존에 로드되어 있는 데이터 세팅은 화면에 안전하게 보존되어 정상 편집이 가능합니다.");
+    setIsOpen(false);
+  };
+
+  const saveGlobalSettings = useAppStore(state => state.saveGlobalSettings);
+
+  return (
+    <div className="relative flex gap-2">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={clsx(
+          "flex items-center gap-1.5 px-3 py-1.5 text-white rounded-md text-[11px] font-bold transition-all shadow-sm cursor-pointer",
+          spreadsheetId 
+            ? "bg-emerald-600 hover:bg-emerald-700" 
+            : "bg-slate-500 hover:bg-slate-600"
+        )}
+      >
+        <Sheet size={14} />
+        {spreadsheetId ? "구글시트 연동중" : "구글시트 연동"}
+      </button>
+
+      {isOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-[60]"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className="absolute right-0 top-9 z-[70] bg-white border border-slate-200 rounded-xl shadow-2xl p-4 w-[360px] animate-in fade-in slide-in-from-top-2 duration-200 text-left">
+            <h3 className="text-xs font-extrabold text-slate-800 mb-3 flex items-center gap-1.5">
+              <Sheet size={14} className="text-emerald-500" />
+              Google Sheets 실시간 연동
+            </h3>
+            
+            <div className="space-y-4">
+              {/* 1. 신규 연동 영역 */}
+              <div className="space-y-2 bg-slate-50/50 p-3 rounded-lg border border-slate-100">
+                <label className="block text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                  신규 스프레드시트 연동 등록
+                </label>
+                <div className="flex gap-1.5 bg-transparent">
+                  <input
+                    type="text"
+                    value={tempId}
+                    onChange={(e) => setTempId(e.target.value)}
+                    placeholder="공유 주소(URL)를 붙여넣으세요"
+                    className="flex-1 text-[11px] border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 bg-white"
+                  />
+                  <button
+                    onClick={handleApply}
+                    disabled={isLoading || !tempId.trim()}
+                    className="px-3 bg-emerald-600 text-white rounded-md text-[11px] font-bold hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    {isLoading ? (
+                      <RefreshCw size={12} className="animate-spin" />
+                    ) : (
+                      "등록"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. 현재 연동 정보 및 관리 */}
+              {spreadsheetId ? (
+                <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
+                      현재 연동된 시트 정보
+                    </span>
+                    <a
+                      href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-indigo-600 font-extrabold hover:underline flex items-center gap-0.5"
+                    >
+                      <Link size={10} />
+                      시트 바로가기
+                    </a>
+                  </div>
+                  
+                  <div className="p-2.5 bg-emerald-50/40 border border-emerald-100/50 rounded-lg flex items-center justify-between">
+                    <div className="flex flex-col flex-1 min-w-0 mr-2">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Spreadsheet ID</span>
+                      <span className="text-[11px] font-mono font-medium text-slate-700 truncate block">
+                        {spreadsheetId}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleRefresh}
+                      disabled={isLoading}
+                      className="flex-1 py-1.5 bg-slate-800 text-white hover:bg-slate-900 rounded-md text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
+                      실시간 동기화 (새로고침)
+                    </button>
+                    <button
+                      onClick={() => setShowDisconnectConfirm(true)}
+                      className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-md text-[11px] font-bold transition-all cursor-pointer"
+                      title="연동 해제"
+                    >
+                      해제
+                    </button>
+                  </div>
+
+                  {showDisconnectConfirm && (
+                    <div className="mt-2 text-[10px] bg-red-50 p-2.5 rounded-lg border border-red-100/60 flex flex-col gap-2 animate-in slide-in-from-top-1">
+                      <span className="text-red-700 font-bold leading-relaxed">
+                        정말 구글 스프레드시트 연동을 해제하시겠습니까? (로딩된 기개발 데이터 값은 브라우저에 그대로 유지됩니다)
+                      </span>
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={handleDisconnect}
+                          className="bg-red-600 text-white px-3 py-1 rounded font-bold hover:bg-red-700 shadow-sm text-[10px] cursor-pointer"
+                        >
+                          네, 해제합니다
+                        </button>
+                        <button
+                          onClick={() => setShowDisconnectConfirm(false)}
+                          className="bg-white border border-slate-200 text-slate-500 px-3 py-1 rounded font-bold hover:bg-slate-50 shadow-sm text-[10px] cursor-pointer"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-4 text-center border border-dashed border-slate-200 rounded-lg text-[11px] text-slate-400">
+                  현재 연동된 구글 스프레드시트가 없습니다.
+                </div>
+              )}
+
+              {/* 3. 정보 안내 팁 영역 */}
+              <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100/30">
+                <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+                  * 시트 탭(Tab) 이름이 <span className="text-indigo-600 font-extrabold">설계 단계명</span>과 정확히 일치해야 합니다. (예: 공모지침, 계획설계 등)<br/>
+                  * 구글 시트는 우측 상단 '공유' 버튼에서 <span className="text-emerald-600 font-extrabold">'링크가 있는 모든 사용자에게 공개(뷰어)'</span> 상태여야 연동이 가능합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ColorPicker({
   value,
   onChange,
@@ -323,34 +540,30 @@ function ColorPicker({
 }
 
 export default function SettingsModal({ onClose }: SettingsModalProps) {
-  const {
-    stages,
-    floors,
-    divisions,
-    departments,
-    updateFloorArea,
-    floorAreasByStage,
-    batchUpdateMapping,
-    updateDivisionColor,
-    batchUpdateFloors,
-    deleteFloor,
-    deleteDivision,
-    deleteDepartment,
-    addStage,
-    updateStage,
-    toggleStageTotalAreaOnly,
-    deleteStage,
-    comparison,
-    availableTables,
-    fetchTableList,
-    spreadsheetId,
-    setSpreadsheetId,
-    fetchData,
-  } = useAppStore();
+  const stages = useAppStore(state => state.stages);
+  const floors = useAppStore(state => state.floors);
+  const divisions = useAppStore(state => state.divisions);
+  const departments = useAppStore(state => state.departments);
+  const updateFloorArea = useAppStore(state => state.updateFloorArea);
+  const floorAreasByStage = useAppStore(state => state.floorAreasByStage);
+  const batchUpdateMapping = useAppStore(state => state.batchUpdateMapping);
+  const updateDivisionColor = useAppStore(state => state.updateDivisionColor);
+  const batchUpdateFloors = useAppStore(state => state.batchUpdateFloors);
+  const deleteFloor = useAppStore(state => state.deleteFloor);
+  const deleteDivision = useAppStore(state => state.deleteDivision);
+  const deleteDepartment = useAppStore(state => state.deleteDepartment);
+  const addStage = useAppStore(state => state.addStage);
+  const updateStage = useAppStore(state => state.updateStage);
+  const toggleStageTotalAreaOnly = useAppStore(state => state.toggleStageTotalAreaOnly);
+  const deleteStage = useAppStore(state => state.deleteStage);
+  const comparison = useAppStore(state => state.comparison);
+  const spreadsheetId = useAppStore(state => state.spreadsheetId);
+  const setSpreadsheetId = useAppStore(state => state.setSpreadsheetId);
+  const fetchData = useAppStore(state => state.fetchData);
+
   const [activeTab, setActiveTab] = useState<"stages" | "areas" | "mapping">(
     "stages",
   );
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState<string>(
     comparison?.targetId ||
       stages[stages.length - 1]?.id ||
@@ -369,10 +582,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       [divId]: !(prev[divId] ?? true),
     }));
   };
-
-  React.useEffect(() => {
-    fetchTableList();
-  }, []);
 
   const handleImportAreas = () => {
     const lines = rawText.trim().split("\n");
@@ -474,61 +683,63 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[70%] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
-          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-indigo-500" />
-            설정 및 데이터 관리
-          </h2>
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-indigo-500" />
+              설정 및 데이터 관리
+            </h2>
+          </div>
           <div className="flex items-center gap-3">
+            <GoogleSheetsManager />
             <SnapshotManager />
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        <div className="flex border-b border-slate-100 shrink-0">
+        <div className="flex border-b border-slate-100 shrink-0 bg-slate-50/50 px-4 gap-2 pt-2">
           <button
             onClick={() => setActiveTab("stages")}
             className={clsx(
-              "px-6 py-3 text-sm font-bold flex items-center gap-2 transition-colors",
+              "px-5 py-2.5 text-[12px] font-bold flex items-center gap-2 transition-all rounded-t-xl border-t border-x -mb-[1px]",
               activeTab === "stages"
-                ? "text-indigo-600 border-b-2 border-indigo-600"
-                : "text-slate-400 hover:text-slate-600",
+                ? "bg-indigo-50/80 text-indigo-700 border-indigo-100/80 font-extrabold shadow-[0_-2px_6px_rgba(99,102,241,0.04)] border-b-white"
+                : "text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100/30",
             )}
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-3.5 h-3.5" />
             설계단계 관리
           </button>
           <button
             onClick={() => setActiveTab("areas")}
             className={clsx(
-              "px-6 py-3 text-sm font-bold flex items-center gap-2 transition-colors",
+              "px-5 py-2.5 text-[12px] font-bold flex items-center gap-2 transition-all rounded-t-xl border-t border-x -mb-[1px]",
               activeTab === "areas"
-                ? "text-indigo-600 border-b-2 border-indigo-600"
-                : "text-slate-400 hover:text-slate-600",
+                ? "bg-indigo-50/80 text-indigo-700 border-indigo-100/80 font-extrabold shadow-[0_-2px_6px_rgba(99,102,241,0.04)] border-b-white"
+                : "text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100/30",
             )}
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
             층별 면적 입력
           </button>
           <button
             onClick={() => setActiveTab("mapping")}
             className={clsx(
-              "px-6 py-3 text-sm font-bold flex items-center gap-2 transition-colors",
+              "px-5 py-2.5 text-[12px] font-bold flex items-center gap-2 transition-all rounded-t-xl border-t border-x -mb-[1px]",
               activeTab === "mapping"
-                ? "text-indigo-600 border-b-2 border-indigo-600"
-                : "text-slate-400 hover:text-slate-600",
+                ? "bg-indigo-50/80 text-indigo-700 border-indigo-100/80 font-extrabold shadow-[0_-2px_6px_rgba(99,102,241,0.04)] border-b-white"
+                : "text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100/30",
             )}
           >
-            <Network className="w-4 h-4" />
+            <Network className="w-3.5 h-3.5" />
             부문/부서 매핑 정보
           </button>
-
-         </div>
+        </div>
 
         <div className="p-6 flex-1 overflow-y-auto">
           {activeTab === "areas" ? (
@@ -550,15 +761,25 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </button>
                   ))}
                 </div>
-                {!stages.find((s) => s.id === selectedStageId)
-                  ?.isTotalAreaOnly && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={handleImportAreas}
-                    className="px-4 py-1.5 bg-indigo-600 text-white rounded text-[11px] font-bold shadow hover:bg-indigo-700 transition-all active:scale-95"
+                    onClick={() => fetchData(true)}
+                    className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded text-[11px] font-bold hover:bg-indigo-100 transition-all flex items-center gap-1.5"
+                    title="Google Sheets에서 데이터 다시 불러오기"
                   >
-                    데이터 적용 (APPLY)
+                    <RefreshCw size={12} />
+                    시트 데이터 동기화
                   </button>
-                )}
+                  {!stages.find((s) => s.id === selectedStageId)
+                    ?.isTotalAreaOnly && (
+                    <button
+                      onClick={handleImportAreas}
+                      className="px-4 py-1.5 bg-indigo-600 text-white rounded text-[11px] font-bold shadow hover:bg-indigo-700 transition-all active:scale-95"
+                    >
+                      텍스트 매핑 적용
+                    </button>
+                  )}
+                </div>
               </div>
 
               <p className="text-[10px] text-slate-500 leading-relaxed italic">
@@ -794,7 +1015,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     );
                   })}
                 </div>
-
+                
                 {/* 2번 영역: BATCH 입력 */}
                 <div className="w-[280px] flex flex-col space-y-2">
                   <div className="flex items-center justify-between">
@@ -903,50 +1124,19 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                         placeholder="단계명 입력"
                         className="flex-1 min-w-0 bg-slate-50 border border-slate-100 rounded px-2 py-1 text-[12px] font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white"
                       />
-                      <div className="shrink-0 relative group/select">
-                        {spreadsheetId ? (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-50 border border-green-200 rounded-lg shadow-sm">
-                            <Link size={12} className="text-green-500" />
-                            <span className="text-[10px] font-bold text-green-700">시트: {stage.name}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg group-hover/select:border-indigo-300 group-hover/select:bg-white transition-all cursor-pointer">
-                            <select
-                              value={stage.tableName || ""}
-                              onChange={(e) =>
-                                updateStage(
-                                  stage.id,
-                                  stage.name,
-                                  stage.code,
-                                  e.target.value,
-                                )
-                              }
-                              className="text-[11px] font-mono font-bold text-slate-600 bg-transparent cursor-pointer appearance-none focus:outline-none min-w-[100px] pr-4"
-                            >
-                              <option value="">DB 미연동</option>
-                              <optgroup label="데이터 테이블">
-                                {availableTables.map((t) => (
-                                  <option key={t} value={t}>
-                                    {t}
-                                  </option>
-                                ))}
-                              </optgroup>
-                              {stage.tableName &&
-                                !availableTables.includes(stage.tableName) && (
-                                  <optgroup label="현재 설정">
-                                    <option value={stage.tableName}>
-                                      {stage.tableName}
-                                    </option>
-                                  </optgroup>
-                                )}
-                            </select>
-                            <ChevronDown
-                              size={12}
-                              className="text-slate-400 pointer-events-none absolute right-2"
-                            />
-                          </div>
-                        )}
-                      </div>
+                    <div className="shrink-0 h-8 flex items-center">
+                      {spreadsheetId ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg shadow-sm group/tab">
+                          <Sheet size={12} className="text-green-600" />
+                          <span className="text-[10px] font-bold text-green-700">연동됨 (Tab: {stage.name})</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg shadow-sm">
+                          <Link size={12} className="text-slate-400" />
+                          <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">연동 안됨</span>
+                        </div>
+                      )}
+                    </div>
                     </div>
 
                     {/* Row 2: Actions */}

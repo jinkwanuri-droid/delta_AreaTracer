@@ -16,24 +16,41 @@ export default function Layout({ children }: { children: ReactNode }) {
   const isLoading = useAppStore(state => state.isLoading);
   const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
   const setIsPdfExportMode = useAppStore(state => state.setIsPdfExportMode);
+  const pdfExportOptions = useAppStore(state => state.pdfExportOptions);
+  const setPdfExportOptions = useAppStore(state => state.setPdfExportOptions);
   const [isExporting, setIsExporting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [localOptions, setLocalOptions] = useState({
+    dashboard: true,
+    summary: true,
+    detail: true
+  });
 
   const handleExportPdf = async () => {
+    // Apply options first
+    setPdfExportOptions(localOptions);
+    setIsModalOpen(false);
     setIsExporting(true);
     setIsPdfExportMode(true);
     
     // Allow React to re-render without virtualization etc
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     try {
-      const tableEl = document.getElementById('pdf-export-table');
+      const tableEl = document.getElementById('pdf-export-content');
       if (!tableEl) {
-        alert('출력할 표를 찾을 수 없습니다.');
+        alert('출력할 콘텐츠를 찾을 수 없습니다.');
         return;
       }
       
-      const el = tableEl.parentElement as HTMLElement;
-      if (!el) return;
+      const el = tableEl.cloneNode(true) as HTMLElement;
+      
+      // Remove interactive elements from cloned content to ensure clean PDF
+      el.querySelectorAll('button, input, select, [role="button"]').forEach(item => {
+        // If it's a checkbox we want to keep its state but hide the actual input element if possible
+        // but for simplicity let's just hide common UI buttons
+        if (item.tagName === 'BUTTON') item.remove();
+      });
 
       const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
         .map(s => s.outerHTML)
@@ -46,18 +63,102 @@ export default function Layout({ children }: { children: ReactNode }) {
           <meta charset="utf-8">
           ${styles}
           <style>
-            body { background: white; margin: 0; padding: 20px; font-family: 'Inter', sans-serif; }
-            #pdf-export-table { width: 100% !important; max-width: none !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .sticky { position: static !important; }
+            @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-gov.min.css');
+            
+            body { 
+              font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+              color: #1a202c !important;
+            }
+            
+            @media print {
+              @page {
+                size: A4 landscape;
+                margin: 0mm !important;
+              }
+              body { 
+                background: white; 
+                margin: 0; 
+                padding: 0;
+                font-family: 'Pretendard', sans-serif !important;
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+              }
+              
+              #pdf-export-content {
+                width: 297mm !important;
+                background: white !important;
+                container-type: inline-size;
+              }
+
+              .page-break {
+                break-before: page !important;
+                page-break-before: always !important;
+                margin-top: 0 !important;
+                padding-top: 20mm !important; /* Adding padding to top of new pages */
+              }
+
+              h2 {
+                font-size: 16pt !important;
+                color: #0f172a !important;
+                font-weight: 900 !important;
+              }
+
+              .text-xs.font-bold.text-slate-400.capitalize {
+                font-size: 8pt !important;
+                color: #94a3b8 !important;
+              }
+
+              table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: fixed !important;
+                font-size: 1.1cqw !important; /* Variable font size for table content */
+              }
+
+              th {
+                font-size: 1.15cqw !important; /* Slightly larger for headers */
+              }
+
+              th, td {
+                word-break: break-all !important;
+                padding: 4px 6px !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              thead {
+                display: table-header-group !important;
+              }
+
+              /* Hide interactive elements and excess margins */
+              .no-print, button, .lucide-rotate-ccw, .lucide-filter, .lucide-settings {
+                display: none !important;
+              }
+
+              /* Flatten shadows for PDF */
+              .shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+                shadow: none !important;
+                box-shadow: none !important;
+              }
+
+              /* Ensure chart containers keep aspect ratio */
+              .recharts-responsive-container {
+                width: 100% !important;
+                height: 300px !important;
+              }
+            }
           </style>
         </head>
-        <body>
+        <body class="bg-white">
           ${el.outerHTML}
         </body>
         </html>
       `;
 
+      // Use modern A4 landscape dimensions
       const width = '297mm';
       const height = '210mm';
 
@@ -75,7 +176,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `export_${activeTab}_${Date.now()}.pdf`;
+      a.download = `hospital_area_report_${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -106,12 +207,12 @@ export default function Layout({ children }: { children: ReactNode }) {
             </h1>
 
             <SelectorPopover
-              label="CURRENT STAGE"
+              label="CURRENT"
               options={stages}
               value={comparison.targetId || ""}
               onChange={(val) => setComparisonStages(comparison.baseId, val)}
               icon={<Layers size={14} />}
-              className="bg-indigo-50/50 border-indigo-100 shadow-indigo-100/20"
+              className="bg-indigo-50/50 border-indigo-100 shadow-indigo-100/20 w-[190px] shrink-0"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -132,7 +233,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               </button>
 
              <button 
-                onClick={handleExportPdf} 
+                onClick={() => setIsModalOpen(true)} 
                 disabled={isExporting}
                 className={clsx(
                   "flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all ml-2",
@@ -150,6 +251,78 @@ export default function Layout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* PDF Export Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-100 max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+              <Download size={18} className="text-indigo-500" />
+              PDF 내보내기 범위 선택
+            </h3>
+            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+              저장할 보고서의 범위를 선택하세요. 체크된 항목들을 하나로 취합하여 가로형 A4 리포트로 출력합니다.
+            </p>
+            
+            <div className="flex flex-col gap-3 mb-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={localOptions.dashboard}
+                  onChange={(e) => setLocalOptions({ ...localOptions, dashboard: e.target.checked })}
+                  className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">대시보드</span>
+                  <span className="text-[10px] text-slate-400">종합 면적 분석 대시보드 차트</span>
+                </div>
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={localOptions.summary}
+                  onChange={(e) => setLocalOptions({ ...localOptions, summary: e.target.checked })}
+                  className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">총괄면적표</span>
+                  <span className="text-[10px] text-slate-400">부서별 면적 대비 요약 소계표</span>
+                </div>
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  checked={localOptions.detail}
+                  onChange={(e) => setLocalOptions({ ...localOptions, detail: e.target.checked })}
+                  className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">층별면적표</span>
+                  <span className="text-[10px] text-slate-400">세부면적계획의 B1~7F 각 층별 상세 테이블 (층별 새 페이지 구분)</span>
+                </div>
+              </label>
+            </div>
+            
+            <div className="flex items-center gap-2 justify-end border-t border-slate-100 pt-3">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 text-xs font-medium transition-colors cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleExportPdf}
+                disabled={!localOptions.dashboard && !localOptions.summary && !localOptions.detail}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                확인 (PDF 저장)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
