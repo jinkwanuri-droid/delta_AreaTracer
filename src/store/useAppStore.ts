@@ -1141,7 +1141,19 @@ export const useAppStore = create<AppState>()(
           return { stages: newStages };
         }),
       toggleMedicalOnly: (medicalOnly) => {
-        set({ medicalOnly });
+        set((state) => {
+          let newFilters = state.filters;
+          if (medicalOnly) {
+            const medicalDivIds = state.divisions.filter(d => /^\d+$/.test(d.id)).map(d => d.id);
+            const medicalDeptIds = state.departments.filter(d => medicalDivIds.includes(d.divisionId)).map(d => d.id);
+            
+            newFilters = {
+              divisionIds: state.filters.divisionIds.filter(id => medicalDivIds.includes(id)),
+              departmentIds: state.filters.departmentIds.filter(id => medicalDeptIds.includes(id))
+            };
+          }
+          return { medicalOnly, filters: newFilters };
+        });
         get().saveGlobalSettings().catch(console.error);
       },
       setFloorWardOverride: (floorId, deptId, count) =>

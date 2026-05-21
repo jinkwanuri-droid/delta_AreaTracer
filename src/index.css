@@ -183,6 +183,11 @@ body {
     break-before: page;
     page-break-before: always;
   }
+
+  .page-break-before-always {
+    break-before: page;
+    page-break-before: always;
+  }
 }
 
 @layer components {

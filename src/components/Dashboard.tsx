@@ -88,12 +88,14 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 
   const totalSum = payload.reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
 
+  const actualLabel = payload[0]?.payload?.name || label;
+
   // Dynamic Content for Floor Chart when a Division is highlighted
   const isFloorChart = !!highlightedDivId && !!departments && !!floors;
   let floorDeptItems: { name: string, value: number, color: string }[] = [];
 
   if (isFloorChart && highlightedDivId) {
-    const currentFloor = floors.find(f => f.name === label);
+    const currentFloor = floors.find(f => f.name === actualLabel);
     if (currentFloor) {
       const deptsInDiv = departments.filter(d => d.divisionId === highlightedDivId);
       const stageValues = values?.filter(v => v.stageId === activeStageId) || [];
@@ -153,7 +155,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     >
       <div className="flex items-center justify-between gap-3 mb-2.5 pb-1.5 border-b border-slate-100" style={{ outline: 'none' }}>
         <span className="text-[12px] font-bold text-slate-800 tracking-tight">
-          {label || displayPayload[0]?.name}
+          {actualLabel || displayPayload[0]?.name}
           {highlightedDivId && isFloorChart && <span className="ml-1 text-[10px] text-indigo-500 font-medium">(상세)</span>}
         </span>
         {showSummarySum && (
@@ -215,10 +217,18 @@ const Dashboard: React.FC = () => {
   const floorWardOverrides = useAppStore(state => state.floorWardOverrides);
 
   const [activeTrendDivId, setActiveTrendDivId] = useState<string | null>(null);
+  const [isInitialMount, setIsInitialMount] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialMount(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Filter components based on medicalOnly (Division IDs 1-5 usually)
   const medicalDivisionIds = useMemo(() => {
-    return divisions.slice(0, 5).map(d => d.id);
+    return divisions.filter(d => /^\d+$/.test(d.id)).map(d => d.id);
   }, [divisions]);
 
   // Compute floor area by department for latest design stage (sorted B2, B1, 1F, 2F...)
@@ -329,6 +339,7 @@ const Dashboard: React.FC = () => {
         adjustedGross: adjustedGross,
         parking: parkingArea,
         outdoor: outdoorArea,
+        other: parkingArea + outdoorArea,
         common: common,
         gnRatio: gnRatio
       };
@@ -486,7 +497,7 @@ const Dashboard: React.FC = () => {
     });
 
     return sortedFloors.map(floor => {
-      const data: any = { name: floor.name, totalArea: 0 };
+      const data: any = { name: floor.name, totalArea: 0, dummyTotal: 0 };
       let lastDivName = '';
       divisions.filter(div => !medicalOnly || medicalDivisionIds.includes(div.id)).forEach(div => {
         const stageValues = filteredValues.filter(v => v.stageId === currentStage.id);
@@ -537,10 +548,8 @@ const Dashboard: React.FC = () => {
       <div className="flex items-center justify-between mb-1">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            실시간 면적 분석 대시보드
-            <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100 uppercase tracking-wider">Live</span>
+            차트로 보는 경상남도 서부의료원 면적 계획
           </h2>
-          <p className="text-[11px] text-slate-500 font-medium">경상남도 서부의료원 신축사업 설계 단계별 면적 추적</p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -554,438 +563,483 @@ const Dashboard: React.FC = () => {
             )}
           >
             <Stethoscope size={14} />
-            의료시설 부문 전용 (1~5부문)
+            의료시설 전용면적
           </button>
         </div>
       </div>
-
-      {/* 5-Column High-Performance Core KPIs Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* KPI 1: 전용면적 (Net) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          transition={{ type: "spring", stiffness: 350, damping: 25 }}
-          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-indigo-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-indigo-400"
-        >
-          {/* Subtle gradient glow in bg */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-50/45 transition-colors duration-500" />
-          
-          <div className="flex justify-between items-center z-10 mb-1">
-            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">전용면적 (Net)</span>
-          </div>
-          <div className="mt-4 z-10">
-            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
-              <span>{formatNumberParts(currentStage?.net || 0).integer}</span>
-              <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(currentStage?.net || 0).decimal}</span>
-              <span className="text-[12px] font-black text-slate-400 ml-1">㎡</span>
-            </h3>
-            <p className="text-slate-400 text-[11px] mt-2.5 font-medium leading-none">
-              지침 대비 <span className={cn(
-                "font-black tracking-tight",
-                ((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100 > 0 ? "text-rose-500" : "text-emerald-500"
-              )}>
-                {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100) > 0 ? "+" : ""}
-                {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100).toFixed(1)}%
-              </span> 변동
-            </p>
-          </div>
-        </motion.div>
-
-        {/* KPI 2: 공용면적 (Common) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-blue-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-blue-400"
-        >
-          {/* Subtle gradient glow in bg */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-50/45 transition-colors duration-500" />
-
-          <div className="flex justify-between items-center z-10 mb-1">
-            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">공용면적 (Common)</span>
-          </div>
-          <div className="mt-4 z-10">
-            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
-              <span>{formatNumberParts(calculatedCommonArea).integer}</span>
-              <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedCommonArea).decimal}</span>
-              <span className="text-[12px] font-black text-slate-400 ml-1">㎡</span>
-            </h3>
-            <p className="text-slate-400 text-[11px] mt-2.5 font-medium leading-none">
-              전용면적 대비 <span className="font-bold text-indigo-500 tracking-tight">{calculatedCommonToNetRatio.toFixed(1)}%</span>
-            </p>
-          </div>
-        </motion.div>
-
-        {/* KPI 3: GN비 (Gross / Net) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-emerald-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-emerald-400"
-        >
-          {/* Subtle gradient glow in bg */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-50/45 transition-colors duration-500" />
-
-          <div className="flex flex-col items-center justify-center text-center z-10 w-full mb-1">
-            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">G/N 비율</span>
-            <span className="text-[9px] text-slate-400 font-medium mt-0.5">[(허가-주차-옥외) / 전용]</span>
-          </div>
-          <div className="mt-3.5 text-center z-10 w-full">
-            <h3 className="text-[27px] font-black text-slate-800 tracking-tight leading-none text-center">
-              {(currentStage?.gnRatio || 0).toFixed(2)}
-            </h3>
-            {/* Embedded 100% Dual Bar representing adjusted Gross vs Net */}
-            <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
-              <div 
-                className="h-full bg-indigo-500 transition-all duration-700 ease-out" 
-                style={{ width: `${Math.min(100, (1 / (currentStage?.gnRatio || 1)) * 100)}%` }} 
-                title="전용" 
-              />
-              <div className="h-full bg-emerald-500 transition-all duration-700 ease-out flex-1" title="공합(공용+조정)" />
-            </div>
-            <div className="flex justify-between text-[9px] font-bold text-slate-450 mt-1.5 leading-none">
-              <span>전용 {((1 / (currentStage?.gnRatio || 1)) * 100).toFixed(1)}%</span>
-              <span>공용 {((1 - (1 / (currentStage?.gnRatio || 1))) * 100).toFixed(1)}%</span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* KPI 4: 단계별 면적 추세 (임베디드 미니 라인차트) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-violet-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-violet-400"
-        >
-          {/* Subtle gradient glow in bg */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-violet-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-violet-50/45 transition-colors duration-500" />
-
-          <div className="flex justify-between items-center z-10 mb-1">
-            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">단계별 면적 추세</span>
-          </div>
-          <div className="h-[46px] w-full mt-3.5 z-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart 
-                key={`composed-${activeTrendDivId || 'all'}`}
-                data={areaByStage} 
-                margin={{ top: 2, right: 2, left: 2, bottom: 2 }}
-                style={{ outline: 'none' }}
-                tabIndex={-1}
-              >
-                <defs>
-                  <linearGradient id="miniGross" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
-                <Tooltip content={<CustomTooltip />} cursor={false} wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }} />
-                <Area type="monotone" dataKey="gross" fill="url(#miniGross)" stroke="#6366f1" strokeWidth={1.5} name="연면적" dot={false} activeDot={{ r: 4 }} isAnimationActive={!isPdfExportMode} animationDuration={400}>
-                    <LabelList 
-                      dataKey="gross" 
-                      position="top" 
-                      offset={5} 
-                      fontSize={6} 
-                      fill="#6366f1" 
-                      formatter={(v: number) => Math.round(v).toLocaleString()}
-                    />
-                </Area>
-                <Line type="monotone" dataKey="net" stroke="#f43f5e" strokeWidth={2} dot={false} name="전용면적" activeDot={{ r: 4 }} isAnimationActive={!isPdfExportMode} animationDuration={400}>
-                    <LabelList 
-                      dataKey="net" 
-                      position="bottom" 
-                      offset={5} 
-                      fontSize={6} 
-                      fill="#f43f5e" 
-                      formatter={(v: number) => Math.round(v).toLocaleString()}
-                    />
-                </Line>
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-between text-[9px] text-slate-400 font-bold mt-2 leading-none z-10">
-            <span>{areaByStage[0]?.name || ''}</span>
-            <span>{areaByStage[areaByStage.length-1]?.name || ''}</span>
-          </div>
-        </motion.div>
-
-        {/* KPI 5: 의료 외 면적 (Non-medical Area) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-amber-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-amber-400"
-        >
-          {/* Subtle gradient glow in bg */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-50/45 transition-colors duration-500" />
-
-          <div className="flex justify-between items-center z-10 mb-1">
-            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">의료 외 면적</span>
-          </div>
-          <div className="mt-4 z-10">
-            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
-              <span>{formatNumberParts(calculatedNonMedicalArea).integer}</span>
-              <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedNonMedicalArea).decimal}</span>
-              <span className="text-[12px] font-black text-slate-400 ml-1">㎡</span>
-            </h3>
-            <p className="text-slate-400 text-[10px] mt-2.5 font-medium leading-none truncate">
-              주차 <span className="font-bold text-slate-700">{(currentStage?.parking || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span> + 옥외 <span className="font-bold text-slate-700">{(currentStage?.outdoor || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-            </p>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Main Charts Row */}
+           {/* Main Grid: Left Column (lg:col-span-2, 40%) vs Right Column (lg:col-span-3, 60%) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Division share donut - Takes 2/5 (40%) width */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-2 min-h-[340px] flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
-          <div className="flex flex-col h-full justify-between">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                <PieChartIcon size={18} className="text-indigo-500" />
-                <h3 className="text-sm font-black text-slate-800 tracking-tight">부문별 면적 비중</h3>
+        
+        {/* Left Column (40% width): contains 2x2 KPIs + Donut Chart */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          
+          {/* KPI Cards: 2x2 Grid with high-end minimal styling */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            {/* KPI 1: 전체 연면적 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-indigo-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+            >
+              <div className="flex justify-between items-start z-10">
+                <span className="text-slate-400 text-[12px] font-black tracking-normal">전체 연면적</span>
+                <div className="p-1.5 bg-indigo-50/50 text-indigo-500 rounded-lg group-hover:bg-indigo-100/50 transition-colors duration-300">
+                  <LayoutGrid size={13} strokeWidth={2.5} />
+                </div>
+              </div>
+              <div className="mt-4 z-10">
+                <h3 className="text-[23px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+                  <span>{formatNumberParts(currentStage?.gross || 0).integer}</span>
+                  <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(currentStage?.gross || 0).decimal}</span>
+                  <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
+                </h3>
+                <p className="text-slate-400 text-[10.5px] mt-2 font-medium leading-none">
+                  지침 대비 <span className={cn(
+                    "font-black tracking-tight",
+                    ((currentStage?.gross || 0) / (baseStage?.gross || 1) * 100) - 100 > 0 ? "text-rose-500" : "text-emerald-500"
+                  )}>
+                    {(((currentStage?.gross || 0) / (baseStage?.gross || 1) * 100) - 100) > 0 ? "+" : ""}
+                    {(((currentStage?.gross || 0) / (baseStage?.gross || 1) * 100) - 100).toFixed(1)}%
+                  </span> 변동
+                </p>
+              </div>
+            </motion.div>
+
+            {/* KPI 2: 공용면적 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-blue-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+            >
+              <div className="flex justify-between items-start z-10">
+                <span className="text-slate-400 text-[12px] font-black tracking-normal">공용면적</span>
+                <div className="p-1.5 bg-blue-50/50 text-blue-500 rounded-lg group-hover:bg-blue-100/50 transition-colors duration-300">
+                  <Trees size={13} strokeWidth={2.5} />
+                </div>
+              </div>
+              <div className="mt-4 z-10">
+                <h3 className="text-[23px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+                  <span>{formatNumberParts(calculatedCommonArea).integer}</span>
+                  <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedCommonArea).decimal}</span>
+                  <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
+                </h3>
+                <p className="text-slate-400 text-[10px] mt-2 font-medium leading-none">
+                  전용면적 대비 <span className="font-bold text-indigo-500 tracking-tight">{calculatedCommonToNetRatio.toFixed(1)}%</span>
+                </p>
+              </div>
+            </motion.div>
+
+            {/* KPI 3: G/N 비율 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-emerald-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+            >
+              <div className="flex justify-between items-start z-10">
+                <span className="text-slate-400 text-[12px] font-black tracking-normal">G/N 비율</span>
+                <div className="p-1.5 bg-emerald-50/50 text-emerald-500 rounded-lg group-hover:bg-emerald-100/50 transition-colors duration-300">
+                  <Activity size={13} strokeWidth={2.5} />
+                </div>
+              </div>
+              <div className="mt-4 z-10 w-full">
+                <div className="flex items-baseline gap-x-2">
+                  <span className="text-[23px] font-black text-slate-800 tracking-tight leading-none">{(currentStage?.gnRatio || 0).toFixed(2)}</span>
+                </div>
+                {/* Embedded Progress Bar */}
+                <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
+                  <div 
+                    className="h-full bg-indigo-500 transition-all duration-700 ease-out" 
+                    style={{ width: `${Math.min(100, (1 / (currentStage?.gnRatio || 1)) * 100)}%` }} 
+                    title="전용" 
+                  />
+                  <div className="h-full bg-emerald-500 transition-all duration-700 ease-out flex-1" title="공용+조정" />
+                </div>
+                <div className="flex justify-between text-[9px] font-bold text-slate-400 mt-1.5 leading-none">
+                  <span>전용 {((1 / (currentStage?.gnRatio || 1)) * 100).toFixed(1)}%</span>
+                  <span>공용 {((1 - (1 / (currentStage?.gnRatio || 1))) * 100).toFixed(1)}%</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* KPI 4: 의료 외 면적 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-amber-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+            >
+              <div className="flex justify-between items-start z-10">
+                <span className="text-slate-400 text-[12px] font-black tracking-normal">의료 외 면적</span>
+                <div className="p-1.5 bg-amber-50/50 text-amber-500 rounded-lg group-hover:bg-amber-100/50 transition-colors duration-300">
+                  <Box size={13} strokeWidth={2.5} />
+                </div>
+              </div>
+              <div className="mt-4 z-10">
+                <h3 className="text-[23px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+                  <span>{formatNumberParts(calculatedNonMedicalArea).integer}</span>
+                  <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedNonMedicalArea).decimal}</span>
+                  <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
+                </h3>
+                <p className="text-slate-400 text-[10px] mt-2 font-medium leading-none truncate">
+                  주차 <span className="font-bold text-slate-700">{(currentStage?.parking || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span> + 옥외 <span className="font-bold text-slate-700">{(currentStage?.outdoor || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                </p>
+              </div>
+            </motion.div>
+
+          </div>
+
+          {/* Division share donut - Takes remainder of 40% column */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+            <div className="flex flex-col h-full justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <PieChartIcon size={17} className="text-indigo-500" />
+                  <h3 className="text-sm font-black text-slate-800 tracking-tight">부문별 면적 비중</h3>
+                </div>
               </div>
               
-              {/* Top-Right Capsule Legend - Expanded width */}
-              <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide flex-1 justify-end ml-4">
-                {divisionData.map((d, i) => {
-                  const isActive = activeTrendDivId === d.id;
-                  return (
-                    <motion.button 
-                      key={i} 
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setActiveTrendDivId(isActive ? null : d.id)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-200 flex-shrink-0",
-                        isActive 
-                          ? "bg-indigo-500 border-indigo-500 text-white shadow-sm ring-2 ring-indigo-100 font-bold" 
-                          : "bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 font-medium"
-                      )}
+              <div className="flex flex-col items-center justify-center w-full h-full my-auto flex-1 min-h-[300px]">
+                <div className="w-full h-full relative flex-1 mx-auto flex items-center justify-center z-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart 
+                      key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
+                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                      style={{ outline: 'none' }}
+                      tabIndex={-1}
                     >
-                      <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
-                      <span className="text-[9px] whitespace-nowrap">{d.name}</span>
-                    </motion.button>
-                  );
-                })}
+                      <Pie
+                        data={divisionData}
+                        innerRadius="56%" 
+                        outerRadius="85%"
+                        startAngle={90}
+                        endAngle={-270}
+                        paddingAngle={4}
+                        cornerRadius={7}
+                        dataKey="value"
+                        isAnimationActive={!isPdfExportMode}
+                        animationDuration={840}
+                        animationEasing="ease-out"
+                        onClick={(data) => {
+                          if (data && data.payload) {
+                            const clickedId = data.payload.id;
+                            if (activeTrendDivId === clickedId) {
+                              setActiveTrendDivId(null);
+                            } else {
+                              setActiveTrendDivId(clickedId);
+                            }
+                          }
+                        }}
+                        cursor="pointer"
+                        labelLine={false}
+                        label={({ x, y, cx, cy, name, percent, value }) => (
+                          <text 
+                            x={x} 
+                            y={y} 
+                            fill="#1e293b" 
+                            textAnchor={x > cx ? 'start' : 'end'} 
+                            dominantBaseline="central" 
+                            fontSize={10.5} 
+                            fontWeight="bold"
+                            style={{ fontFamily: '"Pretendard Variable", sans-serif' }}
+                          >
+                            <tspan x={x} dy="-0.6em">{name}</tspan>
+                            <tspan x={x} dy="1.3em" fill="#64748b" fontSize={9} fontWeight="medium">
+                              {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
+                            </tspan>
+                          </text>
+                        )}
+                      >
+                        {divisionData.map((entry, index) => {
+                          const isAnyActive = activeTrendDivId !== null;
+                          const isActive = activeTrendDivId === entry.id;
+                          const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.15) : 1.0;
+                          return (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.color} 
+                              stroke="#ffffff" 
+                              strokeWidth={1.5} 
+                              style={{ opacity: opacityVal, transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none', cursor: 'pointer' }}
+                            />
+                          );
+                        })}
+                      </Pie>
+                      <Tooltip 
+                        content={<CustomTooltip isPie pieTotal={divisionData.reduce((acc, d) => acc + d.value, 0)} />} 
+                        cursor={false} 
+                        wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center total text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                    <span className="text-[10px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
+                    <span className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
+                      {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-1">㎡</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column (60% width): contains 5위치 (단계별 면적 추세) + 단계별 부문별 면적 추이 */}
+        <div className="lg:col-span-3 flex flex-col gap-6">
+          
+          {/* 5위치: 단계별 면적추이(전용/공용) */}
+          <div className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={16} className="text-indigo-500" />
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">단계별 면적추이(전용/공용)</h3>
               </div>
             </div>
             
-            <div className="flex flex-col items-center justify-center w-full h-full">
-              {/* Centered Circular Chart (Expanded size as requested: 500x400) */}
-              <div className="w-full max-w-[500px] h-[400px] relative flex-shrink-0 mx-auto flex items-center justify-center z-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart 
-                    key={`pie-main-chart-${currentStage?.id || 'default'}`}
-                    margin={{ top: 10, right: 35, left: 35, bottom: 10 }}
-                    style={{ outline: 'none' }}
-                    tabIndex={-1}
+            <div className="h-[235px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={areaByStage} 
+                  margin={{ top: 25, right: 10, left: -10, bottom: 0 }}
+                  style={{ outline: 'none' }}
+                  tabIndex={-1}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.6} />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 600 }}
+                    dy={5}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 9.5, fill: '#94a3b8', fontWeight: 500 }} 
+                    tickFormatter={(val) => Math.round(val).toLocaleString()}
+                  />
+                  <Tooltip 
+                    content={<CustomTooltip />} 
+                    cursor={{ fill: '#f1f5f9' }} 
+                    wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }} 
+                  />
+                  <Bar 
+                    dataKey="net" 
+                    stackId="a" 
+                    fill="#6366f1" 
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    name="전용면적" 
+                    isAnimationActive={false}
+                    barSize={32}
+                    radius={[4, 4, 4, 4]}
                   >
-                    <Pie
-                      data={divisionData}
-                      innerRadius="50%" 
-                      outerRadius="76%"
-                      startAngle={90}
-                      endAngle={-270}
-                      paddingAngle={4}
-                      cornerRadius={7} // Rounded edges
-                      dataKey="value"
-                      isAnimationActive={!isPdfExportMode}
-                      animationDuration={800}
-                      animationEasing="ease-out"
-                      onClick={(data) => {
-                        if (data && data.payload) {
-                          const clickedId = data.payload.id;
-                          if (activeTrendDivId === clickedId) {
-                            setActiveTrendDivId(null);
-                          } else {
-                            setActiveTrendDivId(clickedId);
-                          }
-                        }
-                      }}
-                      cursor="pointer"
-                      labelLine={false}
-                      label={({ x, y, cx, cy, name, percent, value }) => (
-                        <text 
-                          x={x} 
-                          y={y} 
-                          fill="#1e293b" 
-                          textAnchor={x > cx ? 'start' : 'end'} 
-                          dominantBaseline="central" 
-                          fontSize={11.5} 
-                          fontWeight="bold"
-                          style={{ fontFamily: '"Pretendard Variable", sans-serif' }}
-                        >
-                          <tspan x={x} dy="-0.6em">{name}</tspan>
-                          <tspan x={x} dy="1.3em" fill="#64748b" fontSize={10.5} fontWeight="medium">
-                            {value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}㎡ ({(percent * 100).toFixed(2)}%)
-                          </tspan>
-                        </text>
-                      )}
-                    >
-                      {divisionData.map((entry, index) => {
-                        const isAnyActive = activeTrendDivId !== null;
-                        const isActive = activeTrendDivId === entry.id;
-                        const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.15) : 1.0;
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.color} 
-                            stroke="#ffffff" 
-                            strokeWidth={1.5} 
-                            style={{ opacity: opacityVal, transition: 'opacity 400ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none', cursor: 'pointer' }}
-                          />
-                        );
-                      })}
-                    </Pie>
-                    <Tooltip 
-                      content={<CustomTooltip isPie pieTotal={divisionData.reduce((acc, d) => acc + d.value, 0)} />} 
-                      cursor={false} 
-                      wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
+                    <LabelList 
+                      dataKey="net" 
+                      position="inside" 
+                      fill="#ffffff" 
+                      fontSize={9.5} 
+                      fontWeight="bold"
+                      formatter={(v: number) => v > 0 ? Math.round(v).toLocaleString() : ''}
                     />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Center total text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                  <span className="text-[11px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
-                  <span className="text-2xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
-                    {(currentStage?.net || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 mt-1">㎡</span>
-                </div>
-              </div>
-
-              {/* Legend moved to header */}
+                  </Bar>
+                  <Bar 
+                    dataKey="common" 
+                    stackId="a" 
+                    fill="#94a3b8" 
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    name="공용면적" 
+                    isAnimationActive={false}
+                    barSize={32}
+                    radius={[4, 4, 4, 4]}
+                  >
+                    <LabelList 
+                      dataKey="common" 
+                      position="inside" 
+                      fill="#ffffff" 
+                      fontSize={9.5} 
+                      fontWeight="bold"
+                      formatter={(v: number) => v > 0 ? Math.round(v).toLocaleString() : ''}
+                    />
+                  </Bar>
+                  <Bar 
+                    dataKey="other" 
+                    stackId="a" 
+                    fill="#cbd5e1" 
+                    stroke="#ffffff"
+                    strokeWidth={2}
+                    name="의료외(주차/옥외)" 
+                    isAnimationActive={false}
+                    barSize={32}
+                    radius={[4, 4, 4, 4]}
+                  >
+                    <LabelList 
+                      dataKey="other" 
+                      position="inside" 
+                      fill="#ffffff" 
+                      fontSize={9.5} 
+                      fontWeight="bold"
+                      formatter={(v: number) => v > 200 ? Math.round(v).toLocaleString() : ''}
+                    />
+                    <LabelList 
+                      dataKey="gross" 
+                      position="top" 
+                      offset={6}
+                      fill="#475569" 
+                      fontSize={10.5} 
+                      fontWeight="bold"
+                      formatter={(v: number) => Math.round(v).toLocaleString()}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
-        </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-3 min-h-[340px] flex flex-col justify-between">
-          <div className="flex flex-col h-full justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={18} className="text-emerald-500" />
-                  <h3 className="text-sm font-bold text-slate-800">단계별 부문별 면적 추이</h3>
-                </div>
+          {/* 단계별 부문별 면적 추이 (Big Line/Area Chart) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+            <div className="flex flex-col h-full justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={17} className="text-emerald-500" />
+                    <h3 className="text-sm font-black text-slate-800 tracking-tight">단계별 부문별 면적 추이</h3>
+                  </div>
 
-                {/* Top-Right Capsule Legend for Trends - Expanded width */}
-                <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide flex-1 justify-end ml-4">
-                  {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((d, i) => {
-                    const isActive = activeTrendDivId === d.id;
-                    return (
-                      <motion.button 
-                        key={i}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setActiveTrendDivId(isActive ? null : d.id)}
-                        className={cn(
-                          "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-200 flex-shrink-0",
-                          isActive 
-                            ? "bg-indigo-500 border-indigo-500 text-white shadow-sm ring-2 ring-indigo-100 font-bold" 
-                            : "bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 font-medium"
-                        )}
-                      >
-                        <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
-                        <span className="text-[9px] whitespace-nowrap">{d.name}</span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="h-[300px] sm:h-[330px] md:h-[360px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart 
-                    key={`area-trends-${activeTrendDivId || 'all'}`}
-                    data={stageDivisionData} 
-                    margin={{ top: 10, right: 20, left: 0, bottom: 2 }}
-                    style={{ outline: 'none' }}
-                    tabIndex={-1}
-                  >
-                    <defs>
-                      {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div) => (
-                        <linearGradient key={`grad-${div.id}`} id={`grad-div-${div.id}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={div.color || '#cbd5e1'} stopOpacity={0.4} />
-                          <stop offset="95%" stopColor={div.color || '#cbd5e1'} stopOpacity={0.0} />
-                        </linearGradient>
-                      ))}
-                    </defs>
-                    <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
-                      dy={10}
-                      padding={{ left: 20, right: 20 }}
-                    />
-                    <YAxis 
-                      axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}
-                      tickFormatter={(v) => `${(v/1000).toFixed(1)}k`}
-                      width={50}
-                      padding={{ top: 20, bottom: 0 }}
-                    />
-                    <Tooltip 
-                      content={<CustomTooltip />} 
-                      cursor={false} 
-                      wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
-                    />
-                    {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div, i) => {
-                      const isAnyActive = activeTrendDivId !== null;
-                      const isActive = activeTrendDivId === div.id;
-
-                      const strokeWidth = isAnyActive ? (isActive ? 4 : 1) : 2.5;
-                      const strokeOpacity = isAnyActive ? (isActive ? 1.0 : 0.2) : 0.85;
-                      const fillOpacity = isAnyActive ? (isActive ? 0.45 : 0.02) : 0.15;
-
+                  {/* Top-Right Capsule Legend for Trends - Expanded width with hover margin */}
+                  <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide flex-1 justify-end ml-4 py-2.5 px-2 -my-2">
+                    {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((d, i) => {
+                      const isActive = activeTrendDivId === d.id;
                       return (
-                        <Area 
-                          key={div.id} 
-                          type="monotone" 
-                          dataKey={div.name} 
-                          stroke={div.color || '#cbd5e1'} 
-                          fill={`url(#grad-div-${div.id})`}
-                          style={{ strokeWidth, strokeOpacity, fillOpacity, transition: 'fill-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-width 400ms cubic-bezier(0.4, 0, 0.2, 1)' }}
-                          dot={{ r: 3, strokeWidth: 1, fill: '#ffffff', strokeOpacity: strokeOpacity }}
-                          activeDot={{ r: 5 }}
-                          isAnimationActive={!isPdfExportMode}
-                          animationDuration={450}
-                          animationEasing="ease-out"
-                        >
-                          {isActive && (
-                            <LabelList 
-                              dataKey={div.name} 
-                              position="top" 
-                              offset={12} 
-                              fontSize={11} 
-                              fill="#334155" 
-                              fontWeight="black"
-                              stroke="#ffffff"
-                              strokeWidth={3}
-                              paintOrder="stroke"
-                              formatter={(v: number) => v > 0 ? (v > 1000 ? `${(v/1000).toFixed(1)}k` : Math.round(v).toString()) : ""}
-                            />
+                        <motion.button 
+                          key={i}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTrendDivId(isActive ? null : d.id)}
+                          className={cn(
+                            "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-200 flex-shrink-0",
+                            isActive 
+                              ? "bg-indigo-500 border-indigo-500 text-white shadow-sm font-bold" 
+                              : "bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 font-medium"
                           )}
-                        </Area>
+                        >
+                          <div className={cn("w-1 h-1 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
+                          <span className="text-[8.5px] whitespace-nowrap">{d.name}</span>
+                        </motion.button>
                       );
                     })}
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+                  </div>
+                </div>
+                <div className="h-[280px] sm:h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%" key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
+                    <AreaChart 
+                      key={`area-trends-${activeTrendDivId || 'all'}`}
+                      data={stageDivisionData} 
+                      margin={{ top: 10, right: 35, left: 0, bottom: 2 }}
+                      style={{ outline: 'none' }}
+                      tabIndex={-1}
+                    >
+                      <defs>
+                        {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div) => (
+                          <linearGradient key={`grad-${div.id}`} id={`grad-div-${div.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={div.color || '#cbd5e1'} stopOpacity={0.4} />
+                            <stop offset="95%" stopColor={div.color || '#cbd5e1'} stopOpacity={0.0} />
+                          </linearGradient>
+                        ))}
+                      </defs>
+                      <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
+                      <XAxis 
+                        dataKey="name" 
+                        axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
+                        tickLine={false} 
+                        tick={{ fontSize: 9.5, fill: '#64748b', fontWeight: 600 }}
+                        dy={8}
+                        padding={{ left: 20, right: 20 }}
+                      />
+                      <YAxis 
+                        axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
+                        tickLine={false} 
+                        tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 500 }}
+                        tickFormatter={(v) => `${(v/1000).toFixed(1)}k`}
+                        width={45}
+                        padding={{ top: 20, bottom: 0 }}
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />} 
+                        cursor={false} 
+                        wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
+                      />
+                      {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div, i) => {
+                        const isAnyActive = activeTrendDivId !== null;
+                        const isActive = activeTrendDivId === div.id;
+
+                        const strokeWidth = isAnyActive ? (isActive ? 4 : 1) : 2.5;
+                        const strokeOpacity = isAnyActive ? (isActive ? 1.0 : 0.2) : 0.85;
+                        const fillOpacity = isAnyActive ? (isActive ? 0.45 : 0.02) : 0.15;
+
+                        return (
+                          <Area 
+                            key={div.id} 
+                            type="monotone" 
+                            dataKey={div.name} 
+                            stroke={div.color || '#cbd5e1'} 
+                            fill={`url(#grad-div-${div.id})`}
+                            style={{ strokeWidth, strokeOpacity, fillOpacity, transition: 'fill-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-width 400ms cubic-bezier(0.4, 0, 0.2, 1)' }}
+                            dot={{ r: 2.5, strokeWidth: 1, fill: '#ffffff', strokeOpacity: strokeOpacity }}
+                            activeDot={{ r: 4 }}
+                            isAnimationActive={!isPdfExportMode}
+                            animationDuration={840}
+                          >
+                            {(isActive || !isAnyActive) && (
+                              <LabelList 
+                                dataKey={div.name}
+                                content={(props: any) => {
+                                  const { x, y, value } = props;
+                                  if (!value || value === 0) return null;
+                                  
+                                  return (
+                                    <g style={{ pointerEvents: 'none' }}>
+                                      <text 
+                                        x={x + 8} 
+                                        y={y} 
+                                        fill={isActive ? "#0f172a" : "#64748b"} 
+                                        fontSize={9.5} 
+                                        fontWeight="900" 
+                                        textAnchor="start" 
+                                        dominantBaseline="central"
+                                        stroke="#ffffff" 
+                                        strokeWidth={4} 
+                                        paintOrder="stroke"
+                                        strokeLinejoin="round"
+                                        style={{ transition: 'all 300ms ease' }}
+                                      >
+                                        {value > 1000 ? `${(value/1000).toFixed(1)}k` : Math.round(value)}
+                                      </text>
+                                    </g>
+                                  );
+                                }}
+                              />
+                            )}
+                          </Area>
+                        );
+                      })}
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+
             </div>
-
-
-            {/* Legend moved to header */}
           </div>
         </div>
       </div>
+    </div>
 
       {/* Floor & Ward Row */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 w-full">
@@ -998,9 +1052,9 @@ const Dashboard: React.FC = () => {
                 <h3 className="text-sm font-black text-slate-800 tracking-tight">층별 부문 면적 분포</h3>
               </div>
 
-              {/* Capsule Legend Filter for Floor Chart */}
+              {/* Capsule Legend Filter for Floor Chart with hover margin */}
               <div 
-                className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 max-w-[400px] scrollbar-hide"
+                className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide py-2.5 px-2 -my-2 max-w-[400px]"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', outline: 'none', border: 'none' }}
               >
                 {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((d, i) => {
@@ -1026,12 +1080,12 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <div className="h-[310px] w-full">
-               <ResponsiveContainer width="100%" height="100%">
+               <ResponsiveContainer width="100%" height="100%" key={`bar-floors-rc-${activeTrendDivId || 'all'}`}>
                  <BarChart 
                    key={`bar-floors-${activeTrendDivId || 'all'}`}
                    layout="vertical" 
                    data={floorDivisionData} 
-                   margin={{ top: 5, right: 80, left: -20, bottom: 5 }}
+                   margin={{ top: 5, right: 65, left: -20, bottom: 5 }}
                    className="outline-none"
                    style={{ outline: 'none' }}
                    tabIndex={-1}
@@ -1045,24 +1099,6 @@ const Dashboard: React.FC = () => {
                        axisLine={false} 
                        tickLine={false} 
                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
-                    />
-                    <YAxis 
-                       yAxisId="right"
-                       orientation="right"
-                       dataKey="name" 
-                       type="category" 
-                       axisLine={false} 
-                       tickLine={false} 
-                       tick={(props) => {
-                          const { x, y, payload } = props;
-                          const floorData = floorDivisionData.find(d => d.name === payload.value);
-                          const total = floorData ? floorData.totalArea : 0;
-                          return (
-                             <text x={x} y={y} dy={4} fill="#64748b" fontSize={9} fontWeight="900" textAnchor="start">
-                                {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}㎡
-                             </text>
-                          );
-                       }}
                     />
                     <Tooltip 
                       cursor={false}
@@ -1094,8 +1130,7 @@ const Dashboard: React.FC = () => {
                           radius={[6, 6, 6, 6]} 
                           barSize={24} 
                           isAnimationActive={!isPdfExportMode}
-                          animationDuration={800}
-                          animationEasing="ease-in-out"
+                          animationDuration={840}
                           style={{ fillOpacity: barOpacity, cursor: 'pointer', transition: 'fill-opacity 600ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none' }}
                           onClick={() => {
                             if (activeTrendDivId === div.id) {
@@ -1121,6 +1156,34 @@ const Dashboard: React.FC = () => {
                         />
                       );
                     })}
+
+                    {/* Dummy stack bar at the end to render total area labels directly docked next to the last bar */}
+                    <Bar 
+                      yAxisId="left"
+                      dataKey="dummyTotal" 
+                      stackId="a" 
+                      fill="transparent" 
+                      isAnimationActive={!isPdfExportMode}
+                      animationDuration={840}
+                      label={(props: any) => {
+                        const { x, y, width, height, index } = props;
+                        const rowData = floorDivisionData[index];
+                        if (!rowData) return null;
+                        const total = rowData.totalArea;
+                        return (
+                          <text 
+                            x={x + 6} 
+                            y={y + height / 2 + 3} 
+                            fill="#475569" 
+                            fontSize={9.5} 
+                            fontWeight="900" 
+                            textAnchor="start"
+                          >
+                            {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}㎡
+                          </text>
+                        );
+                      }}
+                    />
                           
                  </BarChart>
                </ResponsiveContainer>
@@ -1158,9 +1221,17 @@ const Dashboard: React.FC = () => {
               {wardBedsData.list.map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center text-[11px] border-b border-slate-100/60 pb-1.5 last:border-0 last:pb-0">
                   <span className="text-slate-500 font-bold">{item.label}</span>
-                  <div className="flex gap-2">
-                    {item.rooms !== null && <span className="text-slate-400 font-medium">{item.rooms}실</span>}
-                    <span className="text-slate-800 font-black">{item.beds}병상</span>
+                  <div className="flex items-center text-right">
+                    <div className="w-12 text-right pr-1">
+                      {item.rooms !== null ? (
+                        <span className="text-slate-400 font-semibold">{item.rooms}실</span>
+                      ) : (
+                        <span className="text-[10px] text-slate-300/40 select-none">-</span>
+                      )}
+                    </div>
+                    <div className="w-14 text-right">
+                      <span className="text-slate-800 font-black">{item.beds}병상</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1299,14 +1370,23 @@ const Dashboard: React.FC = () => {
                      <PieChart style={{ outline: 'none' }} tabIndex={-1}>
                         <Pie
                           data={div.data}
-                          innerRadius="60%" 
-                          outerRadius="90%"
+                          innerRadius="40%" 
+                          outerRadius="65%"
                           dataKey="value"
-                          isAnimationActive={!isPdfExportMode}
-                          animationDuration={450}
-                          animationBegin={0}
-                          label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                          labelLine={false}
+                          isAnimationActive={false}
+                          label={({ name, value, percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                            const RADIAN = Math.PI / 180;
+                            const radius = outerRadius + 15;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            const anchor = x > cx ? 'start' : 'end';
+                            return (
+                               <text x={x} y={y} fill="#475569" textAnchor={anchor} dominantBaseline="central" fontSize={11} fontWeight="600">
+                                  {`${name}: ${Math.round(value).toLocaleString()}㎡ (${(percent * 100).toFixed(1)}%)`}
+                               </text>
+                            );
+                          }}
+                          labelLine={true}
                         >
                           {div.data.map((entry, idx) => (
                             <Cell 

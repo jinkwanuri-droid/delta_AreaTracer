@@ -775,6 +775,23 @@ export default function DetailTable() {
     });
   }, [floors]);
 
+  const filteredDivisions = useMemo(() => {
+    if (!medicalOnly) return divisions;
+    return divisions.filter(d => /^\d+$/.test(d.id));
+  }, [divisions, medicalOnly]);
+
+  const filteredDepartmentsBySelection = useMemo(() => {
+    let res = departments;
+    if (medicalOnly) {
+      res = res.filter(d => /^\d+$/.test(d.divisionId));
+    }
+    return res.filter(
+      (d) =>
+        filters.divisionIds.length === 0 ||
+        filters.divisionIds.includes(d.divisionId)
+    );
+  }, [departments, filters.divisionIds, medicalOnly]);
+
   return (
     <div className="flex flex-col h-full bg-transparent overflow-hidden">
       {/* Tab Navigator & Filters */}
@@ -811,7 +828,7 @@ export default function DetailTable() {
           <div className="flex items-center gap-2 shrink-0">
             <SelectorPopover
               placeholder="부문 전체"
-              options={[{ id: "", name: "부문 전체" }, ...divisions]}
+              options={[{ id: "", name: "부문 전체" }, ...filteredDivisions]}
               value={filters.divisionIds[0] || ""}
               onChange={(val) => {
                 useAppStore.setState((state) => ({
@@ -830,11 +847,7 @@ export default function DetailTable() {
               placeholder="부서 전체"
               options={[
                 { id: "", name: "부서 전체" },
-                ...departments.filter(
-                  (d) =>
-                    filters.divisionIds.length === 0 ||
-                    filters.divisionIds.includes(d.divisionId),
-                ),
+                ...filteredDepartmentsBySelection,
               ]}
               value={filters.departmentIds[0] || ""}
               onChange={(val) => {

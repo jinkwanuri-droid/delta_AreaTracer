@@ -32,16 +32,15 @@ export default function Layout({ children }: { children: ReactNode }) {
   const componentRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
+    contentRef: componentRef,
     documentTitle: `hospital_area_report_${Date.now()}`,
-    onBeforePrint: () => {
+    onBeforePrint: async () => {
       // Just in case we need anything explicitly set before the dialog popups
     },
     onAfterPrint: () => {
       setIsPdfExportMode(false);
       setIsExporting(false);
     },
-    removeAfterPrint: true,
   });
 
   const handleExportPdf = async () => {
@@ -196,8 +195,8 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       )}
       
-      {/* Hidden layout for PDF Export */}
-      <div className="hidden">
+      {/* Hidden layout for PDF Export - using absolute off-screen instead of hidden for Recharts sizing */}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '1200px' }}>
          <PrintableReport ref={componentRef} />
       </div>
     </div>
