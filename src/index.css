@@ -309,3 +309,66 @@ body {
   filter: brightness(1.05);
   cursor: pointer;
 }
+
+/* ==========================================================================
+   Print Optimization (@media print)
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 16mm 10mm 14mm 10mm;
+  }
+  
+  html, body {
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Prevent page breaks inside table rows and avoid truncating tables */
+  tr, td, th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  /* Repeat table header on every page */
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Force no scrollbars and full expanding height for print mode */
+  .print-container {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    max-height: none !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+
+  /* Hide absolutely everything else by default if we mount print component */
+  body > #root > *:not(.print-container-root) {
+    display: none !important;
+  }
+  
+  .print-container-root {
+    display: block !important;
+  }
+}

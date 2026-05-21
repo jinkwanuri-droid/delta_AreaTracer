@@ -238,7 +238,8 @@ export const useAppStore = create<AppState>()(
       fetchGlobalSettings: async () => {
         try {
           const res = await fetch("/api/global-settings");
-          if (res.ok) {
+          const contentType = res.headers.get("content-type") || "";
+          if (res.ok && contentType.includes("application/json")) {
             const data = await res.json();
             if (data && Object.keys(data).length > 0) {
               set({
@@ -251,12 +252,79 @@ export const useAppStore = create<AppState>()(
                 comparison: data.comparison || get().comparison,
                 roomNotes: data.roomNotes || get().roomNotes,
                 departmentNotes: data.departmentNotes || get().departmentNotes,
+                summaryNotes: data.summaryNotes || get().summaryNotes,
                 floorWardOverrides: data.floorWardOverrides || get().floorWardOverrides,
               });
+              return;
             }
           }
         } catch (e) {
-          console.error("Failed to fetch global settings:", e);
+          console.warn("Failed to fetch global settings via API. Attempting direct Supabase fallback.", e);
+        }
+
+        // Direct Supabase Fallback (e.g. for Vercel Serverless/Static Environments)
+        if (supabase) {
+          console.log("Using browser-side Supabase client to fetch global settings...");
+          try {
+            // Fetch core config
+            const { data: configData, error: configErr } = await supabase
+              .from("app_config")
+              .select("*");
+            
+            if (configErr) throw configErr;
+
+            const config: any = {};
+            configData?.forEach((item: any) => {
+              let val = item.value;
+              if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                try {
+                  val = JSON.parse(val);
+                } catch (e) {
+                  // Keep as string if not valid JSON
+                }
+              }
+              config[item.key] = val;
+            });
+
+            // Fetch dept notes
+            const { data: deptNotesData } = await supabase
+              .from("dept_notes")
+              .select("*");
+            
+            const deptNotes: Record<string, string> = {};
+            deptNotesData?.forEach((item: any) => {
+              const key = item.dept_no || item.dept_id || item.id;
+              if (key) deptNotes[key] = item.content;
+            });
+
+            // Fetch room notes
+            const { data: roomNotesData } = await supabase
+              .from("room_notes")
+              .select("*");
+            
+            const roomNotes: Record<string, string> = {};
+            roomNotesData?.forEach((item: any) => {
+              const key = item.room_no || item.room_id || item.id;
+              if (key) roomNotes[key] = item.content;
+            });
+
+            set({
+              spreadsheetId: config.spreadsheetId || get().spreadsheetId,
+              stages: config.stages || get().stages,
+              floors: config.floors || get().floors,
+              divisions: config.divisions || get().divisions,
+              departments: config.departments || get().departments,
+              floorAreasByStage: config.floorAreasByStage || get().floorAreasByStage,
+              comparison: config.comparison || get().comparison,
+              summaryNotes: config.summaryNotes || get().summaryNotes,
+              floorWardOverrides: config.floorWardOverrides || get().floorWardOverrides,
+              roomNotes: roomNotes,
+              departmentNotes: deptNotes,
+            });
+            console.log("Global settings successfully loaded directly from Supabase.");
+          } catch (supErr) {
+            console.error("Direct Supabase fetch fallback failed:", supErr);
+          }
         }
       },
       saveGlobalSettings: async () => {
@@ -269,18 +337,71 @@ export const useAppStore = create<AppState>()(
           departments: state.departments,
           floorAreasByStage: state.floorAreasByStage,
           comparison: state.comparison,
+          summaryNotes: state.summaryNotes,
+          floorWardOverrides: state.floorWardOverrides,
           roomNotes: state.roomNotes,
           departmentNotes: state.departmentNotes,
-          floorWardOverrides: state.floorWardOverrides,
         };
+        
+        let apiSuccess = false;
         try {
-          await fetch("/api/global-settings", {
+          const res = await fetch("/api/global-settings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(dataToSave),
           });
+          const contentType = res.headers.get("content-type") || "";
+          if (res.ok && contentType.includes("application/json")) {
+            const data = await res.json();
+            if (data && data.success) {
+              apiSuccess = true;
+            }
+          }
         } catch (e) {
-          console.error("Failed to save global settings:", e);
+          console.warn("Failed to save global settings via API. Attempting direct Supabase fallback.", e);
+        }
+
+        // Direct Supabase Fallback for Saving
+        if (!apiSuccess && supabase) {
+          console.log("Using browser-side Supabase client to save global settings...");
+          try {
+            const { departmentNotes, roomNotes, ...coreConfig } = dataToSave;
+            
+            const configEntries = Object.entries(coreConfig).map(([key, value]) => ({
+              key,
+              value
+            }));
+
+            if (configEntries.length > 0) {
+              const { error: configErr } = await supabase.from("app_config").upsert(configEntries);
+              if (configErr) throw configErr;
+            }
+
+            if (departmentNotes) {
+              const deptEntries = Object.entries(departmentNotes).map(([dept_no, content]) => ({
+                dept_no,
+                content: content as string
+              }));
+              if (deptEntries.length > 0) {
+                const { error: deptErr } = await supabase.from("dept_notes").upsert(deptEntries);
+                if (deptErr) throw deptErr;
+              }
+            }
+
+            if (roomNotes) {
+              const roomEntries = Object.entries(roomNotes).map(([room_no, content]) => ({
+                room_no,
+                content: content as string
+              }));
+              if (roomEntries.length > 0) {
+                const { error: roomErr } = await supabase.from("room_notes").upsert(roomEntries);
+                if (roomErr) throw roomErr;
+              }
+            }
+            console.log("Global settings successfully saved directly to Supabase.");
+          } catch (supErr) {
+            console.error("Direct Supabase save fallback failed:", supErr);
+          }
         }
       },
       setVisibleStageIds: (ids) => set({ visibleStageIds: ids }),

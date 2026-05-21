@@ -1,10 +1,12 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useRef } from 'react';
 import Sidebar from './Sidebar';
 import { useAppStore } from '@/store/useAppStore';
 
 import SelectorPopover from './SelectorPopover';
 import { Layers, RefreshCw, Loader2, Download } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useReactToPrint } from 'react-to-print';
+import PrintableReport from './report/PrintableReport';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const project = useAppStore(state => state.project);
@@ -18,12 +20,28 @@ export default function Layout({ children }: { children: ReactNode }) {
   const setIsPdfExportMode = useAppStore(state => state.setIsPdfExportMode);
   const pdfExportOptions = useAppStore(state => state.pdfExportOptions);
   const setPdfExportOptions = useAppStore(state => state.setPdfExportOptions);
+  
   const [isExporting, setIsExporting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [localOptions, setLocalOptions] = useState({
-    dashboard: true,
-    summary: true,
-    detail: true
+    dashboard: false,
+    summary: false,
+    detail: true // Defaulted to true as we implemented Detail PDF layout first securely
+  });
+
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+    documentTitle: `hospital_area_report_${Date.now()}`,
+    onBeforePrint: () => {
+      // Just in case we need anything explicitly set before the dialog popups
+    },
+    onAfterPrint: () => {
+      setIsPdfExportMode(false);
+      setIsExporting(false);
+    },
+    removeAfterPrint: true,
   });
 
   const handleExportPdf = async () => {
@@ -33,161 +51,15 @@ export default function Layout({ children }: { children: ReactNode }) {
     setIsExporting(true);
     setIsPdfExportMode(true);
     
-    // Allow React to re-render without virtualization etc
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    try {
-      const tableEl = document.getElementById('pdf-export-content');
-      if (!tableEl) {
-        alert('출력할 콘텐츠를 찾을 수 없습니다.');
-        return;
+    // Wait for state updates and ref to be populated
+    setTimeout(() => {
+      if (handlePrint) {
+         handlePrint();
+      } else {
+         setIsPdfExportMode(false);
+         setIsExporting(false);
       }
-      
-      const el = tableEl.cloneNode(true) as HTMLElement;
-      
-      // Remove interactive elements from cloned content to ensure clean PDF
-      el.querySelectorAll('button, input, select, [role="button"]').forEach(item => {
-        // If it's a checkbox we want to keep its state but hide the actual input element if possible
-        // but for simplicity let's just hide common UI buttons
-        if (item.tagName === 'BUTTON') item.remove();
-      });
-
-      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-        .map(s => s.outerHTML)
-        .join('\n');
-      
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          ${styles}
-          <style>
-            @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-gov.min.css');
-            
-            body { 
-              font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-              color: #1a202c !important;
-            }
-            
-            @media print {
-              @page {
-                size: A4 landscape;
-                margin: 0mm !important;
-              }
-              body { 
-                background: white; 
-                margin: 0; 
-                padding: 0;
-                font-family: 'Pretendard', sans-serif !important;
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important; 
-              }
-              
-              #pdf-export-content {
-                width: 297mm !important;
-                background: white !important;
-                container-type: inline-size;
-              }
-
-              .page-break {
-                break-before: page !important;
-                page-break-before: always !important;
-                margin-top: 0 !important;
-                padding-top: 20mm !important; /* Adding padding to top of new pages */
-              }
-
-              h2 {
-                font-size: 16pt !important;
-                color: #0f172a !important;
-                font-weight: 900 !important;
-              }
-
-              .text-xs.font-bold.text-slate-400.capitalize {
-                font-size: 8pt !important;
-                color: #94a3b8 !important;
-              }
-
-              table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                table-layout: fixed !important;
-                font-size: 1.1cqw !important; /* Variable font size for table content */
-              }
-
-              th {
-                font-size: 1.15cqw !important; /* Slightly larger for headers */
-              }
-
-              th, td {
-                word-break: break-all !important;
-                padding: 4px 6px !important;
-              }
-
-              tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
-
-              thead {
-                display: table-header-group !important;
-              }
-
-              /* Hide interactive elements and excess margins */
-              .no-print, button, .lucide-rotate-ccw, .lucide-filter, .lucide-settings {
-                display: none !important;
-              }
-
-              /* Flatten shadows for PDF */
-              .shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
-                shadow: none !important;
-                box-shadow: none !important;
-              }
-
-              /* Ensure chart containers keep aspect ratio */
-              .recharts-responsive-container {
-                width: 100% !important;
-                height: 300px !important;
-              }
-            }
-          </style>
-        </head>
-        <body class="bg-white">
-          ${el.outerHTML}
-        </body>
-        </html>
-      `;
-
-      // Use modern A4 landscape dimensions
-      const width = '297mm';
-      const height = '210mm';
-
-      const response = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: htmlContent, width, height })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF from server');
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `hospital_area_report_${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error(err);
-      alert('PDF Export 중에 오류가 발생했습니다.');
-    } finally {
-      setIsPdfExportMode(false);
-      setIsExporting(false);
-    }
+    }, 500);
   };
 
   return (
@@ -323,6 +195,11 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       )}
+      
+      {/* Hidden layout for PDF Export */}
+      <div className="hidden">
+         <PrintableReport ref={componentRef} />
+      </div>
     </div>
   );
 }

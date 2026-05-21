@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -40,12 +40,26 @@ import {
   ChevronRight,
   PieChart as PieChartIcon,
   BarChart3,
-  Stethoscope
+  Stethoscope,
+  Trees
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Helper to format numbers with commas
 const f = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+// Helper to format numbers into integer and decimal parts
+const formatNumberParts = (val: number) => {
+  const formatted = val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dotIndex = formatted.lastIndexOf('.');
+  if (dotIndex !== -1) {
+    return {
+      integer: formatted.substring(0, dotIndex),
+      decimal: formatted.substring(dotIndex)
+    };
+  }
+  return { integer: formatted, decimal: '.00' };
+};
 
 // High-fidelity, glossmorphic custom tooltip for visual excellence
 interface CustomTooltipProps {
@@ -101,8 +115,8 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     const value = Number(entry.value) || 0;
     const pTotal = pieTotal || React.Children.toArray(validPayload).reduce((acc: any, val: any) => acc + val.value, 0); 
     const percentageText = pTotal > 0 
-      ? `(${((value / pTotal) * 100).toFixed(2)}%)` 
-      : (entry.payload?.percent ? `(${(entry.payload.percent * 100).toFixed(2)}%)` : '');
+      ? `(${((value / pTotal) * 100).toFixed(1)}%)` 
+      : (entry.payload?.percent ? `(${(entry.payload.percent * 100).toFixed(1)}%)` : '');
     
     return (
       <div 
@@ -156,7 +170,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           
           let percentageText = '';
           if (showSummarySum && currentTotal > 0) {
-            percentageText = ` (${((value / currentTotal) * 100).toFixed(2)}%)`;
+            percentageText = ` (${((value / currentTotal) * 100).toFixed(1)}%)`;
           }
 
           return (
@@ -238,7 +252,7 @@ const Dashboard: React.FC = () => {
           .filter(v => roomsInFloorDept.some(r => r.id === v.roomId))
           .reduce((sum, v) => sum + (v.unitArea * v.quantity), 0);
         if (area > 0) {
-          row[dept.name] = Number(area.toFixed(2));
+          row[dept.name] = Number(area.toFixed(1));
         }
       });
       return row;
@@ -260,30 +274,35 @@ const Dashboard: React.FC = () => {
       // Base values for the stage
       const stageValues = values.filter(v => v.stageId === stage.id);
       
-      // Calculate Net Area (Medical Only filter applied if active)
+      // Calculate Net Area (Medical Only filter applied if active, and always excluding Parking/Outdoor special areas)
       const medicalStageValues = stageValues.filter(v => {
-        if (!medicalOnly) return true;
         const room = rooms.find(r => r.id === v.roomId);
-        const dept = departments.find(d => d.id === room?.departmentId);
+        if (!room) return false;
+        
+        const roomNo = room.no.toUpperCase();
+        if (roomNo.startsWith('P') || roomNo.startsWith('O')) {
+          return false;
+        }
+
+        if (!medicalOnly) return true;
+        const dept = departments.find(d => d.id === room.departmentId);
         return dept && medicalDivisionIds.includes(dept.divisionId);
       });
       const netTotal = medicalStageValues.reduce((sum, v) => sum + (v.unitArea * v.quantity), 0);
       
       // Calculate specific deduction areas: Parking and Outdoor Common
-      // These are calculated across ALL departments, not just medical ones
+      // These are calculated based on room number pattern to align perfectly with DepartmentSummary.tsx
       const parkingArea = stageValues.reduce((sum, v) => {
         const room = rooms.find(r => r.id === v.roomId);
-        const dept = departments.find(d => d.id === room?.departmentId);
-        const div = divisions.find(d => d.id === dept?.divisionId);
-        const isParking = (dept?.name || "").includes("주차장") || (div?.name || "").includes("주차장");
+        if (!room) return sum;
+        const isParking = room.no.toUpperCase().startsWith('P');
         return isParking ? sum + (v.unitArea * v.quantity) : sum;
       }, 0);
 
       const outdoorArea = stageValues.reduce((sum, v) => {
         const room = rooms.find(r => r.id === v.roomId);
-        const dept = departments.find(d => d.id === room?.departmentId);
-        const div = divisions.find(d => d.id === dept?.divisionId);
-        const isOutdoor = (dept?.name || "").includes("옥외공용") || (div?.name || "").includes("옥외공용");
+        if (!room) return sum;
+        const isOutdoor = room.no.toUpperCase().startsWith('O');
         return isOutdoor ? sum + (v.unitArea * v.quantity) : sum;
       }, 0);
       
@@ -297,34 +316,17 @@ const Dashboard: React.FC = () => {
       const finalGross = grossTotal || floorAreas['_TOTAL_'] || 0;
       
       // GN Ratio = (Gross - Parking - Outdoor) / Net
-      // User requested: Excude Parking/Outdoor from both when medical filter is on
+      // User requested: Exclude Parking/Outdoor from both when medical filter is on (and generally they are deducted gross)
       const adjustedGross = finalGross - parkingArea - outdoorArea;
-      
-      // Calculate overall total net for proportional distribution of common area
-      const totalNetAll = stageValues.reduce((sum, v) => sum + (v.unitArea * v.quantity), 0);
-      const overallCommon = adjustedGross - totalNetAll;
-      
-      let common = 0;
-      let displayGross = adjustedGross;
-
-      if (medicalOnly) {
-        // Proportional distribution of common area for medical divisions
-        const medicalNetRatio = totalNetAll > 0 ? (netTotal / totalNetAll) : 0;
-        common = overallCommon * medicalNetRatio;
-        displayGross = netTotal + common;
-      } else {
-        common = overallCommon;
-        displayGross = adjustedGross;
-      }
-      
-      const gnRatio = netTotal > 0 ? (displayGross / netTotal) : 0;
+      const common = adjustedGross - netTotal;
+      const gnRatio = netTotal > 0 ? (adjustedGross / netTotal) : 0;
       
       return {
         id: stage.id,
         name: stage.name,
         net: netTotal,
         gross: finalGross,
-        adjustedGross: displayGross, // Using the adjusted one for display/KPIs
+        adjustedGross: adjustedGross,
         parking: parkingArea,
         outdoor: outdoorArea,
         common: common,
@@ -360,77 +362,28 @@ const Dashboard: React.FC = () => {
     return (calculatedCommonArea / currentStage.net) * 100;
   }, [currentStage, calculatedCommonArea]);
 
-  // High precision calculation for Ward Bed configuration (병동부 병상 구성)
+  // Non-medical area (parking + outdoor area)
+  const calculatedNonMedicalArea = useMemo(() => {
+    if (!currentStage) return 0;
+    return (currentStage.parking || 0) + (currentStage.outdoor || 0);
+  }, [currentStage]);
+
+  // User-specified static bed configuration (병동부 병상 구성)
   const wardBedsData = useMemo(() => {
-    if (!currentStage) return { total: 0, items: [] };
-    const stageValues = values.filter(v => v.stageId === currentStage.id);
-    const wardRooms = rooms.filter(r => {
-      const dept = departments.find(d => d.id === r.departmentId);
-      return r.departmentId === "101" || dept?.name.includes("병동");
-    });
-
-    let beds4 = 0;
-    let beds2 = 0;
-    let beds1 = 0;
-    let bedsSpecial = 0;
-
-    wardRooms.forEach(room => {
-      const roomVal = stageValues.find(v => v.roomId === room.id);
-      if (!roomVal) return;
-      const q = roomVal.quantity || 0;
-      const multiplier = room.departmentId === "101" 
-        ? (floorWardOverrides[`${room.floorId}|101`] ?? 1) 
-        : 1;
-      const totalQty = q * multiplier;
-
-      const name = room.name || "";
-      if (name.includes("4인") || name.includes("4인실")) {
-        beds4 += totalQty * 4;
-      } else if (name.includes("2인") || name.includes("2인실")) {
-        beds2 += totalQty * 2;
-      } else if (name.includes("1인") || name.includes("1인실") || name.includes("독실") || name.includes("특실") || name.includes("임종")) {
-        beds1 += totalQty * 1;
-      } else if (name.includes("중환자") || name.includes("ICU") || name.includes("격리") || name.includes("무균") || name.includes("특수")) {
-        const matchBeds = name.match(/(\d+)인/);
-        const perRoom = matchBeds ? parseInt(matchBeds[1]) : 1;
-        bedsSpecial += totalQty * perRoom;
-      } else {
-        // Fallback for ward rooms that are generic multi-beds
-        const matchBeds = name.match(/(\d+)인/);
-        if (matchBeds) {
-          const perRoom = parseInt(matchBeds[1]);
-          bedsSpecial += totalQty * perRoom;
-        }
-      }
-    });
-
-    const calculatedTotal = beds4 + beds2 + beds1 + bedsSpecial;
-
-    // Standard baseline fallback if beds calculation result is zero, based on 300-bed scale guidelines for Gyeongnam West Medical Center
-    if (calculatedTotal === 0) {
-      return {
-        total: 300,
-        items: [
-          { name: "4인실", value: 212, percentage: 70.67, color: "#6366f1" },
-          { name: "2인실", value: 48, percentage: 16.00, color: "#38bdf8" },
-          { name: "1인실", value: 24, percentage: 8.00, color: "#34d399" },
-          { name: "특수/격리", value: 16, percentage: 5.33, color: "#f43f5e" }
-        ]
-      };
-    }
-
-    const items = [
-      { name: "4인실", value: beds4, percentage: (beds4 / calculatedTotal) * 100, color: "#6366f1" },
-      { name: "2인실", value: beds2, percentage: (beds2 / calculatedTotal) * 100, color: "#38bdf8" },
-      { name: "1인실", value: beds1, percentage: (beds1 / calculatedTotal) * 100, color: "#34d399" },
-      { name: "특수/격리", value: bedsSpecial, percentage: (bedsSpecial / calculatedTotal) * 100, color: "#f43f5e" }
-    ].filter(i => i.value > 0);
-
     return {
-      total: calculatedTotal,
-      items: items
+      totalBedsSum: 300,
+      list: [
+        { label: '4인실', rooms: 58, beds: 232 },
+        { label: '2인실', rooms: 7, beds: 14 },
+        { label: '1인실', rooms: 14, beds: 14 },
+        { label: '임종실', rooms: 2, beds: 2 },
+        { label: '격리4인실', rooms: 4, beds: 16 },
+        { label: '음압격리실', rooms: 7, beds: 7 },
+        { label: '개방(ICU)', rooms: null, beds: 12 },
+        { label: '격리(ICU)', rooms: null, beds: 3 },
+      ]
     };
-  }, [currentStage, values, rooms, departments, floorWardOverrides]);
+  }, []);
 
   // 1. Division area share (latest stage)
   const divisionData = useMemo(() => {
@@ -601,7 +554,7 @@ const Dashboard: React.FC = () => {
             )}
           >
             <Stethoscope size={14} />
-            의료시설 전용면적
+            의료시설 부문 전용 (1~5부문)
           </button>
         </div>
       </div>
@@ -614,28 +567,27 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
           transition={{ type: "spring", stiffness: 350, damping: 25 }}
-          className="bg-white p-5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.015)] border border-slate-100 flex flex-col justify-between relative overflow-hidden group cursor-default"
+          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-indigo-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-indigo-400"
         >
           {/* Subtle gradient glow in bg */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-50/45 transition-colors duration-500" />
           
-          <div className="flex justify-between items-center z-10">
-            <span className="text-slate-500 text-[13.5px] font-bold tracking-tight">전용면적 (Net)</span>
-            <div className="p-2 bg-indigo-50/80 text-indigo-600 rounded-xl border border-indigo-100/30">
-              <LayoutGrid size={16} />
-            </div>
+          <div className="flex justify-between items-center z-10 mb-1">
+            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">전용면적 (Net)</span>
           </div>
-          <div className="mt-5 z-10">
-            <h3 className="text-[26px] font-black text-slate-800 tracking-tight leading-none">
-              {(currentStage?.net || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-bold text-slate-400">㎡</span>
+          <div className="mt-4 z-10">
+            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+              <span>{formatNumberParts(currentStage?.net || 0).integer}</span>
+              <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(currentStage?.net || 0).decimal}</span>
+              <span className="text-[12px] font-black text-slate-400 ml-1">㎡</span>
             </h3>
-            <p className="text-slate-400 text-[11.5px] mt-2 font-medium">
+            <p className="text-slate-400 text-[11px] mt-2.5 font-medium leading-none">
               지침 대비 <span className={cn(
                 "font-black tracking-tight",
                 ((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100 > 0 ? "text-rose-500" : "text-emerald-500"
               )}>
                 {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100) > 0 ? "+" : ""}
-                {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100).toFixed(2)}%
+                {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100).toFixed(1)}%
               </span> 변동
             </p>
           </div>
@@ -647,23 +599,22 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
           whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.015)] border border-slate-100 flex flex-col justify-between relative overflow-hidden group cursor-default"
+          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-blue-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-blue-400"
         >
           {/* Subtle gradient glow in bg */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-blue-50/45 transition-colors duration-500" />
 
-          <div className="flex justify-between items-center z-10">
-            <span className="text-slate-500 text-[13.5px] font-bold tracking-tight">공용면적 (Common)</span>
-            <div className="p-2 bg-blue-50/80 text-blue-600 rounded-xl border border-blue-100/30">
-              <Box size={16} />
-            </div>
+          <div className="flex justify-between items-center z-10 mb-1">
+            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">공용면적 (Common)</span>
           </div>
-          <div className="mt-5 z-10">
-            <h3 className="text-[26px] font-black text-slate-800 tracking-tight leading-none">
-              {calculatedCommonArea.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-bold text-slate-400">㎡</span>
+          <div className="mt-4 z-10">
+            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+              <span>{formatNumberParts(calculatedCommonArea).integer}</span>
+              <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedCommonArea).decimal}</span>
+              <span className="text-[12px] font-black text-slate-400 ml-1">㎡</span>
             </h3>
-            <p className="text-slate-400 text-[11.5px] mt-2 font-medium">
-              전용면적 대비 <span className="font-bold text-indigo-500 tracking-tight">{calculatedCommonToNetRatio.toFixed(2)}%</span>
+            <p className="text-slate-400 text-[11px] mt-2.5 font-medium leading-none">
+              전용면적 대비 <span className="font-bold text-indigo-500 tracking-tight">{calculatedCommonToNetRatio.toFixed(1)}%</span>
             </p>
           </div>
         </motion.div>
@@ -674,23 +625,18 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.015)] border border-slate-100 flex flex-col justify-between relative overflow-hidden group cursor-default"
+          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-emerald-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-emerald-400"
         >
           {/* Subtle gradient glow in bg */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-emerald-50/45 transition-colors duration-500" />
 
-          <div className="flex justify-between items-center z-10">
-            <div className="flex flex-col">
-              <span className="text-slate-500 text-[13.5px] font-bold tracking-tight">G/N 비율</span>
-              <span className="text-[9px] text-slate-400 font-medium">(전용+공용) / 전용</span>
-            </div>
-            <div className="p-2 bg-emerald-50/80 text-emerald-600 rounded-xl border border-emerald-100/30">
-              <Layers size={16} />
-            </div>
+          <div className="flex flex-col items-center justify-center text-center z-10 w-full mb-1">
+            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">G/N 비율</span>
+            <span className="text-[9px] text-slate-400 font-medium mt-0.5">[(허가-주차-옥외) / 전용]</span>
           </div>
-          <div className="mt-3 text-center z-10">
-            <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none mb-1">
-              {(currentStage?.gnRatio || 0).toFixed(2)} <span className="text-[13px] font-bold text-slate-400">배</span>
+          <div className="mt-3.5 text-center z-10 w-full">
+            <h3 className="text-[27px] font-black text-slate-800 tracking-tight leading-none text-center">
+              {(currentStage?.gnRatio || 0).toFixed(2)}
             </h3>
             {/* Embedded 100% Dual Bar representing adjusted Gross vs Net */}
             <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
@@ -701,9 +647,9 @@ const Dashboard: React.FC = () => {
               />
               <div className="h-full bg-emerald-500 transition-all duration-700 ease-out flex-1" title="공합(공용+조정)" />
             </div>
-            <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1.5 leading-none">
-              <span>전용 {((1 / (currentStage?.gnRatio || 1)) * 100).toFixed(2)}%</span>
-              <span>공용 {((1 - (1 / (currentStage?.gnRatio || 1))) * 100).toFixed(2)}%</span>
+            <div className="flex justify-between text-[9px] font-bold text-slate-450 mt-1.5 leading-none">
+              <span>전용 {((1 / (currentStage?.gnRatio || 1)) * 100).toFixed(1)}%</span>
+              <span>공용 {((1 - (1 / (currentStage?.gnRatio || 1))) * 100).toFixed(1)}%</span>
             </div>
           </div>
         </motion.div>
@@ -714,16 +660,13 @@ const Dashboard: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
           whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.015)] border border-slate-100 flex flex-col justify-between relative overflow-hidden group cursor-default"
+          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-violet-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-violet-400"
         >
           {/* Subtle gradient glow in bg */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-violet-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-violet-50/45 transition-colors duration-500" />
 
-          <div className="flex justify-between items-center z-10">
-            <span className="text-slate-500 text-[13.5px] font-bold tracking-tight">단계별 면적 추세</span>
-            <div className="p-2 bg-violet-50/80 text-violet-600 rounded-xl border border-violet-100/30">
-              <TrendingUp size={16} />
-            </div>
+          <div className="flex justify-between items-center z-10 mb-1">
+            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">단계별 면적 추세</span>
           </div>
           <div className="h-[46px] w-full mt-3.5 z-10">
             <ResponsiveContainer width="100%" height="100%">
@@ -764,55 +707,35 @@ const Dashboard: React.FC = () => {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex justify-between text-[10px] text-slate-400 font-bold mt-2 leading-none z-10">
+          <div className="flex justify-between text-[9px] text-slate-400 font-bold mt-2 leading-none z-10">
             <span>{areaByStage[0]?.name || ''}</span>
             <span>{areaByStage[areaByStage.length-1]?.name || ''}</span>
           </div>
         </motion.div>
 
-        {/* KPI 5: 병동부 병상 구성 (List Layout) */}
+        {/* KPI 5: 의료 외 면적 (Non-medical Area) */}
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
-          className="bg-white p-5 rounded-2xl shadow-[0_2px_12px_rgba(0,0,0,0.015)] border border-slate-100 flex flex-col justify-between relative overflow-hidden group cursor-default"
+          className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100/80 hover:border-amber-100 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default border-t-[3px] border-t-amber-400"
         >
           {/* Subtle gradient glow in bg */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-50/45 transition-colors duration-500" />
 
-          <div className="flex justify-between items-center z-10">
-            <span className="text-slate-500 text-[13.5px] font-bold tracking-tight">병동부 병상 구성</span>
-            <div className="p-2 bg-amber-50/80 text-amber-600 rounded-xl border border-amber-100/30">
-              <Hospital size={16} />
-            </div>
+          <div className="flex justify-between items-center z-10 mb-1">
+            <span className="text-slate-500 text-[12.5px] font-black tracking-normal">의료 외 면적</span>
           </div>
-          <div className="mt-3 z-10 flex flex-col">
-          <div className="flex justify-between items-baseline mb-2">
-            <h3 className="text-[20px] font-black text-slate-800 tracking-tight leading-none">
-              총 15 <span className="text-xs font-bold text-slate-400">병상</span>
+          <div className="mt-4 z-10">
+            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+              <span>{formatNumberParts(calculatedNonMedicalArea).integer}</span>
+              <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedNonMedicalArea).decimal}</span>
+              <span className="text-[12px] font-black text-slate-400 ml-1">㎡</span>
             </h3>
-          </div>
-          
-          <div className="space-y-1.5 mt-1">
-            {[
-              { label: '4인실', rooms: 0, beds: 0 },
-              { label: '2인실', rooms: 0, beds: 0 },
-              { label: '1인실', rooms: 0, beds: 0 },
-              { label: '4인실(격리)', rooms: 0, beds: 0 },
-              { label: '1인실(격리)', rooms: 0, beds: 0 },
-              { label: '개방(ICU)', beds: 12 },
-              { label: '격리(ICU)', beds: 3 },
-            ].map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center text-[10.5px]">
-                <span className="text-slate-500 font-bold">{item.label}</span>
-                <div className="flex gap-2">
-                  {'rooms' in item && <span className="text-slate-400 font-medium">{item.rooms}실</span>}
-                  <span className="text-slate-800 font-black">{item.beds}병상</span>
-                </div>
-              </div>
-            ))}
-          </div>
+            <p className="text-slate-400 text-[10px] mt-2.5 font-medium leading-none truncate">
+              주차 <span className="font-bold text-slate-700">{(currentStage?.parking || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span> + 옥외 <span className="font-bold text-slate-700">{(currentStage?.outdoor || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+            </p>
           </div>
         </motion.div>
       </div>
@@ -855,23 +778,25 @@ const Dashboard: React.FC = () => {
             
             <div className="flex flex-col items-center justify-center w-full h-full">
               {/* Centered Circular Chart (Expanded size as requested: 500x400) */}
-              <div className="w-[500px] h-[400px] relative flex-shrink-0 mx-auto flex items-center justify-center z-0">
+              <div className="w-full max-w-[500px] h-[400px] relative flex-shrink-0 mx-auto flex items-center justify-center z-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart 
-                    key={`pie-main-${activeTrendDivId || 'all'}`}
-                    margin={{ top: 20, right: 80, left: 80, bottom: 20 }}
+                    key={`pie-main-chart-${currentStage?.id || 'default'}`}
+                    margin={{ top: 10, right: 35, left: 35, bottom: 10 }}
                     style={{ outline: 'none' }}
                     tabIndex={-1}
                   >
                     <Pie
                       data={divisionData}
-                      innerRadius="55%" 
-                      outerRadius="86%"
+                      innerRadius="50%" 
+                      outerRadius="76%"
+                      startAngle={90}
+                      endAngle={-270}
                       paddingAngle={4}
                       cornerRadius={7} // Rounded edges
                       dataKey="value"
                       isAnimationActive={!isPdfExportMode}
-                      animationDuration={700}
+                      animationDuration={800}
                       animationEasing="ease-out"
                       onClick={(data) => {
                         if (data && data.payload) {
@@ -1034,14 +959,17 @@ const Dashboard: React.FC = () => {
                           animationDuration={450}
                           animationEasing="ease-out"
                         >
-                          {(isActive || !isAnyActive) && (
+                          {isActive && (
                             <LabelList 
                               dataKey={div.name} 
                               position="top" 
                               offset={12} 
                               fontSize={11} 
-                              fill={div.color} 
-                              fontWeight="bold"
+                              fill="#334155" 
+                              fontWeight="black"
+                              stroke="#ffffff"
+                              strokeWidth={3}
+                              paintOrder="stroke"
                               formatter={(v: number) => v > 0 ? (v > 1000 ? `${(v/1000).toFixed(1)}k` : Math.round(v).toString()) : ""}
                             />
                           )}
@@ -1059,10 +987,10 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Trend & Floor Row -> Replaced with Full-Width elegant floor distribution */}
-      <div className="w-full">
-        {/* Floor Distribution - Scaled cleanly to full width */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px] justify-between w-full">
+      {/* Floor & Ward Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 w-full">
+        {/* Floor Distribution - Scaled cleanly to 8/10 width */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px] justify-between lg:col-span-8 col-span-1">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1103,7 +1031,7 @@ const Dashboard: React.FC = () => {
                    key={`bar-floors-${activeTrendDivId || 'all'}`}
                    layout="vertical" 
                    data={floorDivisionData} 
-                   margin={{ top: 5, right: 45, left: -20, bottom: 5 }}
+                   margin={{ top: 5, right: 80, left: -20, bottom: 5 }}
                    className="outline-none"
                    style={{ outline: 'none' }}
                    tabIndex={-1}
@@ -1111,13 +1039,33 @@ const Dashboard: React.FC = () => {
                   >
                     <XAxis type="number" hide />
                     <YAxis 
+                       yAxisId="left"
                        dataKey="name" 
                        type="category" 
                        axisLine={false} 
                        tickLine={false} 
                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
                     />
+                    <YAxis 
+                       yAxisId="right"
+                       orientation="right"
+                       dataKey="name" 
+                       type="category" 
+                       axisLine={false} 
+                       tickLine={false} 
+                       tick={(props) => {
+                          const { x, y, payload } = props;
+                          const floorData = floorDivisionData.find(d => d.name === payload.value);
+                          const total = floorData ? floorData.totalArea : 0;
+                          return (
+                             <text x={x} y={y} dy={4} fill="#64748b" fontSize={9} fontWeight="900" textAnchor="start">
+                                {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}㎡
+                             </text>
+                          );
+                       }}
+                    />
                     <Tooltip 
+                      cursor={false}
                       content={
                         <CustomTooltip 
                           highlightedDivId={activeTrendDivId} 
@@ -1128,7 +1076,6 @@ const Dashboard: React.FC = () => {
                           floors={floors}
                         />
                       } 
-                      cursor={false}
                       wrapperStyle={{ pointerEvents: 'none', transition: 'transform 0.1s ease-out' }}
                     />
                     {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div, i, arr) => {
@@ -1138,6 +1085,7 @@ const Dashboard: React.FC = () => {
                       return (
                         <Bar 
                           key={div.id} 
+                          yAxisId="left"
                           dataKey={div.name} 
                           stackId="a" 
                           fill={div.color || '#cbd5e1'} 
@@ -1157,21 +1105,14 @@ const Dashboard: React.FC = () => {
                             }
                           }}
                           label={(props: any) => {
-                            const { x, y, width, height, value, payload } = props;
-                            if (!value || !payload) return null;
+                            const { x, y, width, height, value } = props;
+                            if (!value || width <= 35) return null;
                             
-                            const isLast = payload.lastDivName === div.name;
-
                             return (
                               <g style={{ pointerEvents: 'none' }}>
-                                {(isActive || isPdfExportMode) && width > 35 && (
+                                {(isActive || isPdfExportMode) && (
                                    <text x={x + width / 2} y={y + height / 2 + 1} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={isPdfExportMode ? 7 : 8} fontWeight="bold">
                                      {Math.round(value).toLocaleString()}
-                                   </text>
-                                )}
-                                {isLast && (
-                                   <text x={x + width + 5} y={y + height / 2 + 1} fill="#64748b" textAnchor="start" dominantBaseline="central" fontSize={9} fontWeight="black" style={{ opacity: (isAnyActive && !isActive && !isPdfExportMode) ? 0.15 : 1, transition: 'opacity 600ms ease' }}>
-                                     {Math.round(payload.totalArea).toLocaleString()}
                                    </text>
                                 )}
                               </g>
@@ -1186,108 +1127,158 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Top Changes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Compared to Guideline */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp size={16} className="text-rose-500" />
-              공모지침 대비 변동 TOP 3
-            </h3>
-            <span className="text-[10px] text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-lg">전용면적 기준</span>
+        {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (2/10 width) */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          whileHover={{ y: -4, scale: 1.015, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)" }}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between lg:col-span-2 col-span-1 relative overflow-hidden group cursor-default h-[400px]"
+          style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
+        >
+          {/* Subtle gradient glow in bg */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/20 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-50/45 transition-colors duration-500" />
+
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Hospital size={18} className="text-amber-500" />
+              <h3 className="text-sm font-black text-slate-800 tracking-tight">병상 구성</h3>
+            </div>
           </div>
           
-          <div className="space-y-6">
-            <div>
-              <p className="text-[11px] font-bold text-rose-500 uppercase tracking-wider mb-3">최대 증가 부서</p>
-              <div className="grid grid-cols-1 gap-2">
-                {guidelineChanges.increased.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-rose-50/50 rounded-xl border border-rose-100 group transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs">{i+1}</div>
-                      <div className="text-sm font-bold text-slate-700">{c.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-bold text-rose-600">+{f(c.diff)} ㎡</div>
-                      <div className="text-[10px] text-slate-400 group-hover:text-rose-400">지침: {f(c.base)} → 현재: {f(c.target)}</div>
-                    </div>
-                  </div>
-                ))}
-                {guidelineChanges.increased.length === 0 && <p className="text-[10px] text-slate-400 italic">증가한 부서가 없습니다.</p>}
-              </div>
+          <div className="mt-2 z-10 flex flex-col flex-1 justify-between">
+            <div className="flex justify-between items-baseline mb-3">
+              <h3 className="text-[20px] font-black text-slate-800 tracking-tight leading-none">
+                총 {wardBedsData.totalBedsSum} <span className="text-xs font-bold text-slate-400">병상</span>
+              </h3>
             </div>
-
-            <div>
-              <p className="text-[11px] font-bold text-emerald-500 uppercase tracking-wider mb-3">최대 감소 부서</p>
-              <div className="grid grid-cols-1 gap-2">
-                {guidelineChanges.decreased.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-emerald-50/50 rounded-xl border border-emerald-100 group transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs">{i+1}</div>
-                      <div className="text-sm font-bold text-slate-700">{c.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-bold text-emerald-600">{f(c.diff)} ㎡</div>
-                      <div className="text-[10px] text-slate-400 group-hover:text-emerald-400">지침: {f(c.base)} → 현재: {f(c.target)}</div>
-                    </div>
+            
+            <div className="space-y-1.5 flex-1 flex flex-col justify-center">
+              {wardBedsData.list.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center text-[11px] border-b border-slate-100/60 pb-1.5 last:border-0 last:pb-0">
+                  <span className="text-slate-500 font-bold">{item.label}</span>
+                  <div className="flex gap-2">
+                    {item.rooms !== null && <span className="text-slate-400 font-medium">{item.rooms}실</span>}
+                    <span className="text-slate-800 font-black">{item.beds}병상</span>
                   </div>
-                ))}
-                {guidelineChanges.decreased.length === 0 && <p className="text-[10px] text-slate-400 italic">감소한 부서가 없습니다.</p>}
-              </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Top Changes Grid - Horizontal 1x4 Layout across 4 columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+        {/* Card 1: 공모지침 대비 최대 증가 */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[12.5px] font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                <TrendingUp size={15} className="text-rose-500" />
+                공모지침 대비 최대 증가
+              </h3>
+              <span className="text-[8.5px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-50 rounded">전용</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 mt-3">
+              {guidelineChanges.increased.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 bg-rose-50/40 rounded-xl border border-rose-100/50 group transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-[10px]">{i+1}</div>
+                    <div className="text-xs font-bold text-slate-700 truncate max-w-[90px]" title={c.name}>{c.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] font-bold text-rose-600">+{f(c.diff)} ㎡</div>
+                    <div className="text-[8px] text-slate-400">지침: {f(c.base)} → {f(c.target)}</div>
+                  </div>
+                </div>
+              ))}
+              {guidelineChanges.increased.length === 0 && <p className="text-[9px] text-slate-400 italic">증가 부서 없음</p>}
             </div>
           </div>
         </div>
 
-        {/* Compared to Intermediate Design */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp size={16} className="text-indigo-500" />
-              중간설계 대비 변동 TOP 3
-            </h3>
-            <span className="text-[10px] text-slate-400 font-medium px-2 py-1 bg-slate-50 rounded-lg">전용면적 기준</span>
-          </div>
-          
-          <div className="space-y-6">
-            <div>
-              <p className="text-[11px] font-bold text-indigo-500 uppercase tracking-wider mb-3">최대 증가 부서</p>
-              <div className="grid grid-cols-1 gap-2">
-                {intermediateChanges.increased.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 group transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">{i+1}</div>
-                      <div className="text-sm font-bold text-slate-700">{c.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-bold text-indigo-600">+{f(c.diff)} ㎡</div>
-                      <div className="text-[10px] text-slate-400 group-hover:text-indigo-400">중간: {f(c.base)} → 현재: {f(c.target)}</div>
-                    </div>
-                  </div>
-                ))}
-                {intermediateChanges.increased.length === 0 && <p className="text-[10px] text-slate-400 italic">증가한 부서가 없습니다.</p>}
-              </div>
+        {/* Card 2: 공모지침 대비 최대 감소 */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[12.5px] font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                <TrendingUp size={15} className="text-emerald-500" />
+                공모지침 대비 최대 감소
+              </h3>
+              <span className="text-[8.5px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-50 rounded">전용</span>
             </div>
-
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3">최대 감소 부서</p>
-              <div className="grid grid-cols-1 gap-2">
-                {intermediateChanges.decreased.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 group transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs">{i+1}</div>
-                      <div className="text-sm font-bold text-slate-700">{c.name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs font-bold text-slate-600">{f(c.diff)} ㎡</div>
-                      <div className="text-[10px] text-slate-400 group-hover:text-amber-600">중간: {f(c.base)} → 현재: {f(c.target)}</div>
-                    </div>
+            <div className="grid grid-cols-1 gap-2 mt-3">
+              {guidelineChanges.decreased.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 bg-emerald-50/40 rounded-xl border border-emerald-100/50 group transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-[10px]">{i+1}</div>
+                    <div className="text-xs font-bold text-slate-700 truncate max-w-[90px]" title={c.name}>{c.name}</div>
                   </div>
-                ))}
-                {intermediateChanges.decreased.length === 0 && <p className="text-[10px] text-slate-400 italic">감소한 부서가 없습니다.</p>}
-              </div>
+                  <div className="text-right">
+                    <div className="text-[11px] font-bold text-emerald-600">{f(c.diff)} ㎡</div>
+                    <div className="text-[8px] text-slate-400">지침: {f(c.base)} → {f(c.target)}</div>
+                  </div>
+                </div>
+              ))}
+              {guidelineChanges.decreased.length === 0 && <p className="text-[9px] text-slate-400 italic">감소 부서 없음</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: 중간설계 대비 최대 증가 */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[12.5px] font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                <TrendingUp size={15} className="text-indigo-505 text-indigo-600" />
+                중간설계 대비 최대 증가
+              </h3>
+              <span className="text-[8.5px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-50 rounded">전용</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 mt-3">
+              {intermediateChanges.increased.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 bg-indigo-50/40 rounded-xl border border-indigo-100/50 group transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">{i+1}</div>
+                    <div className="text-xs font-bold text-slate-700 truncate max-w-[90px]" title={c.name}>{c.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] font-bold text-indigo-600">+{f(c.diff)} ㎡</div>
+                    <div className="text-[8px] text-slate-400">중간: {f(c.base)} → {f(c.target)}</div>
+                  </div>
+                </div>
+              ))}
+              {intermediateChanges.increased.length === 0 && <p className="text-[9px] text-slate-400 italic">증가 부서 없음</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: 중간설계 대비 최대 감소 */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[12.5px] font-black text-slate-800 flex items-center gap-1.5 leading-none">
+                <TrendingUp size={15} className="text-slate-505 text-slate-600" />
+                중간설계 대비 최대 감소
+              </h3>
+              <span className="text-[8.5px] text-slate-400 font-medium px-1.5 py-0.5 bg-slate-50 rounded">전용</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 mt-3">
+              {intermediateChanges.decreased.map((c, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-200 group transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-slate-105 bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px]">{i+1}</div>
+                    <div className="text-xs font-bold text-slate-700 truncate max-w-[90px]" title={c.name}>{c.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] font-bold text-slate-600">{f(c.diff)} ㎡</div>
+                    <div className="text-[8px] text-slate-400">중간: {f(c.base)} → {f(c.target)}</div>
+                  </div>
+                </div>
+              ))}
+              {intermediateChanges.decreased.length === 0 && <p className="text-[9px] text-slate-400 italic">감소 부서 없음</p>}
             </div>
           </div>
         </div>
@@ -1313,6 +1304,7 @@ const Dashboard: React.FC = () => {
                           dataKey="value"
                           isAnimationActive={!isPdfExportMode}
                           animationDuration={450}
+                          animationBegin={0}
                           label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                           labelLine={false}
                         >

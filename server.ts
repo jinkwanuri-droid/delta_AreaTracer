@@ -8,9 +8,17 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const getSupabase = () => {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  if (!url || !key) {
+    if (process.env.NODE_ENV === "production") {
+      console.warn("SUPABASE CONFIG MISSING: Please set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel.");
+    }
+    return null;
+  }
+  return createClient(url, key);
+};
 
 async function startServer() {
   const app = express();
@@ -21,55 +29,98 @@ async function startServer() {
   // Global Settings Persistence API (using Supabase)
   app.get("/api/global-settings", async (req, res) => {
     try {
+      console.log("Fetching global settings from Supabase tables: app_config, dept_notes, room_notes");
+      
+      const supabase = getSupabase();
+      if (!supabase) {
+        console.warn("Supabase configuration missing in environment variables.");
+        return res.status(503).json({ 
+          error: "Supabase configuration missing", 
+          details: "VITE_SUPABASE_URL or keys are not set in environment variables." 
+        });
+      }
+
       // Fetch core config
-      const { data: configData } = await supabase
+      const { data: configData, error: configError } = await supabase
         .from("app_config")
         .select("*");
       
+      if (configError) {
+        console.error("Supabase app_config fetch error:", configError);
+        throw configError;
+      }
+
       const config: any = {};
       configData?.forEach(item => {
-        config[item.key] = item.value;
+        let val = item.value;
+        if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+          try {
+            val = JSON.parse(val);
+          } catch (e) {
+            // Keep as string if not valid JSON
+          }
+        }
+        config[item.key] = val;
       });
 
       // Fetch dept notes
-      const { data: deptNotesData } = await supabase
+      const { data: deptNotesData, error: deptError } = await supabase
         .from("dept_notes")
         .select("*");
       
+      if (deptError) {
+        console.error("Supabase dept_notes fetch error:", deptError);
+      }
+
       const deptNotes: Record<string, string> = {};
-      deptNotesData?.forEach(item => {
-        deptNotes[item.dept_no] = item.content;
+      deptNotesData?.forEach((item: any) => {
+        const key = item.dept_no || item.dept_id || item.id;
+        if (key) deptNotes[key] = item.content;
       });
 
       // Fetch room notes
-      const { data: roomNotesData } = await supabase
+      const { data: roomNotesData, error: roomError } = await supabase
         .from("room_notes")
         .select("*");
       
+      if (roomError) {
+        console.error("Supabase room_notes fetch error:", roomError);
+      }
+
       const roomNotes: Record<string, string> = {};
-      roomNotesData?.forEach(item => {
-        roomNotes[item.room_no] = item.content;
+      roomNotesData?.forEach((item: any) => {
+        const key = item.room_no || item.room_id || item.id;
+        if (key) roomNotes[key] = item.content;
       });
 
-      // Combine into the expected structure for useAppStore
       const result = {
         ...config,
         departmentNotes: deptNotes,
         roomNotes: roomNotes
       };
 
+      console.log(`Successfully fetched settings. Config keys: ${Object.keys(config).length}, Dept Notes: ${Object.keys(deptNotes).length}, Room Notes: ${Object.keys(roomNotes).length}`);
       res.json(result);
-    } catch (error) {
-      console.error("Error reading settings from Supabase:", error);
-      res.status(500).json({ error: "Failed to read settings" });
+    } catch (error: any) {
+      console.error("Critical error in /api/global-settings GET:", error.message || error);
+      res.status(500).json({ 
+        error: "Failed to read settings from Supabase", 
+        details: error.message || "Unknown error" 
+      });
     }
   });
 
   app.post("/api/global-settings", async (req, res) => {
     try {
       const settings = req.body;
+      console.log("Saving global settings to Supabase...");
+
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error("Supabase URL or Key is missing in environment variables.");
+      }
       
-      // 1. Save core config (excluding large notes records)
+      // 1. Save core config
       const { departmentNotes, roomNotes, ...coreConfig } = settings;
       
       const configEntries = Object.entries(coreConfig).map(([key, value]) => ({
@@ -78,7 +129,8 @@ async function startServer() {
       }));
 
       if (configEntries.length > 0) {
-        await supabase.from("app_config").upsert(configEntries);
+        const { error: configErr } = await supabase.from("app_config").upsert(configEntries);
+        if (configErr) throw configErr;
       }
 
       // 2. Save dept notes
@@ -88,7 +140,8 @@ async function startServer() {
           content: content as string
         }));
         if (deptEntries.length > 0) {
-          await supabase.from("dept_notes").upsert(deptEntries);
+          const { error: deptErr } = await supabase.from("dept_notes").upsert(deptEntries);
+          if (deptErr) throw deptErr;
         }
       }
 
@@ -99,14 +152,19 @@ async function startServer() {
           content: content as string
         }));
         if (roomEntries.length > 0) {
-          await supabase.from("room_notes").upsert(roomEntries);
+          const { error: roomErr } = await supabase.from("room_notes").upsert(roomEntries);
+          if (roomErr) throw roomErr;
         }
       }
 
+      console.log("Successfully saved global settings to Supabase.");
       res.json({ success: true });
-    } catch (error) {
-      console.error("Error saving settings to Supabase:", error);
-      res.status(500).json({ error: "Failed to save settings" });
+    } catch (error: any) {
+      console.error("Critical error in /api/global-settings POST:", error.message || error);
+      res.status(500).json({ 
+        error: "Failed to save settings to Supabase",
+        details: error.message || "Unknown error"
+      });
     }
   });
 
