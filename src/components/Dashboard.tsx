@@ -101,8 +101,8 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
     const value = Number(entry.value) || 0;
     const pTotal = pieTotal || React.Children.toArray(validPayload).reduce((acc: any, val: any) => acc + val.value, 0); 
     const percentageText = pTotal > 0 
-      ? `(${((value / pTotal) * 100).toFixed(1)}%)` 
-      : (entry.payload?.percent ? `(${(entry.payload.percent * 100).toFixed(1)}%)` : '');
+      ? `(${((value / pTotal) * 100).toFixed(2)}%)` 
+      : (entry.payload?.percent ? `(${(entry.payload.percent * 100).toFixed(2)}%)` : '');
     
     return (
       <div 
@@ -156,7 +156,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
           
           let percentageText = '';
           if (showSummarySum && currentTotal > 0) {
-            percentageText = ` (${((value / currentTotal) * 100).toFixed(1)}%)`;
+            percentageText = ` (${((value / currentTotal) * 100).toFixed(2)}%)`;
           }
 
           return (
@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
           .filter(v => roomsInFloorDept.some(r => r.id === v.roomId))
           .reduce((sum, v) => sum + (v.unitArea * v.quantity), 0);
         if (area > 0) {
-          row[dept.name] = Number(area.toFixed(1));
+          row[dept.name] = Number(area.toFixed(2));
         }
       });
       return row;
@@ -297,20 +297,37 @@ const Dashboard: React.FC = () => {
       const finalGross = grossTotal || floorAreas['_TOTAL_'] || 0;
       
       // GN Ratio = (Gross - Parking - Outdoor) / Net
-      // We keep it as a ratio (e.g. 1.5) or percentage as requested? 
-      // The previous one was (net/gross)*100.
-      // Usually "Gross to Net ratio" is Gross/Net. 
-      // User formula: (건축허가면적-주차장면적-옥외공용면적)/전용면적
+      // User requested: Excude Parking/Outdoor from both when medical filter is on
       const adjustedGross = finalGross - parkingArea - outdoorArea;
-      const gnRatio = netTotal > 0 ? (adjustedGross / netTotal) : 0;
+      
+      // Calculate overall total net for proportional distribution of common area
+      const totalNetAll = stageValues.reduce((sum, v) => sum + (v.unitArea * v.quantity), 0);
+      const overallCommon = adjustedGross - totalNetAll;
+      
+      let common = 0;
+      let displayGross = adjustedGross;
+
+      if (medicalOnly) {
+        // Proportional distribution of common area for medical divisions
+        const medicalNetRatio = totalNetAll > 0 ? (netTotal / totalNetAll) : 0;
+        common = overallCommon * medicalNetRatio;
+        displayGross = netTotal + common;
+      } else {
+        common = overallCommon;
+        displayGross = adjustedGross;
+      }
+      
+      const gnRatio = netTotal > 0 ? (displayGross / netTotal) : 0;
       
       return {
         id: stage.id,
         name: stage.name,
         net: netTotal,
         gross: finalGross,
+        adjustedGross: displayGross, // Using the adjusted one for display/KPIs
         parking: parkingArea,
         outdoor: outdoorArea,
+        common: common,
         gnRatio: gnRatio
       };
     });
@@ -335,7 +352,7 @@ const Dashboard: React.FC = () => {
   // Combined statistics for Net, Gross, Common Area
   const calculatedCommonArea = useMemo(() => {
     if (!currentStage) return 0;
-    return Math.max(0, (currentStage.gross || 0) - (currentStage.net || 0));
+    return currentStage.common || 0;
   }, [currentStage]);
 
   const calculatedCommonToNetRatio = useMemo(() => {
@@ -584,7 +601,7 @@ const Dashboard: React.FC = () => {
             )}
           >
             <Stethoscope size={14} />
-            의료시설 부문 전용 (1~5부문)
+            의료시설 전용면적
           </button>
         </div>
       </div>
@@ -610,7 +627,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="mt-5 z-10">
             <h3 className="text-[26px] font-black text-slate-800 tracking-tight leading-none">
-              {Math.round(currentStage?.net || 0).toLocaleString()} <span className="text-sm font-bold text-slate-400">㎡</span>
+              {(currentStage?.net || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-bold text-slate-400">㎡</span>
             </h3>
             <p className="text-slate-400 text-[11.5px] mt-2 font-medium">
               지침 대비 <span className={cn(
@@ -618,7 +635,7 @@ const Dashboard: React.FC = () => {
                 ((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100 > 0 ? "text-rose-500" : "text-emerald-500"
               )}>
                 {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100) > 0 ? "+" : ""}
-                {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100).toFixed(1)}%
+                {(((currentStage?.net || 0) / (baseStage?.net || 1) * 100) - 100).toFixed(2)}%
               </span> 변동
             </p>
           </div>
@@ -643,10 +660,10 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="mt-5 z-10">
             <h3 className="text-[26px] font-black text-slate-800 tracking-tight leading-none">
-              {Math.round(calculatedCommonArea).toLocaleString()} <span className="text-sm font-bold text-slate-400">㎡</span>
+              {calculatedCommonArea.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-sm font-bold text-slate-400">㎡</span>
             </h3>
             <p className="text-slate-400 text-[11.5px] mt-2 font-medium">
-              전용면적 대비 <span className="font-bold text-indigo-500 tracking-tight">{calculatedCommonToNetRatio.toFixed(1)}%</span>
+              전용면적 대비 <span className="font-bold text-indigo-500 tracking-tight">{calculatedCommonToNetRatio.toFixed(2)}%</span>
             </p>
           </div>
         </motion.div>
@@ -665,7 +682,7 @@ const Dashboard: React.FC = () => {
           <div className="flex justify-between items-center z-10">
             <div className="flex flex-col">
               <span className="text-slate-500 text-[13.5px] font-bold tracking-tight">G/N 비율</span>
-              <span className="text-[9px] text-slate-400 font-medium">[(허가-주차-옥외) / 전용]</span>
+              <span className="text-[9px] text-slate-400 font-medium">(전용+공용) / 전용</span>
             </div>
             <div className="p-2 bg-emerald-50/80 text-emerald-600 rounded-xl border border-emerald-100/30">
               <Layers size={16} />
@@ -685,8 +702,8 @@ const Dashboard: React.FC = () => {
               <div className="h-full bg-emerald-500 transition-all duration-700 ease-out flex-1" title="공합(공용+조정)" />
             </div>
             <div className="flex justify-between text-[10px] font-bold text-slate-400 mt-1.5 leading-none">
-              <span>전용 {((1 / (currentStage?.gnRatio || 1)) * 100).toFixed(1)}%</span>
-              <span>공용 {((1 - (1 / (currentStage?.gnRatio || 1))) * 100).toFixed(1)}%</span>
+              <span>전용 {((1 / (currentStage?.gnRatio || 1)) * 100).toFixed(2)}%</span>
+              <span>공용 {((1 - (1 / (currentStage?.gnRatio || 1))) * 100).toFixed(2)}%</span>
             </div>
           </div>
         </motion.div>
@@ -753,7 +770,7 @@ const Dashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* KPI 5: 병동부 병상 구성 (100% 4색 막대차트) */}
+        {/* KPI 5: 병동부 병상 구성 (List Layout) */}
         <motion.div 
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -770,33 +787,32 @@ const Dashboard: React.FC = () => {
               <Hospital size={16} />
             </div>
           </div>
-          <div className="mt-3 text-center z-10">
-            <h3 className="text-[25px] font-black text-slate-800 tracking-tight leading-none mb-1">
-              총 {wardBedsData.total} <span className="text-sm font-bold text-slate-400">병상</span>
+          <div className="mt-3 z-10 flex flex-col">
+          <div className="flex justify-between items-baseline mb-2">
+            <h3 className="text-[20px] font-black text-slate-800 tracking-tight leading-none">
+              총 15 <span className="text-xs font-bold text-slate-400">병상</span>
             </h3>
-            {/* Embedded 100% Quad Stacked Horizontal Bar */}
-            <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
-              {wardBedsData.items.map((item, idx) => (
-                <div 
-                  key={idx} 
-                  className="h-full transition-all duration-500" 
-                  style={{ 
-                     width: `${item.percentage}%`, 
-                     backgroundColor: item.color 
-                  }} 
-                  title={`${item.name}: ${item.value}석 (${item.percentage.toFixed(1)}%)`} 
-                />
-              ))}
-            </div>
-            {/* Mini Legend Row */}
-            <div className="flex justify-between text-[9px] font-bold mt-2.5 leading-none">
-              {wardBedsData.items.map((item, idx) => (
-                <div key={idx} className="flex flex-col items-center">
-                  <span className="text-slate-400 truncate max-w-[34px]">{item.name}</span>
-                  <span className="mt-0.5" style={{ color: item.color }}>{Math.round(item.value)}석</span>
+          </div>
+          
+          <div className="space-y-1.5 mt-1">
+            {[
+              { label: '4인실', rooms: 0, beds: 0 },
+              { label: '2인실', rooms: 0, beds: 0 },
+              { label: '1인실', rooms: 0, beds: 0 },
+              { label: '4인실(격리)', rooms: 0, beds: 0 },
+              { label: '1인실(격리)', rooms: 0, beds: 0 },
+              { label: '개방(ICU)', beds: 12 },
+              { label: '격리(ICU)', beds: 3 },
+            ].map((item, idx) => (
+              <div key={idx} className="flex justify-between items-center text-[10.5px]">
+                <span className="text-slate-500 font-bold">{item.label}</span>
+                <div className="flex gap-2">
+                  {'rooms' in item && <span className="text-slate-400 font-medium">{item.rooms}실</span>}
+                  <span className="text-slate-800 font-black">{item.beds}병상</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           </div>
         </motion.div>
       </div>
@@ -804,26 +820,53 @@ const Dashboard: React.FC = () => {
       {/* Main Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Division share donut - Takes 2/5 (40%) width */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-2 min-h-[460px] flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-2 min-h-[340px] flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
           <div className="flex flex-col h-full justify-between">
-            <div className="flex items-center gap-2 mb-6">
-              <PieChartIcon size={18} className="text-indigo-500" />
-              <h3 className="text-sm font-black text-slate-800 tracking-tight">부문별 면적 비중 <span className="text-[10px] text-slate-400 font-bold italic">(의료시설 전용)</span></h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <PieChartIcon size={18} className="text-indigo-500" />
+                <h3 className="text-sm font-black text-slate-800 tracking-tight">부문별 면적 비중</h3>
+              </div>
+              
+              {/* Top-Right Capsule Legend - Expanded width */}
+              <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide flex-1 justify-end ml-4">
+                {divisionData.map((d, i) => {
+                  const isActive = activeTrendDivId === d.id;
+                  return (
+                    <motion.button 
+                      key={i} 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActiveTrendDivId(isActive ? null : d.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-200 flex-shrink-0",
+                        isActive 
+                          ? "bg-indigo-500 border-indigo-500 text-white shadow-sm ring-2 ring-indigo-100 font-bold" 
+                          : "bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 font-medium"
+                      )}
+                    >
+                      <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
+                      <span className="text-[9px] whitespace-nowrap">{d.name}</span>
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
             
             <div className="flex flex-col items-center justify-center w-full h-full">
-              {/* Centered Circular Chart (150% scaled thick donut with rounded corners) */}
-              <div className="w-[280px] h-[280px] sm:w-[310px] sm:h-[310px] md:w-[330px] md:h-[330px] relative flex-shrink-0 mx-auto flex items-center justify-center z-0">
+              {/* Centered Circular Chart (Expanded size as requested: 500x400) */}
+              <div className="w-[500px] h-[400px] relative flex-shrink-0 mx-auto flex items-center justify-center z-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart 
                     key={`pie-main-${activeTrendDivId || 'all'}`}
+                    margin={{ top: 20, right: 80, left: 80, bottom: 20 }}
                     style={{ outline: 'none' }}
                     tabIndex={-1}
                   >
                     <Pie
                       data={divisionData}
-                      innerRadius="50%" // Thicker wheel
-                      outerRadius="82%"
+                      innerRadius="55%" 
+                      outerRadius="86%"
                       paddingAngle={4}
                       cornerRadius={7} // Rounded edges
                       dataKey="value"
@@ -841,8 +884,24 @@ const Dashboard: React.FC = () => {
                         }
                       }}
                       cursor="pointer"
-                      labelLine={true}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                      labelLine={false}
+                      label={({ x, y, cx, cy, name, percent, value }) => (
+                        <text 
+                          x={x} 
+                          y={y} 
+                          fill="#1e293b" 
+                          textAnchor={x > cx ? 'start' : 'end'} 
+                          dominantBaseline="central" 
+                          fontSize={11.5} 
+                          fontWeight="bold"
+                          style={{ fontFamily: '"Pretendard Variable", sans-serif' }}
+                        >
+                          <tspan x={x} dy="-0.6em">{name}</tspan>
+                          <tspan x={x} dy="1.3em" fill="#64748b" fontSize={10.5} fontWeight="medium">
+                            {value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}㎡ ({(percent * 100).toFixed(2)}%)
+                          </tspan>
+                        </text>
+                      )}
                     >
                       {divisionData.map((entry, index) => {
                         const isAnyActive = activeTrendDivId !== null;
@@ -870,54 +929,18 @@ const Dashboard: React.FC = () => {
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
                   <span className="text-[11px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
                   <span className="text-2xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
-                    {Math.round(currentStage?.net || 0).toLocaleString()}
+                    {(currentStage?.net || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 mt-1">㎡</span>
                 </div>
               </div>
 
-              {/* Bottom: Custom Legend (캡슐형 디자인, activeTrendDivId 와 연동, 한 줄 레이아웃) */}
-              <div className="flex flex-nowrap overflow-x-auto pb-1.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] items-center justify-start sm:justify-center gap-2 mt-6 w-full max-w-md mx-auto px-2">
-                {divisionData.map((d, i) => {
-                  const isActive = activeTrendDivId === d.id;
-                  return (
-                    <motion.div 
-                      key={i} 
-                      whileHover={{ scale: 1.04, y: -0.5 }}
-                      whileTap={{ scale: 0.96 }}
-                      layout
-                      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                      onClick={() => {
-                        if (activeTrendDivId === d.id) {
-                          setActiveTrendDivId(null);
-                        } else {
-                          setActiveTrendDivId(d.id);
-                        }
-                      }}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer select-none flex-shrink-0",
-                        isActive 
-                          ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-md font-extrabold ring-1 ring-indigo-100" 
-                          : "bg-slate-100/80 hover:bg-slate-100 border-slate-200/50 text-slate-600 font-bold"
-                      )}
-                    >
-                      <motion.div 
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: d.color }}
-                        animate={{ scale: isActive ? 1.25 : 1.0 }}
-                      />
-                      <span className="text-[11px] leading-none whitespace-nowrap">
-                        {d.name}
-                      </span>
-                    </motion.div>
-                  );
-                })}
-              </div>
+              {/* Legend moved to header */}
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-3 min-h-[420px] flex flex-col justify-between">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 col-span-1 lg:col-span-3 min-h-[340px] flex flex-col justify-between">
           <div className="flex flex-col h-full justify-between">
             <div>
               <div className="flex items-center justify-between mb-6">
@@ -925,13 +948,37 @@ const Dashboard: React.FC = () => {
                   <BarChart3 size={18} className="text-emerald-500" />
                   <h3 className="text-sm font-bold text-slate-800">단계별 부문별 면적 추이</h3>
                 </div>
+
+                {/* Top-Right Capsule Legend for Trends - Expanded width */}
+                <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide flex-1 justify-end ml-4">
+                  {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((d, i) => {
+                    const isActive = activeTrendDivId === d.id;
+                    return (
+                      <motion.button 
+                        key={i}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setActiveTrendDivId(isActive ? null : d.id)}
+                        className={cn(
+                          "flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-200 flex-shrink-0",
+                          isActive 
+                            ? "bg-indigo-500 border-indigo-500 text-white shadow-sm ring-2 ring-indigo-100 font-bold" 
+                            : "bg-slate-50 border-slate-200 text-slate-500 hover:border-indigo-300 font-medium"
+                        )}
+                      >
+                        <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
+                        <span className="text-[9px] whitespace-nowrap">{d.name}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="h-[260px] w-full">
+              <div className="h-[300px] sm:h-[330px] md:h-[360px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart 
                     key={`area-trends-${activeTrendDivId || 'all'}`}
                     data={stageDivisionData} 
-                    margin={{ top: 10, right: 20, left: -20, bottom: 2 }}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 2 }}
                     style={{ outline: 'none' }}
                     tabIndex={-1}
                   >
@@ -946,16 +993,19 @@ const Dashboard: React.FC = () => {
                     <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
                     <XAxis 
                       dataKey="name" 
-                      axisLine={false} 
+                      axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
                       tickLine={false} 
                       tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
                       dy={10}
+                      padding={{ left: 20, right: 20 }}
                     />
                     <YAxis 
-                      axisLine={false} 
+                      axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
                       tickLine={false} 
                       tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}
                       tickFormatter={(v) => `${(v/1000).toFixed(1)}k`}
+                      width={50}
+                      padding={{ top: 20, bottom: 0 }}
                     />
                     <Tooltip 
                       content={<CustomTooltip />} 
@@ -988,9 +1038,10 @@ const Dashboard: React.FC = () => {
                             <LabelList 
                               dataKey={div.name} 
                               position="top" 
-                              offset={10} 
-                              fontSize={10} 
+                              offset={12} 
+                              fontSize={11} 
                               fill={div.color} 
+                              fontWeight="bold"
                               formatter={(v: number) => v > 0 ? (v > 1000 ? `${(v/1000).toFixed(1)}k` : Math.round(v).toString()) : ""}
                             />
                           )}
@@ -1003,41 +1054,7 @@ const Dashboard: React.FC = () => {
             </div>
 
 
-            {/* Stage Comparison Capsule Legend at the bottom */}
-            <div className="flex flex-nowrap overflow-x-auto pb-1.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] items-center justify-start sm:justify-center gap-2 mt-4 w-full px-2">
-              {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((d, i) => {
-                const isActive = activeTrendDivId === d.id;
-                return (
-                  <motion.div 
-                    key={i}
-                    whileHover={{ scale: 1.04, y: -0.5 }}
-                    whileTap={{ scale: 0.96 }}
-                    layout
-                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                    onClick={() => {
-                      if (activeTrendDivId === d.id) {
-                        setActiveTrendDivId(null);
-                      } else {
-                        setActiveTrendDivId(d.id);
-                      }
-                    }}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all duration-300 cursor-pointer select-none flex-shrink-0",
-                      isActive 
-                        ? "bg-indigo-50 border-indigo-200 text-indigo-700 shadow-md font-extrabold ring-1 ring-indigo-100" 
-                        : "bg-slate-100/80 hover:bg-slate-100 border-slate-200/50 text-slate-600 font-bold"
-                    )}
-                  >
-                    <motion.div 
-                      className="w-2 h-2 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: d.color }} 
-                      animate={{ scale: isActive ? 1.25 : 1.0 }}
-                    />
-                    <span className="text-[11px] leading-none whitespace-nowrap">{d.name}</span>
-                  </motion.div>
-                );
-              })}
-            </div>
+            {/* Legend moved to header */}
           </div>
         </div>
       </div>
@@ -1080,7 +1097,7 @@ const Dashboard: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className="h-[290px] w-full">
+            <div className="h-[310px] w-full">
                <ResponsiveContainer width="100%" height="100%">
                  <BarChart 
                    key={`bar-floors-${activeTrendDivId || 'all'}`}
@@ -1090,6 +1107,7 @@ const Dashboard: React.FC = () => {
                    className="outline-none"
                    style={{ outline: 'none' }}
                    tabIndex={-1}
+                   barCategoryGap={10}
                   >
                     <XAxis type="number" hide />
                     <YAxis 
@@ -1123,8 +1141,10 @@ const Dashboard: React.FC = () => {
                           dataKey={div.name} 
                           stackId="a" 
                           fill={div.color || '#cbd5e1'} 
-                          radius={i === (arr.length - 1) ? [0, 5, 5, 0] : [0, 0, 0, 0]}
-                          barSize={18} 
+                          stroke="#ffffff"
+                          strokeWidth={1.5}
+                          radius={[6, 6, 6, 6]} 
+                          barSize={24} 
                           isAnimationActive={!isPdfExportMode}
                           animationDuration={800}
                           animationEasing="ease-in-out"
