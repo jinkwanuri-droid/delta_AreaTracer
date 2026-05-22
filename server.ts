@@ -206,6 +206,31 @@ async function startServer() {
     }
   });
 
+  app.get("/api/keep-awake", async (req, res) => {
+    try {
+      const supabase = getSupabase();
+      if (!supabase) {
+        throw new Error("Supabase URL or Key is missing in environment variables.");
+      }
+      
+      const { error } = await supabase
+        .from('app_config')
+        .select('*')
+        .limit(1);
+
+      res.json({
+        ok: !error,
+        timestamp: Date.now()
+      });
+
+    } catch (err) {
+      res.status(500).json({
+        ok: false,
+        error: String(err)
+      });
+    }
+  });
+
   // Mock Data
   const mockProject = { id: "p1", name: "경상남도 서부의료원" };
   const mockStages = [
