@@ -224,7 +224,7 @@ export const useAppStore = create<AppState>()(
       roomNotes: {},
       departmentNotes: {},
       visibleStageIds: [],
-      comparison: { baseId: null, targetId: null },
+      comparison: { baseId: 's3', targetId: 's5' },
       activeTab: "detail",
       activeFloorId: "all",
       isPdfExportMode: false,
@@ -233,7 +233,33 @@ export const useAppStore = create<AppState>()(
       snapshots: [],
       medicalOnly: true,
       isLoading: false,
-      spreadsheetId: null,
+      spreadsheetId: "11lc8nzfAQipvNRKNsYsctEL_aQKk75Feer3rXZNRXiU",
+      stages: [
+        { id: "s1", name: "공모지침", code: "A", order: 0, isTotalAreaOnly: true },
+        { id: "s2", name: "계획설계", code: "B", order: 1 },
+        { id: "s3", name: "중간설계", code: "C", order: 2 },
+        { id: "s4", name: "인허가", code: "D", order: 3 },
+        { id: "s5", name: "실시설계90", code: "E", order: 4 },
+      ],
+      floors: [
+        { id: "7F", name: "7F", order: 0 },
+        { id: "6F", name: "6F", order: 1 },
+        { id: "5F", name: "5F", order: 2 },
+        { id: "4F", name: "4F", order: 3 },
+        { id: "3F", name: "3F", order: 4 },
+        { id: "2F", name: "2F", order: 5 },
+        { id: "1F", name: "1F", order: 6 },
+        { id: "B1", name: "B1", order: 7 },
+      ],
+      divisions: [
+        { id: "1", name: "병동부", color: "#B695E2", order: 0 },
+        { id: "2", name: "외래진료부", color: "#E29595", order: 1 },
+        { id: "3", name: "중앙진료부", color: "#E2D795", order: 2 },
+        { id: "4", name: "공급부", color: "#95E2B6", order: 3 },
+        { id: "5", name: "관리행정부", color: "#95B6E2", order: 4 },
+        { id: "O", name: "부문 O", color: "#B0B0B0", order: 5 },
+        { id: "P", name: "부문 P", color: "#B0B0B0", order: 6 },
+      ],
       floorWardOverrides: {},
       fetchGlobalSettings: async () => {
         try {
@@ -719,6 +745,9 @@ export const useAppStore = create<AppState>()(
             },
             activeFloorId: "all",
           });
+
+          // Persist the sheet-derived schema to Supabase for stability across refreshes
+          setTimeout(() => get().saveGlobalSettings().catch(console.error), 100);
         } catch (e: any) {
           if (e?.message?.includes("구글 스프레드시트")) {
             set({ spreadsheetId: null, isLoading: false });
