@@ -1653,39 +1653,56 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
   const targetId = comparison.targetId || stages[stages.length - 1]?.id;
 
   return (
-    <div className="overflow-x-auto w-full border border-slate-200 rounded-md">
-      <table className="w-full text-slate-800 border-collapse table-fixed text-[10px]">
+    <div className="overflow-x-auto w-full border border-slate-200 rounded-md print:border-none">
+      <table className="w-full text-slate-800 border-collapse table-fixed text-[10px]" style={{ width: '987px', minWidth: '987px' }}>
+        <colgroup>
+          <col style={{ width: '42px' }} />
+          <col style={{ width: '160px' }} />
+          {stages.map((s) => (
+            <React.Fragment key={s.id}>
+              <col style={{ width: '38px' }} />
+              <col style={{ width: '24px' }} />
+              <col style={{ width: '48px' }} />
+            </React.Fragment>
+          ))}
+          <col style={{ width: '55px' }} />
+          <col style={{ width: '180px' }} />
+        </colgroup>
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200">
-            <th className="py-2 px-2 text-center font-extrabold text-slate-800 w-[60px] text-[11px]">NO.</th>
-            <th className="py-2 px-3 text-left font-extrabold text-slate-800 w-[200px] text-[11px]">ROOM NAME</th>
-            {stages.map((s) => {
-              const isLast = s.id === targetId;
-              return (
-                <React.Fragment key={s.id}>
-                  <th className="py-1.5 px-1 text-right font-bold text-slate-700 bg-slate-50/50 w-[58px] border-l border-slate-200 text-[10px]">{s.name} (Net)</th>
-                  <th className="py-1.5 px-1 text-center font-bold text-slate-700 bg-slate-50/50 w-[36px] text-[10px]">Qty</th>
-                  <th className="py-1.5 px-2 text-right font-extrabold text-slate-800 w-[75px] border-r border-slate-200 text-[10px]">Total</th>
-                </React.Fragment>
-              );
-            })}
-            <th className="py-2 px-2 text-right font-extrabold text-slate-800 w-[75px] text-[11px]">증감</th>
-            <th className="py-2 px-3 text-left font-extrabold text-slate-800 w-[130px] border-l border-slate-200 text-[11px] col-note-print">NOTE</th>
+          <tr className="bg-slate-100 border-b border-slate-350">
+            <th rowSpan={2} className="py-2 px-1 text-center font-extrabold text-slate-800 text-[10px]">NO.</th>
+            <th rowSpan={2} className="py-2 px-2 text-left font-extrabold text-slate-800 text-[10px]">ROOM NAME</th>
+            {stages.map((s) => (
+              <th key={s.id} colSpan={3} className="py-1 px-1 text-center font-extrabold text-slate-700 border-l border-b border-slate-200 text-[9.5px]">
+                {s.name}
+              </th>
+            ))}
+            <th rowSpan={2} className="py-2 px-1 text-right font-extrabold text-slate-800 border-l border-slate-300 text-[10px]">증감</th>
+            <th rowSpan={2} className="py-2 px-2 text-left font-extrabold text-slate-800 border-l border-slate-300 text-[10px] col-note-print">NOTE</th>
+          </tr>
+          <tr className="bg-slate-50 border-b border-slate-300">
+            {stages.map((s) => (
+              <React.Fragment key={`${s.id}-sub`}>
+                <th className="py-1 px-1 text-right font-bold text-slate-500 border-l border-slate-200 text-[8.5px]">Net</th>
+                <th className="py-1 px-1 text-center font-bold text-slate-500 border-l border-slate-200 text-[8.5px]">Qty</th>
+                <th className="py-1 px-1 text-right font-extrabold text-slate-700 border-l border-slate-200 text-[8.5px] bg-slate-50/40">Total</th>
+              </React.Fragment>
+            ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white text-[10px]">
+        <tbody className="divide-y divide-slate-200 bg-white text-[10px]">
           {flatData.map((row) => {
             if (row.isSpacer) {
               return (
-                <tr key={row.id} className="bg-slate-50/30" style={{ height: "4px" }}>
-                  <td colSpan={2 + stages.length * 3 + 2} className="p-0" />
+                <tr key={row.id} className="bg-slate-50/20" style={{ height: "4px" }}>
+                  <td colSpan={2 + stages.length * 3 + 2} className="p-0 border-y border-slate-100" />
                 </tr>
               );
             }
             if (row.isGroupHeader) {
               return (
-                <tr key={row.id} className="bg-slate-50 border-y border-slate-200">
-                  <td colSpan={2 + stages.length * 3 + 2} className="py-1.5 px-3 font-extrabold text-[#334155] text-[11px]">
+                <tr key={row.id} className="bg-slate-100/70 border-y border-slate-300">
+                  <td colSpan={2 + stages.length * 3 + 2} className="py-2 px-3 font-extrabold text-[#334155] text-[11px] border-b border-slate-300">
                     <div className="flex items-center">
                       <span 
                         className="inline-block w-2.5 h-2.5 rounded-full mr-2.5 flex-shrink-0" 
@@ -1704,50 +1721,50 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
             }
             if (row.isSummary) {
               return (
-                <tr key={row.id} className="bg-slate-50/80 font-bold border-y border-slate-200 text-slate-950 text-[10.5px]">
-                  <td className="py-1.5 px-2 text-center"></td>
-                  <td className="py-1.5 px-3 text-left">[{row.deptName} 소계]</td>
+                <tr key={row.id} className="bg-slate-50 font-bold border-y border-slate-300 text-slate-950 text-[10px]">
+                  <td className="py-1.5 px-2 text-center border-b border-slate-300"></td>
+                  <td className="py-1.5 px-3 text-left border-b border-slate-300">[{row.deptName} 소계]</td>
                   {stages.map((s) => (
                     <React.Fragment key={s.id}>
-                      <td className="py-1.5 px-1 text-right border-l border-slate-100">-</td>
-                      <td className="py-1.5 px-1 text-center">-</td>
-                      <td className="py-1.5 px-2 text-right text-indigo-900 border-r border-slate-100">
+                      <td className="py-1.5 px-1 text-right border-l border-slate-200 border-b border-slate-300">-</td>
+                      <td className="py-1.5 px-1 text-center border-l border-slate-200 border-b border-slate-300">-</td>
+                      <td className="py-1.5 px-2 text-right text-indigo-900 border-l border-slate-200 border-b border-slate-300 font-extrabold bg-[#EEF2F6]">
                         {formatNum(row[`${s.id}_total`], stages, s.id)}
                       </td>
                     </React.Fragment>
                   ))}
                   <td className={clsx(
-                    "py-1.5 px-2 text-right font-bold",
+                    "py-1.5 px-2 text-right font-bold border-l border-slate-200 border-b border-slate-300",
                     row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                   )}>
                     {row.variance > 0 ? "+" : ""}{formatNum(row.variance, stages)}
                   </td>
-                  <td className="py-1.5 px-3 border-l border-slate-200"></td>
+                  <td className="py-1.5 px-3 border-l border-slate-200 border-b border-slate-300"></td>
                 </tr>
               );
             }
             return (
               <tr key={row.id} className="hover:bg-slate-50/50">
-                <td className="py-1.2 px-2 text-center text-slate-500 whitespace-nowrap font-mono">{row.no}</td>
-                <td className="py-1.2 px-3 text-left text-slate-800 font-semibold whitespace-nowrap overflow-hidden text-ellipsis">{row.name}</td>
+                <td className="py-1.5 px-2 text-center text-slate-500 font-mono border-b border-slate-200">{row.no}</td>
+                <td className="py-1.5 px-3 text-left text-slate-800 font-semibold border-b border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>{row.name}</td>
                 {stages.map((s) => {
                   const isEmpty = row[`${s.id}_isEmpty`];
                   return (
                     <React.Fragment key={s.id}>
-                      <td className="py-1.2 px-1 text-right text-slate-500 font-mono border-l border-slate-100/50">
+                      <td className="py-1.5 px-1 text-right text-slate-500 font-mono border-l border-slate-200 border-b border-slate-200">
                         {isEmpty ? "" : formatNum(row[`${s.id}_unitArea`], stages)}
                       </td>
-                      <td className="py-1.2 px-1 text-center text-slate-500 font-mono">
+                      <td className="py-1.5 px-1 text-center text-slate-500 font-mono border-l border-slate-200 border-b border-slate-200">
                         {isEmpty ? "" : formatQty(row[`${s.id}_quantity`])}
                       </td>
-                      <td className="py-1.2 px-2 text-right text-slate-700 font-mono font-semibold border-r border-slate-100/50">
+                      <td className="py-1.5 px-2 text-right text-slate-700 font-mono font-semibold border-l border-slate-200 border-b border-slate-200 bg-slate-50/20">
                         {isEmpty ? "" : formatNum(row[`${s.id}_total`], stages)}
                       </td>
                     </React.Fragment>
                   );
                 })}
                 <td className={clsx(
-                  "py-1.2 px-2 text-right font-mono font-bold",
+                  "py-1.5 px-2 text-right font-mono font-bold border-l border-slate-200 border-b border-slate-200",
                   row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                 )}>
                   {row.variance !== undefined && row.variance !== 0 ? (
@@ -1757,7 +1774,7 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
                     </>
                   ) : "-"}
                 </td>
-                <td className="py-1.2 px-3 text-left text-slate-500 font-normal whitespace-nowrap overflow-hidden text-ellipsis max-w-[130px] border-l border-slate-200 col-note-print">
+                <td className="py-1.5 px-3 text-left text-slate-600 font-normal border-l border-slate-200 border-b border-slate-200 col-note-print leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>
                   {row.note || "-"}
                 </td>
               </tr>
