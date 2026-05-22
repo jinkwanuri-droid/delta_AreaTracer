@@ -45,7 +45,10 @@ async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]):
       let message = 'Failed to fetch spreadsheet metadata';
       try {
         const err = await metaResponse!.json();
-        message = err.error?.message || message;
+        // Google API error structure is usually { error: { message: "..." } } 
+        // My proxy also follows this now.
+        message = err.error?.message || err.message || message;
+        
         if (message.includes("not found") || message.includes("entity was not found") || message.includes("permission") || metaResponse!.status === 404 || metaResponse!.status === 403 || metaResponse!.status === 400) {
           throw new Error("구글 스프레드시트 ID가 올바르지 않거나 공유 권한설정이 되어있지 않습니다. 구글 스프레드시트 우측 상단 '공유' 버튼을 클릭한 후 일반 액세스를 '링크가 있는 모든 사용자' 및 '뷰어' 상태로 설정했는지 확인해주세요.");
         }

@@ -235,10 +235,16 @@ async function startServer() {
   app.get("/api/sheets/metadata/:spreadsheetId", async (req, res) => {
     try {
       const { spreadsheetId } = req.params;
-      const apiKey = process.env.GOOGLE_SHEETS_API_KEY || process.env.VITE_GOOGLE_SHEETS_API_KEY;
+      const apiKey = process.env.GOOGLE_SHEETS_API_KEY || 
+                     process.env.VITE_GOOGLE_SHEETS_API_KEY || 
+                     process.env.VITE_GOOGLE_SHEETS_API || 
+                     process.env.GOOGLE_SHEETS_API;
       
       if (!apiKey) {
-        return res.status(500).json({ error: "Google Sheets API Key not configured on server" });
+        console.error("Google Sheets API Key not found in environment variables.");
+        return res.status(500).json({ 
+          error: { message: "Google Sheets API Key not configured on server. Please set GOOGLE_SHEETS_API_KEY or VITE_GOOGLE_SHEETS_API_KEY in environment variables." } 
+        });
       }
 
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
@@ -246,12 +252,14 @@ async function startServer() {
       const data = await response.json();
       
       if (!response.ok) {
+        console.error(`Google API Error (Metadata): ${response.status}`, data);
         return res.status(response.status).json(data);
       }
       
       res.json(data);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error("Proxy Error (Metadata):", error);
+      res.status(500).json({ error: { message: error.message } });
     }
   });
 
@@ -259,10 +267,15 @@ async function startServer() {
     try {
       const { spreadsheetId } = req.params;
       const { ranges } = req.query;
-      const apiKey = process.env.GOOGLE_SHEETS_API_KEY || process.env.VITE_GOOGLE_SHEETS_API_KEY;
+      const apiKey = process.env.GOOGLE_SHEETS_API_KEY || 
+                     process.env.VITE_GOOGLE_SHEETS_API_KEY || 
+                     process.env.VITE_GOOGLE_SHEETS_API || 
+                     process.env.GOOGLE_SHEETS_API;
 
       if (!apiKey) {
-        return res.status(500).json({ error: "Google Sheets API Key not configured on server" });
+        return res.status(500).json({ 
+          error: { message: "Google Sheets API Key not configured on server" } 
+        });
       }
 
       let url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}`;
@@ -277,12 +290,14 @@ async function startServer() {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error(`Google API Error (Values): ${response.status}`, data);
         return res.status(response.status).json(data);
       }
 
       res.json(data);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error("Proxy Error (Values):", error);
+      res.status(500).json({ error: { message: error.message } });
     }
   });
 
