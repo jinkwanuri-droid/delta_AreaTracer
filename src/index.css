@@ -331,59 +331,91 @@ body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 16mm 10mm 14mm 10mm;
+    margin: 10mm 10mm 10mm 10mm;
   }
   
   html, body {
-    width: 100%;
+    width: 100% !important;
     height: auto !important;
     overflow: visible !important;
-    background: transparent;
+    background: #ffffff !important;
+    color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Force background colors to print */
+  /* Force background colors and borders to print accurately */
   * {
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  /* Prevent page breaks inside table rows and avoid truncating tables */
+  /* Hide UI items like sidebar, headers, controls during print */
+  header, 
+  aside, 
+  nav,
+  button, 
+  .no-print, 
+  [role="dialog"], 
+  .fixed,
+  .sidebar,
+  .selector-popover,
+  .tab-navigator-container {
+    display: none !important;
+  }
+
+  /* Reset main workspace wraps so they occupy 100% space without cuts */
+  #root, 
+  div.flex.h-screen, 
+  main, 
+  .flex-1 {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Table layout fit optimizations for crisp A4 landscape printing */
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    page-break-inside: auto !important;
+    border-collapse: collapse !important;
+  }
+
   tr, td, th {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  table {
-    page-break-inside: auto;
-  }
-
-  /* Repeat table header on every page */
   thead {
     display: table-header-group !important;
   }
 
-  tfoot {
-    display: table-footer-group !important;
+  /* Compact text sizes in print for maximal information density */
+  table th, table td {
+    padding: 4px 3px !important;
+    font-size: 8.5px !important;
+    line-height: 1.15 !important;
   }
 
-  /* Force no scrollbars and full expanding height for print mode */
-  .print-container {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-    max-height: none !important;
-    width: 100% !important;
-    position: relative !important;
+  /* Specific note column wrapping restriction to keep table snug and completely inside borders */
+  .col-note-print,
+  td:last-child {
+    font-size: 8px !important;
+    white-space: normal !important;
+    word-break: break-all !important;
+    word-wrap: break-word !important;
+    max-width: 140px !important;
+    width: 140px !important;
+    color: #475569 !important;
   }
 
-  /* Hide absolutely everything else by default if we mount print component */
-  body > #root > *:not(.print-container-root) {
-    display: none !important;
-  }
-  
-  .print-container-root {
-    display: block !important;
+  .page-break {
+    page-break-before: always !important;
+    break-before: page !important;
   }
 }

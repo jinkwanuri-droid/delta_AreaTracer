@@ -1,12 +1,10 @@
-import { ReactNode, useState, useRef } from 'react';
+import { ReactNode, useState } from 'react';
 import Sidebar from './Sidebar';
 import { useAppStore } from '@/store/useAppStore';
 
 import SelectorPopover from './SelectorPopover';
 import { Layers, RefreshCw, Loader2, Download } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useReactToPrint } from 'react-to-print';
-import PrintableReport from './report/PrintableReport';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const project = useAppStore(state => state.project);
@@ -29,20 +27,6 @@ export default function Layout({ children }: { children: ReactNode }) {
     detail: true // Defaulted to true as we implemented Detail PDF layout first securely
   });
 
-  const componentRef = useRef<HTMLDivElement>(null);
-
-  const handlePrint = useReactToPrint({
-    contentRef: componentRef,
-    documentTitle: `hospital_area_report_${Date.now()}`,
-    onBeforePrint: async () => {
-      // Just in case we need anything explicitly set before the dialog popups
-    },
-    onAfterPrint: () => {
-      setIsPdfExportMode(false);
-      setIsExporting(false);
-    },
-  });
-
   const handleExportPdf = async () => {
     // Apply options first
     setPdfExportOptions(localOptions);
@@ -50,16 +34,18 @@ export default function Layout({ children }: { children: ReactNode }) {
     setIsExporting(true);
     setIsPdfExportMode(true);
     
-    // Give enough time for Recharts to render fully in the hidden div
-    // Complex charts can take a bit to stabilize layout
+    // Listen to print completion/cancel to recover UI state
+    const restoreUI = () => {
+      setIsPdfExportMode(false);
+      setIsExporting(false);
+      window.removeEventListener('afterprint', restoreUI);
+    };
+    window.addEventListener('afterprint', restoreUI);
+
+    // Give enough time for Recharts and Tailwind layouts to stabilize (600ms is perfectly stable & snappy)
     setTimeout(() => {
-      if (handlePrint) {
-         handlePrint();
-      } else {
-         setIsPdfExportMode(false);
-         setIsExporting(false);
-      }
-    }, 1500);
+      window.print();
+    }, 600);
   };
 
   return (
@@ -196,10 +182,6 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       )}
       
-      {/* Hidden layout for PDF Export - using absolute off-screen instead of hidden for Recharts sizing */}
-      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '1200px' }}>
-         <PrintableReport ref={componentRef} />
-      </div>
     </div>
   );
 }

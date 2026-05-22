@@ -1670,7 +1670,7 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
               );
             })}
             <th className="py-2 px-2 text-right font-extrabold text-slate-800 w-[75px] text-[11px]">증감</th>
-            <th className="py-2 px-3 text-left font-extrabold text-slate-800 w-[130px] border-l border-slate-200 text-[11px]">NOTE</th>
+            <th className="py-2 px-3 text-left font-extrabold text-slate-800 w-[130px] border-l border-slate-200 text-[11px] col-note-print">NOTE</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white text-[10px]">
@@ -1757,7 +1757,7 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
                     </>
                   ) : "-"}
                 </td>
-                <td className="py-1.2 px-3 text-left text-slate-500 font-normal whitespace-nowrap overflow-hidden text-ellipsis max-w-[130px] border-l border-slate-200">
+                <td className="py-1.2 px-3 text-left text-slate-500 font-normal whitespace-nowrap overflow-hidden text-ellipsis max-w-[130px] border-l border-slate-200 col-note-print">
                   {row.note || "-"}
                 </td>
               </tr>
