@@ -299,11 +299,22 @@ body {
 /* ==========================================================================
    Recharts Butter-Smooth GPU-Accelerated Highlight Transitions
    ========================================================================== */
+/* ==========================================================================
+   Recharts Global Focus & Accessibility Suppression
+   ========================================================================== */
+.recharts-wrapper, 
+.recharts-surface, 
+.recharts-responsive-container {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .recharts-pie-sector,
 .recharts-sector,
 .recharts-rectangle,
 .recharts-bar-rectangle {
   transition: opacity 250ms ease-in-out;
+  outline: none !important;
 }
 
 /* Hover effect for interactive elements in charts */

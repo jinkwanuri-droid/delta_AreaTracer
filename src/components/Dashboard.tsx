@@ -77,6 +77,42 @@ interface CustomTooltipProps {
   floors?: any[];
 }
 
+const TrendBarLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (!value || value <= 0) return null;
+  const isSmall = value < 1000;
+  
+  if (isSmall) {
+    return (
+      <text 
+        x={x + width + 4} 
+        y={y + height / 2} 
+        fill="#475569" 
+        textAnchor="start" 
+        dominantBaseline="middle" 
+        fontSize={8.5}
+        fontWeight="800"
+      >
+        {Math.round(value).toLocaleString()}
+      </text>
+    );
+  }
+  
+  return (
+    <text 
+      x={x + width / 2} 
+      y={y + height / 2} 
+      fill="#ffffff" 
+      textAnchor="middle" 
+      dominantBaseline="middle" 
+      fontSize={9.5}
+      fontWeight="bold"
+    >
+      {Math.round(value).toLocaleString()}
+    </text>
+  );
+};
+
 const CustomTooltip: React.FC<CustomTooltipProps> = ({ 
   active, payload, label, isBed, isPie, pieTotal, 
   highlightedDivId, departments, rooms, values, activeStageId, floors 
@@ -645,9 +681,9 @@ const Dashboard: React.FC = () => {
                   <Activity size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10 w-full">
-                <div className="flex items-baseline gap-x-2">
-                  <span className="text-[26px] font-black text-slate-800 tracking-tight leading-none">{(currentStage?.gnRatio || 0).toFixed(2)}</span>
+              <div className="mt-4 z-10 w-full text-right">
+                <div className="flex items-baseline justify-end gap-x-2">
+                  <span className="text-[32px] font-black text-slate-800 tracking-tight leading-none">{(currentStage?.gnRatio || 0).toFixed(2)}</span>
                 </div>
                 {/* Embedded Progress Bar */}
                 <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
@@ -735,8 +771,8 @@ const Dashboard: React.FC = () => {
                     dataKey="net" 
                     stackId="a" 
                     fill="#6366f1" 
-                    stroke="#ffffff"
-                    strokeWidth={2}
+                    stroke="#e2e8f0"
+                    strokeWidth={1}
                     name="전용면적" 
                     isAnimationActive={false}
                     barSize={32}
@@ -744,19 +780,15 @@ const Dashboard: React.FC = () => {
                   >
                     <LabelList 
                       dataKey="net" 
-                      position="inside" 
-                      fill="#ffffff" 
-                      fontSize={9.5} 
-                      fontWeight="bold"
-                      formatter={(v: number) => v > 0 ? Math.round(v).toLocaleString() : ''}
+                      content={<TrendBarLabel />}
                     />
                   </Bar>
                   <Bar 
                     dataKey="common" 
                     stackId="a" 
                     fill="#94a3b8" 
-                    stroke="#ffffff"
-                    strokeWidth={2}
+                    stroke="#e2e8f0"
+                    strokeWidth={1}
                     name="공용면적" 
                     isAnimationActive={false}
                     barSize={32}
@@ -764,19 +796,15 @@ const Dashboard: React.FC = () => {
                   >
                     <LabelList 
                       dataKey="common" 
-                      position="inside" 
-                      fill="#ffffff" 
-                      fontSize={9.5} 
-                      fontWeight="bold"
-                      formatter={(v: number) => v > 0 ? Math.round(v).toLocaleString() : ''}
+                      content={<TrendBarLabel />}
                     />
                   </Bar>
                   <Bar 
                     dataKey="other" 
                     stackId="a" 
                     fill="#cbd5e1" 
-                    stroke="#ffffff"
-                    strokeWidth={2}
+                    stroke="#e2e8f0"
+                    strokeWidth={1}
                     name="의료외(주차/옥외)" 
                     isAnimationActive={false}
                     barSize={32}
@@ -784,11 +812,7 @@ const Dashboard: React.FC = () => {
                   >
                     <LabelList 
                       dataKey="other" 
-                      position="inside" 
-                      fill="#ffffff" 
-                      fontSize={9.5} 
-                      fontWeight="bold"
-                      formatter={(v: number) => v > 200 ? Math.round(v).toLocaleString() : ''}
+                      content={<TrendBarLabel />}
                     />
                     <LabelList 
                       dataKey="gross" 
