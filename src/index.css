@@ -331,15 +331,17 @@ body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 12mm 15mm 12mm 15mm;
+    margin: 12mm 15mm 12mm 15mm !important;
   }
   
   html, body {
-    width: 100% !important;
-    height: auto !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: visible !important;
     background: #ffffff !important;
-    color: #0f172a !important;
+    color: #1e293b !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -350,7 +352,7 @@ body {
     color-adjust: exact !important;
   }
 
-  /* Hide UI elements like sidebar, top header, buttons, selectors during print */
+  /* Hide raw web app UI panels during PDF printing */
   header, 
   aside, 
   nav,
@@ -366,7 +368,7 @@ body {
     display: none !important;
   }
 
-  /* Reset main workspace wrapper to be fluid & absolute-clean without scrolled windows */
+  /* Make root wrapper fluid with correct stacking so only .printable-mode renders */
   #root, 
   div.flex.h-screen, 
   main, 
@@ -381,116 +383,5 @@ body {
     padding: 0 !important;
     background: transparent !important;
   }
-
-  /* Force print container to align uniformly at 987px to match custom A4 tables margins */
-  #pdf-export-content {
-    display: block !important;
-    width: 987px !important;
-    min-width: 987px !important;
-    max-width: 987px !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-    overflow: visible !important;
-  }
-
-  #pdf-export-content > div {
-    padding: 0 !important;
-    margin: 0 0 16mm 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* Structural solid borders for high-quality table rendering */
-  table {
-    width: 987px !important;
-    min-width: 987px !important;
-    table-layout: fixed !important;
-    border-collapse: collapse !important;
-    page-break-inside: auto !important;
-    border: 1.5px solid #475569 !important; /* Bold primary boundary line */
-  }
-
-  tr {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  thead {
-    display: table-header-group !important;
-  }
-
-  /* High contrast table styles to override subtle screen-only shades */
-  table th {
-    background-color: #f1f5f9 !important;
-    color: #0f172a !important;
-    border: 1px solid #94a3b8 !important;
-    font-weight: 800 !important;
-    font-size: 9px !important;
-    padding: 4px 2px !important;
-    text-align: center;
-  }
-
-  table td {
-    border: 1px solid #cbd5e1 !important;
-    font-size: 8.5px !important;
-    padding: 4px 6px !important;
-    color: #1e293b !important;
-    background-color: #ffffff !important;
-    word-break: break-all !important;
-    overflow: visible !important;
-  }
-
-  /* Specific background overrides for summaries & headers to reflect clearly in PDF print output */
-  tr.bg-slate-100\/70,
-  tr.bg-slate-100 {
-    background-color: #e2e8f0 !important;
-  }
-  
-  tr.bg-slate-100\/70 td,
-  tr.bg-slate-100 td {
-    background-color: #e2e8f0 !important;
-    color: #0f172a !important;
-    font-weight: 800 !important;
-  }
-
-  tr.bg-slate-50,
-  tr.bg-slate-50\/20 {
-    background-color: #f8fafc !important;
-  }
-
-  tr.bg-slate-50 td {
-    background-color: #f1f5f9 !important;
-    color: #0c0a09 !important;
-    font-weight: bold !important;
-  }
-
-  /* Style specific cells in print */
-  td.bg-slate-50\/20,
-  td.bg-indigo-50\/20 {
-    background-color: #f8fafc !important;
-  }
-
-  td.bg-\[\#EEF2F6\] {
-    background-color: #e2e8f0 !important;
-    font-weight: 800 !important;
-  }
-
-  /* Note column print auto-wrap settings */
-  .col-note-print,
-  td:last-child {
-    font-size: 8px !important;
-    white-space: normal !important;
-    word-break: break-all !important;
-    word-wrap: break-word !important;
-    text-align: left !important;
-    padding: 4px 6px !important;
-    color: #475569 !important;
-  }
-
-  /* Page breaks for multi-page layouts */
-  .page-break {
-    page-break-before: always !important;
-    break-before: page !important;
-  }
 }
+

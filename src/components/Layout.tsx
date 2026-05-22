@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import SelectorPopover from './SelectorPopover';
 import { Layers, RefreshCw, Loader2, Download } from 'lucide-react';
 import { clsx } from 'clsx';
+import PrintableReport from './report/PrintableReport';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const project = useAppStore(state => state.project);
@@ -47,6 +48,14 @@ export default function Layout({ children }: { children: ReactNode }) {
       window.print();
     }, 600);
   };
+
+  if (isPdfExportMode) {
+    return (
+      <div className="w-full bg-white min-h-screen p-0 m-0">
+        <PrintableReport />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full bg-[#F8FAFC] text-[#1E293B] font-['Pretendard','Inter',sans-serif] overflow-hidden">
