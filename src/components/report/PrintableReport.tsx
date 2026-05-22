@@ -1,6 +1,6 @@
 import React, { useMemo, forwardRef } from 'react';
 import clsx from 'clsx';
-import { useAppStore, getFloorVal } from '@/store/useAppStore';
+import { useAppStore, getFloorVal, findRoomNote } from '@/store/useAppStore';
 import { 
   ReportAreaByStageChart, 
   ReportDivisionPieChart, 
@@ -23,6 +23,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   const comparison = useAppStore(state => state.comparison);
   const filters = useAppStore(state => state.filters);
   const floorWardOverrides = useAppStore(state => state.floorWardOverrides);
+  const roomNotes = useAppStore(state => state.roomNotes);
 
   const currentStage = stages[stages.length - 1];
   const currentDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -831,7 +832,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                   ) : "-"}
                                 </td>
                                 <td className="py-1 px-2 text-left text-slate-600 font-normal leading-snug whitespace-normal border-slate-200" style={{ wordBreak: 'break-all' }}>
-                                  {row.note || "-"}
+                                  {findRoomNote(roomNotes, row.no, row.floorId) || row.note || "-"}
                                 </td>
                               </tr>
                             );

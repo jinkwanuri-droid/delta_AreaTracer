@@ -312,7 +312,8 @@ export default function DetailTable() {
     if (activeFloorId === "all") {
       const grouped = new Map<string, any>();
       filteredRooms.forEach((r) => {
-        const key = `${r.departmentId}-${r.no}-${r.name}`;
+        const roomNoKey = r.no ? r.no.trim() : "";
+        const key = `${r.departmentId}-${roomNoKey}`;
         if (!grouped.has(key)) {
           grouped.set(key, {
             ...r,
@@ -325,6 +326,22 @@ export default function DetailTable() {
         } else {
           const existing = grouped.get(key);
           existing.originalRoomIds.push(r.id);
+          
+          if (r.name && existing.name !== r.name) {
+            const currentNames = existing.name.split(",").map((n: string) => n.trim()).filter(Boolean);
+            const newName = r.name.trim();
+            if (!currentNames.includes(newName)) {
+              existing.name = [...currentNames, newName].join(", ");
+            }
+          }
+          
+          if (r.note && existing.note !== r.note) {
+            const currentNotes = existing.note.split(",").map((n: string) => n.trim()).filter(Boolean);
+            const newNote = r.note.trim();
+            if (!currentNotes.includes(newNote)) {
+              existing.note = [...currentNotes, newNote].join(", ");
+            }
+          }
         }
       });
       return Array.from(grouped.values());

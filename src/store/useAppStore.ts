@@ -180,14 +180,24 @@ export const findRoomNote = (roomNotes: Record<string, string> | undefined | nul
   const targetLevel = standardizeFloorId(String(rLevel));
   const targetKey = `${targetNo}|${targetLevel}`;
   
-  // 1. Direct key match
+  // 1. Direct key match (e.g. "101-01|1F")
   if (roomNotes[targetKey]) {
     return roomNotes[targetKey];
   }
+
+  // 2. Direct match by room number only (e.g. "101-01")
+  if (roomNotes[targetNo]) {
+    return roomNotes[targetNo];
+  }
   
-  // 2. Flexible match across all keys
+  // 3. Flexible match across all keys
   const keys = Object.keys(roomNotes);
   for (const key of keys) {
+    const cleanKey = key.trim().toUpperCase();
+    if (cleanKey === targetNo) {
+      return roomNotes[key];
+    }
+    
     const parts = key.split("|");
     if (parts.length === 2) {
       const keyNo = parts[0].trim().toUpperCase();
@@ -236,6 +246,25 @@ export const useAppStore = create<AppState>()(
       spreadsheetId: null,
       floorWardOverrides: {},
       fetchGlobalSettings: async () => {
+        // Load local fallback/backup first to guarantee instant offline-first rendering
+        let localRN: Record<string, string> = {};
+        let localDN: Record<string, string> = {};
+        try {
+          const rBackup = localStorage.getItem("local_room_notes");
+          const dBackup = localStorage.getItem("local_dept_notes");
+          if (rBackup) localRN = JSON.parse(rBackup);
+          if (dBackup) localDN = JSON.parse(dBackup);
+          
+          if (Object.keys(localRN).length > 0 || Object.keys(localDN).length > 0) {
+            set({
+              roomNotes: { ...get().roomNotes, ...localRN },
+              departmentNotes: { ...get().departmentNotes, ...localDN }
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to retrieve local notes backup:", e);
+        }
+
         try {
           const res = await fetch("/api/global-settings");
           const contentType = res.headers.get("content-type") || "";
@@ -250,8 +279,8 @@ export const useAppStore = create<AppState>()(
                 departments: data.departments || get().departments,
                 floorAreasByStage: data.floorAreasByStage || get().floorAreasByStage,
                 comparison: data.comparison || get().comparison,
-                roomNotes: data.roomNotes || get().roomNotes,
-                departmentNotes: data.departmentNotes || get().departmentNotes,
+                roomNotes: { ...localRN, ...(data.roomNotes || {}) },
+                departmentNotes: { ...localDN, ...(data.departmentNotes || {}) },
                 summaryNotes: data.summaryNotes || get().summaryNotes,
                 floorWardOverrides: data.floorWardOverrides || get().floorWardOverrides,
               });
@@ -318,8 +347,8 @@ export const useAppStore = create<AppState>()(
               comparison: config.comparison || get().comparison,
               summaryNotes: config.summaryNotes || get().summaryNotes,
               floorWardOverrides: config.floorWardOverrides || get().floorWardOverrides,
-              roomNotes: roomNotes,
-              departmentNotes: deptNotes,
+              roomNotes: { ...localRN, ...roomNotes },
+              departmentNotes: { ...localDN, ...deptNotes },
             });
             console.log("Global settings successfully loaded directly from Supabase.");
           } catch (supErr) {
@@ -342,6 +371,14 @@ export const useAppStore = create<AppState>()(
           roomNotes: state.roomNotes,
           departmentNotes: state.departmentNotes,
         };
+
+        // Always save to localStorage immediately as a reliable local backup
+        try {
+          localStorage.setItem("local_room_notes", JSON.stringify(state.roomNotes || {}));
+          localStorage.setItem("local_dept_notes", JSON.stringify(state.departmentNotes || {}));
+        } catch (e) {
+          console.warn("localStorage notes backup write failed:", e);
+        }
         
         let apiSuccess = false;
         try {
