@@ -234,9 +234,6 @@ export const useAppStore = create<AppState>()(
       medicalOnly: true,
       isLoading: false,
       spreadsheetId: null,
-      stages: [],
-      floors: [],
-      divisions: [],
       floorWardOverrides: {},
       fetchGlobalSettings: async () => {
         try {

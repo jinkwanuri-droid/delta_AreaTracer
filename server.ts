@@ -231,6 +231,61 @@ async function startServer() {
     }
   });
 
+  // Google Sheets API Proxy
+  app.get("/api/sheets/metadata/:spreadsheetId", async (req, res) => {
+    try {
+      const { spreadsheetId } = req.params;
+      const apiKey = process.env.GOOGLE_SHEETS_API_KEY || process.env.VITE_GOOGLE_SHEETS_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ error: "Google Sheets API Key not configured on server" });
+      }
+
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+      
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/sheets/values/:spreadsheetId", async (req, res) => {
+    try {
+      const { spreadsheetId } = req.params;
+      const { ranges } = req.query;
+      const apiKey = process.env.GOOGLE_SHEETS_API_KEY || process.env.VITE_GOOGLE_SHEETS_API_KEY;
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "Google Sheets API Key not configured on server" });
+      }
+
+      let url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}`;
+      
+      if (Array.isArray(ranges)) {
+        ranges.forEach(r => { url += `&ranges=${encodeURIComponent(String(r))}`; });
+      } else if (ranges) {
+        url += `&ranges=${encodeURIComponent(String(ranges))}`;
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(response.status).json(data);
+      }
+
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Mock Data
   const mockProject = { id: "p1", name: "경상남도 서부의료원" };
   const mockStages = [

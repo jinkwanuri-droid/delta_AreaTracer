@@ -27,14 +27,11 @@ const COLUMN_MAPPINGS: Record<string, string> = {
 };
 
 async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]): Promise<Record<string, any[]>> {
-  const apiKey = (import.meta as any).env.VITE_GOOGLE_SHEETS_API_KEY;
-  if (!apiKey) throw new Error('Google Sheets API Key not configured');
-
   if (sheetNames.length === 0) return {};
 
   let existingTabs: string[] = [];
   try {
-    const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+    const metaUrl = `/api/sheets/metadata/${spreadsheetId}`;
     let metaResponse;
     let metaRetries = 3;
     while (metaRetries > 0) {
@@ -83,7 +80,7 @@ async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]):
   }
 
   const rangesQuery = validSheetNames.map(name => `ranges=${encodeURIComponent(name)}`).join('&');
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}&${rangesQuery}`;
+  const url = `/api/sheets/values/${spreadsheetId}?${rangesQuery}`;
   
   let response;
   let retries = 3;
