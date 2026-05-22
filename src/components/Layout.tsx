@@ -50,7 +50,8 @@ export default function Layout({ children }: { children: ReactNode }) {
     setIsExporting(true);
     setIsPdfExportMode(true);
     
-    // Wait for state updates and ref to be populated
+    // Give enough time for Recharts to render fully in the hidden div
+    // Complex charts can take a bit to stabilize layout
     setTimeout(() => {
       if (handlePrint) {
          handlePrint();
@@ -58,7 +59,7 @@ export default function Layout({ children }: { children: ReactNode }) {
          setIsPdfExportMode(false);
          setIsExporting(false);
       }
-    }, 500);
+    }, 1500);
   };
 
   return (
