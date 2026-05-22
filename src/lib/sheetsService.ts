@@ -36,27 +36,38 @@ async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]):
     let metaRetries = 3;
     while (metaRetries > 0) {
       metaResponse = await fetch(metaUrl);
-      if (metaResponse.ok || metaResponse.status !== 503) break;
-      await new Promise(r => setTimeout(r, 1500));
-      metaRetries--;
+      if (metaResponse.ok) break;
+      
+      // If server error, retry
+      if (metaResponse.status >= 500) {
+        metaRetries--;
+        await new Promise(r => setTimeout(r, 1000));
+        continue;
+      }
+      break;
     }
     
     if (!metaResponse || !metaResponse.ok) {
       let message = 'Failed to fetch spreadsheet metadata';
+      let errorBody = '';
       try {
-        const err = await metaResponse!.json();
-        // Google API error structure is usually { error: { message: "..." } } 
-        // My proxy also follows this now.
+        errorBody = await metaResponse!.text();
+        const err = JSON.parse(errorBody);
         message = err.error?.message || err.message || message;
-        
-        if (message.includes("not found") || message.includes("entity was not found") || message.includes("permission") || metaResponse!.status === 404 || metaResponse!.status === 403 || metaResponse!.status === 400) {
-          throw new Error("구글 스프레드시트 ID가 올바르지 않거나 공유 권한설정이 되어있지 않습니다. 구글 스프레드시트 우측 상단 '공유' 버튼을 클릭한 후 일반 액세스를 '링크가 있는 모든 사용자' 및 '뷰어' 상태로 설정했는지 확인해주세요.");
-        }
       } catch (e: any) {
-        if (e.message?.includes("구글 스프레드시트")) throw e;
-        message = metaResponse?.statusText || message;
+        message = errorBody || metaResponse?.statusText || message;
       }
-      throw new Error(message);
+      
+      // Log for diagnosis in console
+      console.error("Sheets Proxy Error Details:", {
+        status: metaResponse?.status,
+        body: errorBody
+      });
+
+      if (message.includes("not found") || message.includes("entity was not found") || message.includes("permission") || metaResponse?.status === 404 || metaResponse?.status === 403 || metaResponse?.status === 400) {
+        throw new Error("구글 스프레드시트 ID가 올바르지 않거나 공유 권한설정이 되어있지 않습니다. 구글 스프레드시트 우측 상단 '공유' 버튼을 클릭한 후 일반 액세스를 '링크가 있는 모든 사용자' 및 '뷰어' 상태로 설정했는지 확인해주세요.");
+      }
+      throw new Error(`${message}${metaResponse ? ` (${metaResponse.status})` : ''}`);
     }
     const metaData = await metaResponse.json();
     if (metaData.sheets) {

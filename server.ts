@@ -20,14 +20,11 @@ const getSupabase = () => {
   return createClient(url, key);
 };
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
+app.use(express.json({ limit: '50mb' }));
 
-  app.use(express.json({ limit: '50mb' }));
-
-  // Global Settings Persistence API (using Supabase)
-  app.get("/api/global-settings", async (req, res) => {
+// Global Settings Persistence API (using Supabase)
+app.get("/api/global-settings", async (req, res) => {
     try {
       console.log("Fetching global settings from Supabase tables: app_config, dept_notes, room_notes");
       
@@ -391,24 +388,32 @@ async function startServer() {
   });
 
 
-  // Vite middleware for development
+  // Setup Vite or Static serving
+  const PORT = 3000;
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    }).then(vite => {
+      app.use(vite.middlewares);
+      app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+      });
     });
-    app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
+    
+    // In production (like on Vercel), we export the app for the platform to handle.
+    // However, some platforms might still need it to listen if not using serverless.
+    if (process.env.VERCEL !== '1') {
+      app.listen(PORT, "0.0.0.0", () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    }
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
-
-startServer();
+export default app;
