@@ -359,7 +359,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       const chunks: any[][] = [];
       let currentChunk: any[] = [];
       let currentPoints = 0;
-      const MAX_POINTS_PER_PAGE = 22; // A4 가로 최적 마진의 황금 비율 (행 밀림 방지)
+      const MAX_POINTS_PER_PAGE = 18.0; // PPT 및 A4 가로 인쇄 시 바닥글과 절대 겹치지 않는 황금 최적 분할 포인트 수치
 
       flatData.forEach((item) => {
         let weight = 1.0;
@@ -424,6 +424,13 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   return (
     <div ref={ref} className="print-container-root w-full bg-white text-slate-800 printable-mode" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
       <style>{`
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+        /* 공통 프리텐다드 서체 전 영역 강제화로 숫자가 리얼 고딕으로 완벽 렌더링되게 처리 */
+        .printable-mode, .printable-mode * {
+          font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+        }
+
         /* 전반적인 인쇄 구조 및 규격 설정 (중요: 크기 불일치 원천 해소) */
         @media print {
           .printable-mode { 
@@ -433,7 +440,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           @page { 
             size: A4 landscape; 
-            margin: 12mm 15mm 12mm 15mm !important; 
+            margin: 10mm 15mm 10mm 15mm !important; 
           }
           
           body, html {
@@ -443,6 +450,16 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             padding: 0 !important;
             overflow: visible !important;
             background: #ffffff !important;
+          }
+
+          body, html, .printable-mode, .printable-mode * {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+          }
+
+          /* 실제 PDF 가용 높이(190mm)에 슬라이드 1장 매칭으로 행 밀림 원천 봉쇄 */
+          .pdf-slide-container {
+            height: 190mm !important;
+            max-height: 190mm !important;
           }
         }
 
@@ -685,17 +702,17 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     <div className="border border-slate-300 rounded-lg overflow-hidden style-table-pdf-container">
                       <table className="w-full text-slate-800 border-collapse table-fixed text-[9.5px] font-sans" style={{ width: '987px', minWidth: '987px' }}>
                         <colgroup>
-                          <col style={{ width: '42px' }} />
-                          <col style={{ width: '155px' }} />
+                          <col style={{ width: '36px' }} />
+                          <col style={{ width: '115px' }} />
                           {stages.map((s) => (
                             <React.Fragment key={s.id}>
-                              <col style={{ width: '38px' }} />
-                              <col style={{ width: '24px' }} />
-                              <col style={{ width: '48px' }} />
+                              <col style={{ width: '35px' }} />
+                              <col style={{ width: '22px' }} />
+                              <col style={{ width: '42px' }} />
                             </React.Fragment>
                           ))}
-                          <col style={{ width: '55px' }} />
-                          <col style={{ width: '135px' }} />
+                          <col style={{ width: '46px' }} />
+                          <col style={{ width: '295px' }} />
                         </colgroup>
                         <thead>
                           <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
