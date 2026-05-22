@@ -1,12 +1,15 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { createServer as createViteServer } from "vite";
-import puppeteer from "puppeteer";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// Vite and Puppeteer are imported dynamically to avoid issues in some environments (like Vercel)
+// or to save memory on serverless cold starts.
+let vite: any = null;
+let puppeteer: any = null;
 
 const getSupabase = () => {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
@@ -168,6 +171,11 @@ app.get("/api/global-settings", async (req, res) => {
   app.post("/api/export-pdf", async (req, res) => {
     try {
       const { html, width, height } = req.body;
+      
+      if (!puppeteer) {
+        puppeteer = (await import("puppeteer")).default;
+      }
+
       const browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -391,24 +399,26 @@ app.get("/api/global-settings", async (req, res) => {
   // Setup Vite or Static serving
   const PORT = 3000;
   if (process.env.NODE_ENV !== "production") {
-    createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    }).then(vite => {
-      app.use(vite.middlewares);
-      app.listen(PORT, "0.0.0.0", () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+    import("vite").then(({ createServer }) => {
+      createServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      }).then(viteInstance => {
+        app.use(viteInstance.middlewares);
+        app.listen(PORT, "0.0.0.0", () => {
+          console.log(`Server running on http://localhost:${PORT}`);
+        });
       });
     });
   } else {
+    // In production (Vercel), we don't need to serve static files from Express if correctly rewritten,
+    // but we keep it here for standard production builds.
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-    
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+    }
+
     // In production (like on Vercel), we export the app for the platform to handle.
-    // However, some platforms might still need it to listen if not using serverless.
     if (process.env.VERCEL !== '1') {
       app.listen(PORT, "0.0.0.0", () => {
         console.log(`Server running on port ${PORT}`);
