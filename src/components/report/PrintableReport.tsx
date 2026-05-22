@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       const chunks: any[][] = [];
       let currentChunk: any[] = [];
       let currentPoints = 0;
-      const MAX_POINTS_PER_PAGE = 31.0; // PPT 및 A4 가로 인쇄 시 바닥글과 간섭을 차단하고 꼬리말 밑 공백을 최소화하는 하이덴시티 황금 분할
+      const MAX_POINTS_PER_PAGE = 35.5; // PPT 및 A4 가로 인쇄 시 바닥글과 간섭을 차단하고 꼬리말 밑 공백을 최소화하는 하이덴시티 황금 분할
 
       for (let i = 0; i < flatData.length; i++) {
         const item = flatData[i];
@@ -500,9 +500,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
         /* 화면에서도 완벽한 A4 비율을 유지하면서 여백을 안전히 잡고 박스 섀도우를 얹어 고귀하고 품격있게 프리뷰 렌더링 */
         .pdf-slide-container {
-          width: 987px !important;
-          height: 698px !important;
-          max-height: 698px !important;
+          width: 297mm !important;
+          height: 210mm !important;
+          max-height: 210mm !important;
           margin: 16px auto !important;
           padding: 12mm 15mm 14mm 15mm !important;
           position: relative !important;
@@ -643,7 +643,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
 
           <div className="overflow-hidden border border-slate-300 rounded-lg">
-            <table className="w-full text-[10.5px] border-collapse tabular-nums" style={{ width: '987px' }}>
+            <table className="w-full text-[10.5px] border-collapse tabular-nums" style={{ width: '100%', minWidth: '100%' }}>
               <thead>
                 <tr className="bg-slate-800 text-white border-b border-slate-400 font-extrabold">
                   <th className="py-2.5 px-4 text-center border-r border-slate-700 w-32 font-black">부문</th>
@@ -751,19 +751,19 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
                     {/* 테이블 컨텐츠 영역 */}
                     <div className="border border-slate-300 rounded-lg overflow-hidden style-table-pdf-container">
-                      <table className="w-full text-slate-800 border-collapse table-fixed text-[9.5px] font-sans" style={{ width: '987px', minWidth: '987px' }}>
+                      <table className="w-full text-slate-800 border-collapse table-fixed text-[9.5px] font-sans" style={{ width: '100%', minWidth: '100%' }}>
                         <colgroup>
                           <col style={{ width: '32px' }} />
-                          <col style={{ width: '130px' }} />
+                          <col style={{ width: '160px' }} />
                           {stages.map((s) => (
                             <React.Fragment key={s.id}>
                               <col style={{ width: '34px' }} />
-                              <col style={{ width: '20px' }} />
-                              <col style={{ width: '39px' }} />
+                              <col style={{ width: '22px' }} />
+                              <col style={{ width: '42px' }} />
                             </React.Fragment>
                           ))}
                           <col style={{ width: '45px' }} />
-                          <col style={{ width: '315px' }} />
+                          <col style={{ width: '280px' }} />
                         </colgroup>
                         <thead>
                           <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
@@ -771,7 +771,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[10px] border-r border-slate-300">ROOM NAME</th>
                             {stages.map((s, idx) => {
                               const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
-                              const headBg = isPracticeStage ? "bg-[#F3E8FF] text-purple-950 font-black" : "bg-[#E2E8F0] text-slate-800";
+                              const headBg = isPracticeStage ? "bg-[#F3E8FF] text-purple-950 font-black" : "bg-[#CBD5E1] text-slate-900";
                               return (
                                 <th key={s.id} colSpan={3} className={clsx(
                                   "py-0.5 px-1 text-center font-extrabold border-r border-b border-slate-300 text-[9.5px]",
@@ -791,7 +791,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             {stages.map((s, idx) => {
                               const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
                               // 상위 전용 헤더 배경색과 완벽히 색톤 매칭 전개 (텍스트 가운데 정렬 적용)
-                              const subHeadBg = isPracticeStage ? "bg-[#FAF5FF] text-purple-900" : "bg-[#E2E8F0] text-slate-850";
+                              const subHeadBg = isPracticeStage ? "bg-[#FAF5FF] text-purple-900" : "bg-[#CBD5E1] text-slate-850";
                               return (
                                 <React.Fragment key={`${s.id}-sub`}>
                                   <th className={clsx("py-0.5 px-0.5 text-center font-extrabold border-r border-slate-200 text-[8px] tracking-tighter", subHeadBg)}>Net</th>

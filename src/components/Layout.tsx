@@ -127,9 +127,17 @@ export default function Layout({ children }: { children: ReactNode }) {
               <Download size={18} className="text-indigo-500" />
               PDF 내보내기 범위 선택
             </h3>
-            <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+            <p className="text-xs text-slate-500 mb-3 leading-relaxed">
               저장할 보고서의 범위를 선택하세요. 체크된 항목들을 하나로 취합하여 가로형 A4 리포트로 출력합니다.
             </p>
+
+            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg text-[11px] leading-normal flex items-start gap-2 shadow-sm animate-pulse-slow">
+              <span className="text-indigo-600 text-base leading-none">💡</span>
+              <div>
+                <span className="font-extrabold block mb-0.5 text-indigo-950">인쇄 필수 설정 안내:</span>
+                A4 가로형 전체 영역 인쇄를 위해 PDF 저장 화면에서 반드시 <strong className="text-pink-600 font-extrabold underline underline-offset-2">여백: 없음 (None)</strong> 및 <strong className="text-indigo-950 font-extrabold">배경 그래픽 포함 (Background graphics)</strong> 옵션을 활성화해주세요!
+              </div>
+            </div>
             
             <div className="flex flex-col gap-3 mb-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
               <label className="flex items-center gap-3 cursor-pointer group">
