@@ -161,7 +161,8 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
     const baseId = comparison.baseId || stages[0]?.id;
     const targetId = comparison.targetId || stages[stages.length - 1]?.id;
 
-    floors.forEach(floor => {
+    const sortedFloors = [...floors].sort((a, b) => getFloorVal(a.name || a.id) - getFloorVal(b.name || b.id));
+    sortedFloors.forEach(floor => {
       // 1) displayRooms 필터링 및 소팅 똑같이 적용
       const deptsMap = new Map(departments.map((d) => [d.id, d]));
       const divsMap = new Map(divisions.map((d) => [d.id, d]));
@@ -359,7 +360,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       const chunks: any[][] = [];
       let currentChunk: any[] = [];
       let currentPoints = 0;
-      const MAX_POINTS_PER_PAGE = 18.0; // PPT 및 A4 가로 인쇄 시 바닥글과 절대 겹치지 않는 황금 최적 분할 포인트 수치
+      const MAX_POINTS_PER_PAGE = 21.0; // PPT 및 A4 가로 인쇄 시 바닥글과 간섭을 차단하고 꼬리말 밑 공백을 최소화하는 하이덴시티 황금 분할
 
       flatData.forEach((item) => {
         let weight = 1.0;
@@ -428,7 +429,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
         /* 공통 프리텐다드 서체 전 영역 강제화로 숫자가 리얼 고딕으로 완벽 렌더링되게 처리 */
         .printable-mode, .printable-mode * {
-          font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+          font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
         }
 
         /* 전반적인 인쇄 구조 및 규격 설정 (중요: 크기 불일치 원천 해소) */
@@ -440,7 +441,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           @page { 
             size: A4 landscape; 
-            margin: 10mm 15mm 10mm 15mm !important; 
+            margin: 14mm 15mm 12mm 15mm !important; 
           }
           
           body, html {
@@ -453,21 +454,21 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           }
 
           body, html, .printable-mode, .printable-mode * {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
           }
 
-          /* 실제 PDF 가용 높이(190mm)에 슬라이드 1장 매칭으로 행 밀림 원천 봉쇄 */
+          /* 실제 PDF 가용 높이(184mm)에 슬라이드 1장 매칭으로 행 밀림 원천 봉쇄 */
           .pdf-slide-container {
-            height: 190mm !important;
-            max-height: 190mm !important;
+            height: 184mm !important;
+            max-height: 184mm !important;
           }
         }
 
         /* 987px는 A4 landscape 가로 실가용 영역에 100% 한계치로 완벽 안착되는 황금 절대 수치 */
         .pdf-slide-container {
           width: 987px !important;
-          height: 648px !important;
-          max-height: 648px !important;
+          height: 665px !important;
+          max-height: 665px !important;
           margin: 0 auto !important;
           padding: 0 !important;
           position: relative !important;
@@ -496,20 +497,19 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       {/* 0. 대시보드 리포트 슬라이드                                */}
       {/* ======================================================== */}
       {options.dashboard && (
-        <div className="pdf-slide-container">
+        <div className="pdf-slide-container pt-3.5 px-1 bg-white">
           {/* 머리말 영역 (PPT 모바일/스샷 상부 라인 완벽 동치) */}
-          <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1 mt-1">
+          <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
             <span>{projectTitle}</span>
             <span>종합면적 대시보드</span>
           </div>
           <div className="border-b-[1.5px] border-slate-700 w-full mb-3"></div>
 
           {/* 타이틀 및 현황 */}
-          <div className="flex justify-between items-baseline mb-4 px-1">
+          <div className="flex justify-between items-baseline mb-3 px-1">
             <h2 className="text-[20px] font-extrabold text-slate-900 tracking-tight">
               종합 실별 구조 및 계획설계 요약 현황
             </h2>
-            <span className="text-[10px] text-slate-400 font-semibold font-mono">REPORT DATE: {currentDate}</span>
           </div>
 
           {/* 대시보드 차트 시각화 및 그리드 구성 */}
@@ -558,11 +558,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             </div>
           </div>
           
-          {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
+           {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
           <div className="absolute bottom-2 left-1 right-1">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
-              <span>HANA ARCHITECTURE DESIGN GROUP</span>
+              <span className="font-extrabold text-[#1E293B] text-[9px]">해안건축</span>
               <span>STAGE: {currentStage?.name}</span>
               <span className="text-[11px] font-mono font-semibold text-slate-800 leading-none">
                 {getOverallPageNumber('dashboard')}
@@ -576,20 +576,19 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       {/* 1. 총괄면적표 요약 리포트 슬라이드                          */}
       {/* ======================================================== */}
       {options.summary && (
-        <div className="pdf-slide-container">
+        <div className="pdf-slide-container pt-3.5 px-1 bg-white">
           {/* 머리말 영역 */}
-          <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1 mt-1">
+          <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
             <span>{projectTitle}</span>
             <span>부서별 총괄면적</span>
           </div>
           <div className="border-b-[1.5px] border-slate-700 w-full mb-3"></div>
 
           {/* 타이틀 및 요약정보 */}
-          <div className="flex justify-between items-baseline mb-4 px-1">
+          <div className="flex justify-between items-baseline mb-3 px-1">
             <h2 className="text-[20px] font-extrabold text-slate-900 tracking-tight">
               부서별 면적 계획 총괄 요약계획표
             </h2>
-            <span className="text-[10px] text-slate-400 font-semibold font-mono">REPORT DATE: {currentDate}</span>
           </div>
 
           <div className="overflow-hidden border border-slate-300 rounded-lg">
@@ -652,7 +651,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           <div className="absolute bottom-2 left-1 right-1">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
-              <span>HANA ARCHITECTURE DESIGN GROUP</span>
+              <span className="font-extrabold text-[#1E293B] text-[9px]">해안건축</span>
               <span>STAGE: {currentStage?.name}</span>
               <span className="text-[11px] font-mono font-semibold text-slate-800 leading-none">
                 {getOverallPageNumber('summary')}
@@ -669,7 +668,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         <>
           {(() => {
             let detailPageAccumulator = 0;
-            return Object.entries(floorChunksMap).map(([floorName, chunks]) => {
+            const sortedFloorNames = Object.keys(floorChunksMap).sort((a, b) => getFloorVal(a) - getFloorVal(b));
+            return sortedFloorNames.map((floorName) => {
+              const chunks = floorChunksMap[floorName];
               const totalChunks = chunks.length;
               return chunks.map((chunkRows, chunkIdx) => {
                 const currentPageNum = chunkIdx + 1;
@@ -681,38 +682,37 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                 }
 
                 return (
-                  <div key={`${floorName}-p${currentPageNum}`} className="pdf-slide-container">
+                  <div key={`${floorName}-p${currentPageNum}`} className="pdf-slide-container pt-3.5 px-1 bg-white">
                     
                     {/* 머리말 영역 (PPT 스크린샷과 완벽 동해) */}
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1 mt-1">
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
                       <span>{projectTitle}</span>
                       <span>층별세부 면적계획</span>
                     </div>
                     <div className="border-b-[1.5px] border-slate-700 w-full mb-3"></div>
 
                     {/* 타이틀 영역 - 00층 세부 면적계획 (1/8) 완벽 반영 */}
-                    <div className="flex justify-between items-baseline mb-4 px-1">
+                    <div className="flex justify-between items-baseline mb-3 px-1">
                       <h2 className="text-[19px] font-extrabold text-slate-900 tracking-tight">
                         {floorName} 세부 면적계획 <span className="text-slate-500 font-bold ml-1">({currentPageNum}/{totalChunks})</span>
                       </h2>
-                      <span className="text-[10px] text-slate-400 font-semibold font-mono">REPORT DATE: {currentDate}</span>
                     </div>
 
                     {/* 테이블 컨텐츠 영역 */}
                     <div className="border border-slate-300 rounded-lg overflow-hidden style-table-pdf-container">
                       <table className="w-full text-slate-800 border-collapse table-fixed text-[9.5px] font-sans" style={{ width: '987px', minWidth: '987px' }}>
                         <colgroup>
-                          <col style={{ width: '36px' }} />
-                          <col style={{ width: '115px' }} />
+                          <col style={{ width: '32px' }} />
+                          <col style={{ width: '130px' }} />
                           {stages.map((s) => (
                             <React.Fragment key={s.id}>
-                              <col style={{ width: '35px' }} />
-                              <col style={{ width: '22px' }} />
-                              <col style={{ width: '42px' }} />
+                              <col style={{ width: '34px' }} />
+                              <col style={{ width: '20px' }} />
+                              <col style={{ width: '39px' }} />
                             </React.Fragment>
                           ))}
-                          <col style={{ width: '46px' }} />
-                          <col style={{ width: '295px' }} />
+                          <col style={{ width: '45px' }} />
+                          <col style={{ width: '315px' }} />
                         </colgroup>
                         <thead>
                           <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
@@ -723,7 +723,10 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                 {s.name}
                               </th>
                             ))}
-                            <th rowSpan={2} className="py-1 px-1 text-right font-extrabold text-[10px] border-r border-slate-300">증감</th>
+                            <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[10px] border-r border-slate-300 leading-tight">
+                              증감<br/>
+                              <span className="text-[7.2px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
+                            </th>
                             <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[10px] col-note-print">NOTE</th>
                           </tr>
                           <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
@@ -798,7 +801,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             // 일반 데이터 행 렌더링 (화면이랑 99.9% 동치)
                             return (
                               <tr key={row.id} className="hover:bg-slate-50/20 text-[9px]">
-                                <td className="py-1 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap">{row.no}</td>
+                                <td className="py-1 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[7px] tracking-tighter">{row.no}</td>
                                 <td className="py-1 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>{row.name}</td>
                                 {stages.map((s) => {
                                   const isEmpty = row[`${s.id}_isEmpty`];
@@ -841,7 +844,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     <div className="absolute bottom-2 left-1 right-1">
                       <div className="border-t border-slate-300 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
-                        <span>HANA ARCHITECTURE DESIGN GROUP</span>
+                        <span className="font-extrabold text-[#1E293B] text-[9px]">해안건축</span>
                         <span>STAGE: {currentStage?.name}</span>
                         <span className="text-[11px] font-mono font-semibold text-slate-800 leading-none">
                           {overallPageNum}
