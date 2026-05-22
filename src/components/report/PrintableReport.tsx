@@ -442,7 +442,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           @page { 
             size: A4 landscape; 
-            margin: 14mm 15mm 12mm 15mm !important; 
+            margin: 0 !important; 
           }
           
           body, html {
@@ -458,10 +458,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
           }
 
-          /* 실제 PDF 가용 높이(184mm)에 슬라이드 1장 매칭으로 행 밀림 원천 봉쇄 */
+          /* 실제 PDF 가용 높이(184mm)와 위아래 마진(12mm + 14mm = 26mm)을 더해 A4 세로 총합인 210mm에 정확히 매칭 */
           .pdf-slide-container {
             height: 184mm !important;
             max-height: 184mm !important;
+            margin: 12mm auto 14mm auto !important;
           }
         }
 
