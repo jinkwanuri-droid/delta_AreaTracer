@@ -14,8 +14,12 @@ export default function App() {
     // 1. Fetch Global Settings first for multi-device sync
     // 2. Then fetch data from Sheets
     const init = async () => {
-      await fetchGlobalSettings();
-      await fetchData();
+      try {
+        await fetchGlobalSettings();
+        await fetchData();
+      } catch (err) {
+        console.warn("Initialization error caught in App.tsx:", err);
+      }
     };
     init();
   }, [fetchGlobalSettings, fetchData]);

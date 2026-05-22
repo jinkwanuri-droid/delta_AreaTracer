@@ -567,13 +567,13 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
       </div>
-           {/* Main Grid: Left Column (lg:col-span-2, 40%) vs Right Column (lg:col-span-3, 60%) */}
+
+      {/* Main Grid: Reorganized for flexible ordering on mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         
-        {/* Left Column (40% width): contains 2x2 KPIs + Donut Chart */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          
-          {/* KPI Cards: 2x2 Grid with high-end minimal styling */}
+        {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
+        <div className="lg:col-span-2 order-1">
+          {/* KPI Cards: 2x2 Grid with enhanced height and sizing */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             {/* KPI 1: 전체 연면적 */}
@@ -581,7 +581,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-indigo-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-indigo-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">전체 연면적</span>
@@ -589,8 +589,8 @@ const Dashboard: React.FC = () => {
                   <LayoutGrid size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10">
-                <h3 className="text-[23px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+              <div className="mt-4 z-10 text-right">
+                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end">
                   <span>{formatNumberParts(currentStage?.gross || 0).integer}</span>
                   <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(currentStage?.gross || 0).decimal}</span>
                   <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
@@ -612,7 +612,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-blue-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-blue-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">공용면적</span>
@@ -620,8 +620,8 @@ const Dashboard: React.FC = () => {
                   <Trees size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10">
-                <h3 className="text-[23px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+              <div className="mt-4 z-10 text-right">
+                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end">
                   <span>{formatNumberParts(calculatedCommonArea).integer}</span>
                   <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedCommonArea).decimal}</span>
                   <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
@@ -637,7 +637,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-emerald-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-emerald-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">G/N 비율</span>
@@ -647,7 +647,7 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="mt-4 z-10 w-full">
                 <div className="flex items-baseline gap-x-2">
-                  <span className="text-[23px] font-black text-slate-800 tracking-tight leading-none">{(currentStage?.gnRatio || 0).toFixed(2)}</span>
+                  <span className="text-[26px] font-black text-slate-800 tracking-tight leading-none">{(currentStage?.gnRatio || 0).toFixed(2)}</span>
                 </div>
                 {/* Embedded Progress Bar */}
                 <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
@@ -670,7 +670,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-amber-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-amber-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">의료 외 면적</span>
@@ -678,8 +678,8 @@ const Dashboard: React.FC = () => {
                   <Box size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10">
-                <h3 className="text-[23px] font-black text-slate-800 tracking-tight leading-none flex items-baseline">
+              <div className="mt-4 z-10 text-right">
+                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end">
                   <span>{formatNumberParts(calculatedNonMedicalArea).integer}</span>
                   <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedNonMedicalArea).decimal}</span>
                   <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
@@ -691,119 +691,21 @@ const Dashboard: React.FC = () => {
             </motion.div>
 
           </div>
-
-          {/* Division share donut - Takes remainder of 40% column */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
-            <div className="flex flex-col h-full justify-between">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <PieChartIcon size={17} className="text-indigo-500" />
-                  <h3 className="text-sm font-black text-slate-800 tracking-tight">부문별 면적 비중</h3>
-                </div>
-              </div>
-              
-              <div className="flex flex-col items-center justify-center w-full h-full my-auto flex-1 min-h-[300px]">
-                <div className="w-full h-full relative flex-1 mx-auto flex items-center justify-center z-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart 
-                      key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
-                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                      style={{ outline: 'none' }}
-                      tabIndex={-1}
-                    >
-                      <Pie
-                        data={divisionData}
-                        innerRadius="56%" 
-                        outerRadius="85%"
-                        startAngle={90}
-                        endAngle={-270}
-                        paddingAngle={4}
-                        cornerRadius={7}
-                        dataKey="value"
-                        isAnimationActive={!isPdfExportMode}
-                        animationDuration={840}
-                        animationEasing="ease-out"
-                        onClick={(data) => {
-                          if (data && data.payload) {
-                            const clickedId = data.payload.id;
-                            if (activeTrendDivId === clickedId) {
-                              setActiveTrendDivId(null);
-                            } else {
-                              setActiveTrendDivId(clickedId);
-                            }
-                          }
-                        }}
-                        cursor="pointer"
-                        labelLine={false}
-                        label={({ x, y, cx, cy, name, percent, value }) => (
-                          <text 
-                            x={x} 
-                            y={y} 
-                            fill="#1e293b" 
-                            textAnchor={x > cx ? 'start' : 'end'} 
-                            dominantBaseline="central" 
-                            fontSize={10.5} 
-                            fontWeight="bold"
-                            style={{ fontFamily: '"Pretendard Variable", sans-serif' }}
-                          >
-                            <tspan x={x} dy="-0.6em">{name}</tspan>
-                            <tspan x={x} dy="1.3em" fill="#64748b" fontSize={9} fontWeight="medium">
-                              {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
-                            </tspan>
-                          </text>
-                        )}
-                      >
-                        {divisionData.map((entry, index) => {
-                          const isAnyActive = activeTrendDivId !== null;
-                          const isActive = activeTrendDivId === entry.id;
-                          const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.15) : 1.0;
-                          return (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.color} 
-                              stroke="#ffffff" 
-                              strokeWidth={1.5} 
-                              style={{ opacity: opacityVal, transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none', cursor: 'pointer' }}
-                            />
-                          );
-                        })}
-                      </Pie>
-                      <Tooltip 
-                        content={<CustomTooltip isPie pieTotal={divisionData.reduce((acc, d) => acc + d.value, 0)} />} 
-                        cursor={false} 
-                        wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center total text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-                    <span className="text-[10px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
-                    <span className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
-                      {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </span>
-                    <span className="text-[9px] font-bold text-slate-400 mt-1">㎡</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
 
-        {/* Right Column (60% width): contains 5위치 (단계별 면적 추세) + 단계별 부문별 면적 추이 */}
-        <div className="lg:col-span-3 flex flex-col gap-6">
-          
+        {/* Step trend bar chart - Reordered for mobile */}
+        <div className="lg:col-span-3 order-2 lg:order-2">
           {/* 5위치: 단계별 면적추이(전용/공용) */}
-          <div className="bg-white p-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+          <div className="bg-white p-5 h-full rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-indigo-500" />
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">단계별 면적추이(전용/공용)</h3>
+                <TrendingUp size={17} className="text-indigo-500" />
+                <h3 className="text-sm font-black text-slate-800 tracking-tight">단계별 면적 추이</h3>
               </div>
             </div>
             
             <div className="h-[235px] w-full mt-2">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <BarChart 
                   data={areaByStage} 
                   margin={{ top: 25, right: 10, left: -10, bottom: 0 }}
@@ -902,7 +804,108 @@ const Dashboard: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
 
+        {/* Row 2: Donut Chart and Detailed Trends */}
+        <div className="lg:col-span-2 order-3 lg:order-3">
+          {/* Division share donut */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+            <div className="flex flex-col h-full justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <PieChartIcon size={17} className="text-indigo-500" />
+                  <h3 className="text-sm font-black text-slate-800 tracking-tight">부문별 면적 비중</h3>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center w-full h-full my-auto flex-1 min-h-[300px]">
+                <div className="w-full h-full relative flex-1 mx-auto flex items-center justify-center z-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                    <PieChart 
+                      key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
+                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                      style={{ outline: 'none' }}
+                      tabIndex={-1}
+                    >
+                      <Pie
+                        data={divisionData}
+                        innerRadius="56%" 
+                        outerRadius="85%"
+                        startAngle={90}
+                        endAngle={-270}
+                        paddingAngle={4}
+                        cornerRadius={7}
+                        dataKey="value"
+                        isAnimationActive={!isPdfExportMode}
+                        animationDuration={400}
+                        animationEasing="ease-out"
+                        onClick={(data) => {
+                          if (data && data.payload) {
+                            const clickedId = data.payload.id;
+                            if (activeTrendDivId === clickedId) {
+                               setActiveTrendDivId(null);
+                            } else {
+                               setActiveTrendDivId(clickedId);
+                            }
+                          }
+                        }}
+                        cursor="pointer"
+                        labelLine={false}
+                        label={({ x, y, cx, cy, name, percent, value }) => (
+                          <text 
+                            x={x} 
+                            y={y} 
+                            fill="#1e293b" 
+                            textAnchor={x > cx ? 'start' : 'end'} 
+                            dominantBaseline="central" 
+                            fontSize={10.5} 
+                            fontWeight="bold"
+                            style={{ fontFamily: '"Pretendard Variable", sans-serif' }}
+                          >
+                            <tspan x={x} dy="-0.6em">{name}</tspan>
+                            <tspan x={x} dy="1.3em" fill="#64748b" fontSize={9} fontWeight="medium">
+                              {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
+                            </tspan>
+                          </text>
+                        )}
+                      >
+                        {divisionData.map((entry, index) => {
+                          const isAnyActive = activeTrendDivId !== null;
+                          const isActive = activeTrendDivId === entry.id;
+                          const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.15) : 1.0;
+                          return (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.color} 
+                              stroke="#ffffff" 
+                              strokeWidth={1.5} 
+                              style={{ opacity: opacityVal, transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none', cursor: 'pointer' }}
+                            />
+                          );
+                        })}
+                      </Pie>
+                      <Tooltip 
+                        content={<CustomTooltip isPie pieTotal={divisionData.reduce((acc, d) => acc + d.value, 0)} />} 
+                        cursor={false} 
+                        wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center total text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                    <span className="text-[10px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
+                    <span className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
+                      {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-1">㎡</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-3 order-4 lg:order-4 group">
           {/* 단계별 부문별 면적 추이 (Big Line/Area Chart) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
@@ -938,7 +941,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="h-[280px] sm:h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%" key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
                       data={stageDivisionData} 
@@ -995,7 +998,7 @@ const Dashboard: React.FC = () => {
                             dot={{ r: 2.5, strokeWidth: 1, fill: '#ffffff', strokeOpacity: strokeOpacity }}
                             activeDot={{ r: 4 }}
                             isAnimationActive={!isPdfExportMode}
-                            animationDuration={840}
+                            animationDuration={400}
                           >
                             {(isActive || !isAnyActive) && (
                               <LabelList 
@@ -1079,29 +1082,28 @@ const Dashboard: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className="h-[310px] w-full">
-               <ResponsiveContainer width="100%" height="100%" key={`bar-floors-rc-${activeTrendDivId || 'all'}`}>
+            <div className="h-[310px] w-full relative">
+               <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-floors-rc-${medicalOnly}-${activeTrendDivId || 'all'}`}>
                  <BarChart 
-                   key={`bar-floors-${activeTrendDivId || 'all'}`}
                    layout="vertical" 
                    data={floorDivisionData} 
-                   margin={{ top: 5, right: 65, left: -20, bottom: 5 }}
+                   margin={{ top: 10, right: 80, left: 30, bottom: 10 }}
                    className="outline-none"
                    style={{ outline: 'none' }}
                    tabIndex={-1}
-                   barCategoryGap={10}
+                   barCategoryGap={12}
                   >
                     <XAxis type="number" hide />
                     <YAxis 
-                       yAxisId="left"
                        dataKey="name" 
                        type="category" 
                        axisLine={false} 
                        tickLine={false} 
-                       tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }}
+                       width={40}
+                       tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }}
                     />
                     <Tooltip 
-                      cursor={false}
+                      cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }}
                       content={
                         <CustomTooltip 
                           highlightedDivId={activeTrendDivId} 
@@ -1112,7 +1114,8 @@ const Dashboard: React.FC = () => {
                           floors={floors}
                         />
                       } 
-                      wrapperStyle={{ pointerEvents: 'none', transition: 'transform 0.1s ease-out' }}
+                      wrapperStyle={{ pointerEvents: 'none', zIndex: 1000 }}
+                      allowEscapeViewBox={{ x: true, y: true }}
                     />
                     {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div, i, arr) => {
                       const isAnyActive = activeTrendDivId !== null;
@@ -1121,17 +1124,15 @@ const Dashboard: React.FC = () => {
                       return (
                         <Bar 
                           key={div.id} 
-                          yAxisId="left"
                           dataKey={div.name} 
                           stackId="a" 
                           fill={div.color || '#cbd5e1'} 
                           stroke="#ffffff"
                           strokeWidth={1.5}
-                          radius={[6, 6, 6, 6]} 
-                          barSize={24} 
-                          isAnimationActive={!isPdfExportMode}
-                          animationDuration={840}
-                          style={{ fillOpacity: barOpacity, cursor: 'pointer', transition: 'fill-opacity 600ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none' }}
+                          radius={[4, 4, 4, 4]} 
+                          barSize={20} 
+                          isAnimationActive={false}
+                          style={{ fillOpacity: barOpacity, cursor: 'pointer', transition: 'fill-opacity 400ms ease', outline: 'none' }}
                           onClick={() => {
                             if (activeTrendDivId === div.id) {
                               setActiveTrendDivId(null);
@@ -1159,12 +1160,10 @@ const Dashboard: React.FC = () => {
 
                     {/* Dummy stack bar at the end to render total area labels directly docked next to the last bar */}
                     <Bar 
-                      yAxisId="left"
                       dataKey="dummyTotal" 
                       stackId="a" 
                       fill="transparent" 
-                      isAnimationActive={!isPdfExportMode}
-                      animationDuration={840}
+                      isAnimationActive={false}
                       label={(props: any) => {
                         const { x, y, width, height, index } = props;
                         const rowData = floorDivisionData[index];
@@ -1366,7 +1365,7 @@ const Dashboard: React.FC = () => {
            {divisionDeptShares.map((div, i) => (
               <div key={i} className="flex flex-col items-center">
                 <div className="w-full aspect-square relative mb-4">
-                   <ResponsiveContainer width="100%" height="100%">
+                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                      <PieChart style={{ outline: 'none' }} tabIndex={-1}>
                         <Pie
                           data={div.data}
@@ -1381,7 +1380,7 @@ const Dashboard: React.FC = () => {
                             const y = cy + radius * Math.sin(-midAngle * RADIAN);
                             const anchor = x > cx ? 'start' : 'end';
                             return (
-                               <text x={x} y={y} fill="#475569" textAnchor={anchor} dominantBaseline="central" fontSize={11} fontWeight="600">
+                               <text x={x} y={y} fill="#475569" textAnchor={anchor} dominantBaseline="central" fontSize={9} fontWeight="600">
                                   {`${name}: ${Math.round(value).toLocaleString()}㎡ (${(percent * 100).toFixed(1)}%)`}
                                </text>
                             );

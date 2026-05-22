@@ -190,7 +190,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                    </div>
                    <ReportDivisionPieChart 
                       data={divisionData} 
-                      totalNetArea={currentStage?.net || 0} 
+                      totalNetArea={areaByStage[areaByStage.length - 1]?.net || 0} 
                       width={900} 
                       height={340} 
                    />

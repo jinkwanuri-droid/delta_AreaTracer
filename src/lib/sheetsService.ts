@@ -35,14 +35,28 @@ async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]):
   let existingTabs: string[] = [];
   try {
     const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
-    const metaResponse = await fetch(metaUrl);
-    if (!metaResponse.ok) {
-      const err = await metaResponse.json();
-      const message = err.error?.message || '';
-      if (message.includes("not found") || message.includes("entity was not found") || message.includes("permission") || metaResponse.status === 404 || metaResponse.status === 403 || metaResponse.status === 400) {
-        throw new Error("구글 스프레드시트 ID가 올바르지 않거나 공유 권한설정이 되어있지 않습니다. 구글 스프레드시트 우측 상단 '공유' 버튼을 클릭한 후 일반 액세스를 '링크가 있는 모든 사용자' 및 '뷰어' 상태로 설정했는지 확인해주세요.");
+    let metaResponse;
+    let metaRetries = 3;
+    while (metaRetries > 0) {
+      metaResponse = await fetch(metaUrl);
+      if (metaResponse.ok || metaResponse.status !== 503) break;
+      await new Promise(r => setTimeout(r, 1500));
+      metaRetries--;
+    }
+    
+    if (!metaResponse || !metaResponse.ok) {
+      let message = 'Failed to fetch spreadsheet metadata';
+      try {
+        const err = await metaResponse!.json();
+        message = err.error?.message || message;
+        if (message.includes("not found") || message.includes("entity was not found") || message.includes("permission") || metaResponse!.status === 404 || metaResponse!.status === 403 || metaResponse!.status === 400) {
+          throw new Error("구글 스프레드시트 ID가 올바르지 않거나 공유 권한설정이 되어있지 않습니다. 구글 스프레드시트 우측 상단 '공유' 버튼을 클릭한 후 일반 액세스를 '링크가 있는 모든 사용자' 및 '뷰어' 상태로 설정했는지 확인해주세요.");
+        }
+      } catch (e: any) {
+        if (e.message?.includes("구글 스프레드시트")) throw e;
+        message = metaResponse?.statusText || message;
       }
-      throw new Error(message || 'Failed to fetch spreadsheet metadata');
+      throw new Error(message);
     }
     const metaData = await metaResponse.json();
     if (metaData.sheets) {
@@ -71,11 +85,24 @@ async function fetchSheetDataBatch(spreadsheetId: string, sheetNames: string[]):
   const rangesQuery = validSheetNames.map(name => `ranges=${encodeURIComponent(name)}`).join('&');
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchGet?valueRenderOption=UNFORMATTED_VALUE&key=${apiKey}&${rangesQuery}`;
   
-  const response = await fetch(url);
+  let response;
+  let retries = 3;
+  while (retries > 0) {
+    response = await fetch(url);
+    if (response.ok || response.status !== 503) break;
+    await new Promise(r => setTimeout(r, 1500));
+    retries--;
+  }
 
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.error?.message || 'Failed to fetch sheet data from batchGet');
+  if (!response || !response.ok) {
+    let errMsg = 'Failed to fetch sheet data from batchGet';
+    try {
+      const err = await response!.json();
+      errMsg = err.error?.message || errMsg;
+    } catch(e) {
+      errMsg = response?.statusText || errMsg;
+    }
+    throw new Error(errMsg);
   }
 
   const data = await response.json();
