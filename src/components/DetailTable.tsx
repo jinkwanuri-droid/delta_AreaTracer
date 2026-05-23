@@ -1729,8 +1729,8 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
                 {s.name}
               </th>
             ))}
-            <th rowSpan={2} className="py-2 px-1 text-right font-extrabold text-slate-800 border-l border-slate-300 text-[10px]">증감</th>
-            <th rowSpan={2} className="py-2 px-2 text-left font-extrabold text-slate-800 border-l border-slate-300 text-[10px] col-note-print">NOTE</th>
+            <th rowSpan={2} className="py-2 px-1 text-right font-extrabold text-slate-800 border-l border-slate-300 text-[10px] w-[8%]">증감</th>
+            <th rowSpan={2} className="py-2 px-2 text-left font-extrabold text-slate-800 border-l border-slate-300 text-[10px] col-note-print w-[18%]">NOTE</th>
           </tr>
           <tr className="bg-slate-50 border-b border-slate-300">
             {stages.map((s) => (

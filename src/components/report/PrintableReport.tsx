@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       const chunks: any[][] = [];
       let currentChunk: any[] = [];
       let currentPoints = 0;
-      const MAX_POINTS_PER_PAGE = 29.0; // Reduced from 31.0 to fit safely within A4 footer area
+      const MAX_POINTS_PER_PAGE = 23.0; // Reduced from 29.0 to strictly prevent overflow of bottom padding
 
       for (let i = 0; i < flatData.length; i++) {
         const item = flatData[i];
@@ -790,11 +790,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                 </th>
                               );
                             })}
-                            <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[10px] border-r border-slate-300 leading-tight">
+                            <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[10px] border-r border-slate-300 leading-tight w-[10%]">
                               증감<br/>
                               <span className="text-[7.2px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
                             </th>
-                            <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[10px] col-note-print">NOTE</th>
+                            <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[10px] col-note-print w-[18%]">NOTE</th>
                           </tr>
                           <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
                             {stages.map((s, idx) => {
