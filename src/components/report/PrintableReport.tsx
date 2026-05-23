@@ -532,10 +532,19 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         }
 
         @media print {
+          html, body {
+            height: auto !important;
+            overflow: visible !important;
+          }
           .pdf-slide-container {
+            height: 209mm !important;
+            max-height: 209mm !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
+            margin: 0 !important;
+            page-break-inside: avoid !important;
+            page-break-after: always !important;
           }
         }
 
@@ -619,7 +628,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
           
            {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
-          <div className="absolute bottom-[10mm] left-[15mm] right-[15mm]">
+          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm]">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -708,7 +717,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
 
           {/* 꼬리말 영역 */}
-          <div className="absolute bottom-[10mm] left-[15mm] right-[15mm]">
+          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm]">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -792,9 +801,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             })}
                             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[10px] border-r border-slate-300 leading-tight w-[10%]">
                               증감<br/>
-                              <span className="text-[7.2px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
+                              <span className="text-[6px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
                             </th>
-                            <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[10px] col-note-print w-[18%]">NOTE</th>
+                            <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[10px] col-note-print w-[18%]">NOTE</th>
                           </tr>
                           <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
                             {stages.map((s, idx) => {
@@ -879,7 +888,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             return (
                               <tr key={row.id} className="hover:bg-slate-50/20 text-[9px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                 <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[7px] tracking-tighter">{row.no}</td>
-                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
+                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal text-[8px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
                                 {stages.map((s) => {
                                   const isEmpty = row[`${s.id}_isEmpty`];
                                   const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
@@ -924,7 +933,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     </div>
 
                     {/* 꼬리말 영역 - PPT 슬라이드 최하부 라인 완벽 복제 */}
-                    <div className="absolute bottom-[10mm] left-[15mm] right-[15mm]">
+                    <div className="absolute bottom-[14mm] left-[15mm] right-[15mm]">
                       <div className="border-t border-slate-300 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
                         <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
