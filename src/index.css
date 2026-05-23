@@ -339,17 +339,16 @@ body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 0 !important; /* 빈 화면이 발생하지 않도록 전역 마진 자체를 제거하여 PrintableReport의 정밀 마진 선언을 강화합니다 */
+    margin: 10mm !important; /* 사용자 요청에 따라 사방 10mm 여백 확보 */
   }
   
   html, body {
-    width: 297mm !important;
-    height: auto !important;
+    width: 100% !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important; /* 스크롤바와 여유 공간으로 인한 슬라이드 오버플로우 및 빈 장 유도 전격 차단 */
+    overflow: hidden !important; 
     background: #ffffff !important;
-    color: #1e293b !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
