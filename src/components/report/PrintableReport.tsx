@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 16.5; // Adjusted to allow high legibility with 14-16 comfortable rows per page
+        const MAX_POINTS_PER_PAGE = 21.0; // Adjusted for 100% scale output with comfortable line limits (about 18-20 rows)
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -510,19 +510,25 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
           }
 
-          /* 브라우저 기본 여백(사방 12~14mm)이 들어가므로 슬라이드 크기를 182mm (210 - 28)로 최적화하고 컨테이너 내부 패딩을 소량 지정 */
+          /* 브라우저 기본 여백 사방마진이 부여되므로, 인쇄 가용 영역을 축소 배율 없이 꽉 채우도록 100%로 지정 */
           .pdf-slide-container {
-            width: 271mm !important;
-            height: 182mm !important;
-            max-height: 182mm !important;
+            width: 100% !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            max-height: 100vh !important;
             margin: 0 !important;
             padding: 2mm 3mm 2mm 3mm !important; 
             box-sizing: border-box !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            page-break-inside: avoid !important;
+            page-break-after: always !important;
           }
 
-          /* 하단 꼬리글 영역 오버라이드: 브라우저 기본 여백 하부에 꼭 맞추기 위해 밀착(bottom: 2mm) 시켜 완벽 정렬 */
+          /* 하단 꼬리글 영역 오버라이드: 브라우저 기본 마진 바로 위에 기분 좋게 밀착배치하여 하부 정렬 */
           .pdf-slide-container .absolute.bottom-\[14mm\] {
-            bottom: 2mm !important;
+            bottom: 3mm !important;
             left: 3mm !important;
             right: 3mm !important;
           }
@@ -544,23 +550,6 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
           border: 1px solid #e2e8f0;
           border-radius: 6px;
-        }
-
-        @media print {
-          html, body {
-            height: auto !important;
-            overflow: visible !important;
-          }
-          .pdf-slide-container {
-            height: 182mm !important;
-            max-height: 182mm !important;
-            box-shadow: none !important;
-            border: none !important;
-            border-radius: 0 !important;
-            margin: 0 !important;
-            page-break-inside: avoid !important;
-            page-break-after: always !important;
-          }
         }
 
         /* 마지막 슬라이드는 강제 page-break를 해제해 공백 페이지 인출 방지 */
