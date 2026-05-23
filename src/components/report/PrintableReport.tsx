@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 23.5; // Adjusted for 100% scale output with comfortable line limits (about 20-22 rows)
+        const MAX_POINTS_PER_PAGE = 22.0; // Adjusted for 100% scale output with comfortable line limits
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -513,9 +513,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           /* 브라우저 기본 여백 사방마진이 부여되므로, 인쇄 가용 영역을 축소 배율 없이 꽉 채우도록 100%로 지정 */
           .pdf-slide-container {
             width: 266mm !important;
-            height: 180mm !important;
-            min-height: 180mm !important;
-            max-height: 180mm !important;
+            height: 175mm !important;
+            min-height: 175mm !important;
+            max-height: 175mm !important;
             margin: 0 !important;
             padding: 0mm 1mm 1mm 1mm !important; 
             box-sizing: border-box !important;
@@ -528,10 +528,12 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           }
 
           /* 하단 꼬리글 영역 오버라이드: 브라우저 기본 마진 바로 위에 기분 좋게 밀착배치하여 하부 정렬 (2mm 위로 보정) */
-          .pdf-slide-container .absolute.bottom-\[14mm\] {
-            bottom: 2mm !important;
+          .pdf-slide-container .print-footer {
+            position: absolute !important;
+            bottom: 5mm !important;
             left: 1mm !important;
             right: 1mm !important;
+            width: auto !important;
           }
         }
 
@@ -633,7 +635,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
           
            {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
-          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm]">
+          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -722,7 +724,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
 
           {/* 꼬리말 영역 */}
-          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm]">
+          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -946,7 +948,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     </div>
 
                     {/* 꼬리말 영역 - PPT 슬라이드 최하부 라인 완벽 복제 */}
-                    <div className="absolute bottom-[14mm] left-[15mm] right-[15mm]">
+                    <div className="absolute bottom-[14mm] left-[15mm] right-[15mm] print-footer">
                       <div className="border-t border-slate-300 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
                         <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
