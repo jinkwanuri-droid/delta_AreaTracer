@@ -516,11 +516,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           /* 인쇄 시 컨테이너를 가용 면적에 맞춤으로써 여백 관리 최적화 */
           .pdf-slide-container {
             width: 100% !important;
-            height: 172mm !important; /* 브라우저 가용영역 높이 반영 */
-            min-height: 172mm !important;
-            max-height: 172mm !important;
+            height: 185mm !important; /* 브라우저 기본여백(15mm 마진차감 180~190mm)에 최적화하여 꽉 차도록 세로 상향 */
+            min-height: 185mm !important;
+            max-height: 185mm !important;
             margin: 0 !important;
-            padding: 2mm 0mm 0mm 0mm !important; /* 인쇄시엔 내부 패딩을 거의 제거하여 기본여백과 중복 방지 */
+            padding: 9mm 8mm 13mm 8mm !important; /* 화면 오리지널 패딩과 완벽 일치시켜 꼬리말과 좌우 여백을 온전히 존중 */
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
@@ -530,9 +530,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             box-sizing: border-box !important;
           }
 
-          /* 인쇄 시 머리말 꼬리말 위치를 패딩 감소에 맞게 재조정 */
+          /* 인쇄 시 머리말 꼬리말 오버라이딩 오차 수정 (화면 구성인 bottom-[15mm]과 깔끔하게 연동) */
           .pdf-slide-container .print-footer {
-            bottom: 8mm !important;
+            bottom: 15mm !important;
             left: 8mm !important;
             right: 8mm !important;
           }
