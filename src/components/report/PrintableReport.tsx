@@ -494,65 +494,31 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 0 !important; /* 브라우저 기본 마진 제거 */
+            margin: 0;
           }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .print-container-root {
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            background: #ffffff !important;
-            overflow: visible !important;
-            font-size: unset !important;
-            line-height: normal !important;
-          }
-          /* 슬라이드 크기 및 레이아웃 시스템 현대화 (빈 페이지 및 다층 출력 해결) */
           .pdf-slide-container {
             width: 297mm !important;
             height: 210mm !important;
-            min-height: 210mm !important;
-            max-height: 210mm !important;
+            page-break-after: always !important;
             margin: 0 !important;
             padding: 10mm 12mm 15mm 12mm !important;
-            box-shadow: none !important;
-            border: none !important;
-            border-radius: 0 !important;
+            position: relative !important;
             overflow: hidden !important;
             box-sizing: border-box !important;
-            background: #ffffff !important;
-            display: flex !important;
-            flex-direction: column !important;
-            position: relative !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            page-break-inside: avoid !important;
           }
-
-          /* 테이블 스타일 조정 */
-          .style-table-pdf-container {
-            width: 100% !important;
+          .pdf-slide-container:last-child {
+            page-break-after: avoid !important;
           }
           .style-table-pdf-container table {
             width: 100% !important;
           }
-          .style-table-pdf-container td, 
           .style-table-pdf-container th {
-            display: table-cell;
-            line-height: 1.1 !important;
-            padding: 1px 3px !important;
-            border: 1px solid #cbd5e1 !important;
+            font-size: 8pt !important;
           }
-
+          .style-table-pdf-container td {
+            font-size: 7pt !important;
+          }
+          
           /* 빈셀 빗금 해치 패턴 구현 (인쇄용) */
           .pdf-hatch-cell {
             background: linear-gradient(
@@ -565,25 +531,6 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             background-size: 4px 4px !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-          }
-
-          /* 마지막 슬라이드는 확실히 페이지 나눔이 발생하지 않도록 강제 방어 */
-          .pdf-slide-container:last-child {
-            break-after: auto !important;
-            page-break-after: auto !important;
-          }
-
-          /* 인쇄 시 머리말 꼬리말 오버라이딩 오차 수정 (화면 구성인 bottom-[15mm]과 깔끔하게 연동) */
-          .pdf-slide-container .print-footer {
-            bottom: 15mm !important;
-            left: 8mm !important;
-            right: 8mm !important;
-          }
-
-          /* 혹여나 인쇄 시에도 화면용 그림자나 아웃라인 테두리가 조금이라도 잔류하여 번지거나 빈 페이지를 지탱하지 않도록 강제 숙청 */
-          .pdf-slide-container, .pdf-slide-container * {
-            box-shadow: none !important;
-            text-shadow: none !important;
           }
         }
 
