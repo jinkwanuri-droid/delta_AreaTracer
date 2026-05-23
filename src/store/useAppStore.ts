@@ -96,6 +96,8 @@ export interface AppState {
   isLoading: boolean;
   spreadsheetId: string | null;
   floorWardOverrides: Record<string, number>; // floorId|deptId -> count
+  settingsPassword: string;
+  setSettingsPassword: (val: string) => Promise<void>;
   fetchGlobalSettings: () => Promise<void>;
   saveGlobalSettings: () => Promise<void>;
   setVisibleStageIds: (ids: string[]) => void;
@@ -245,6 +247,11 @@ export const useAppStore = create<AppState>()(
       isLoading: false,
       spreadsheetId: null,
       floorWardOverrides: {},
+      settingsPassword: "1234",
+      setSettingsPassword: async (val: string) => {
+        set({ settingsPassword: val });
+        await get().saveGlobalSettings();
+      },
       fetchGlobalSettings: async () => {
         // Load local fallback/backup first to guarantee instant offline-first rendering
         let localRN: Record<string, string> = {};
@@ -283,6 +290,7 @@ export const useAppStore = create<AppState>()(
                 departmentNotes: { ...localDN, ...(data.departmentNotes || {}) },
                 summaryNotes: data.summaryNotes || get().summaryNotes,
                 floorWardOverrides: data.floorWardOverrides || get().floorWardOverrides,
+                settingsPassword: data.settings_password || get().settingsPassword,
               });
               return;
             }
@@ -349,6 +357,7 @@ export const useAppStore = create<AppState>()(
               floorWardOverrides: config.floorWardOverrides || get().floorWardOverrides,
               roomNotes: { ...localRN, ...roomNotes },
               departmentNotes: { ...localDN, ...deptNotes },
+              settingsPassword: config.settings_password || get().settingsPassword,
             });
             console.log("Global settings successfully loaded directly from Supabase.");
           } catch (supErr) {
@@ -370,6 +379,7 @@ export const useAppStore = create<AppState>()(
           floorWardOverrides: state.floorWardOverrides,
           roomNotes: state.roomNotes,
           departmentNotes: state.departmentNotes,
+          settings_password: state.settingsPassword,
         };
 
         // Always save to localStorage immediately as a reliable local backup

@@ -11,6 +11,7 @@ interface Option {
 
 interface SelectorPopoverProps {
   label?: string;
+  labelClassName?: string;
   options: Option[];
   value: string;
   onChange: (value: string) => void;
@@ -21,6 +22,7 @@ interface SelectorPopoverProps {
 
 export default function SelectorPopover({ 
   label, 
+  labelClassName,
   options, 
   value, 
   onChange, 
@@ -42,7 +44,7 @@ export default function SelectorPopover({
           <div className="flex-1 flex items-center gap-1.5 leading-none text-[11px] font-bold text-left overflow-hidden">
             {label && (
               <>
-                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-tighter shrink-0">{label}</span>
+                <span className={clsx("text-[10px] font-extrabold uppercase tracking-tighter shrink-0", labelClassName || "text-slate-400")}>{label}</span>
                 <span className="text-slate-300 shrink-0">|</span>
               </>
             )}

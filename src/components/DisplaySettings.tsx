@@ -74,13 +74,13 @@ export default function DisplaySettings() {
               </label>
             </div>
 
-            {/* 표시 단계 설정 (2x3 grid as requested) */}
+            {/* 표시 단계 설정 (2x3 grid changed to 2-column list with row-aligned buttons) */}
             <div className="pt-3 border-t border-slate-100">
               <div className="flex items-center gap-2 mb-3">
                 <Eye size={15} className="text-indigo-500" />
                 <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tighter">표시할 단계 (최소 1개)</h4>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {stages.map(stage => {
                   const isVisible = visibleStageIds.includes(stage.id);
                   return (
@@ -88,44 +88,46 @@ export default function DisplaySettings() {
                       key={stage.id}
                       onClick={() => toggleStage(stage.id)}
                       className={clsx(
-                        "flex flex-col items-center justify-center p-2 rounded-lg text-[9px] font-bold transition-all border gap-1 min-h-[52px]",
+                        "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[9.5px] font-bold transition-all border gap-1.5 h-[30px]",
                         isVisible 
                           ? "bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm ring-1 ring-indigo-50" 
-                          : "bg-white text-slate-300 border-slate-100 opacity-60"
+                          : "bg-white text-slate-400 border-slate-100 opacity-85"
                       )}
                     >
-                      <span className="text-center truncate w-full px-1">{stage.name}</span>
-                      {isVisible ? <Check size={10} className="text-indigo-500" /> : <EyeOff size={10} />}
+                      <span className="truncate text-left flex-1">{stage.name}</span>
+                      {isVisible ? <Eye size={10} className="text-indigo-500 shrink-0" /> : <EyeOff size={10} className="shrink-0" />}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* 비교 대상 설정 (Updated to use SelectorPopover label design) */}
+            {/* 비교 대상 설정 (Updated to use SelectorPopover label design, flipped with "차이" divider) */}
             <div className="pt-3 border-t border-slate-100">
               <div className="flex items-center gap-2 mb-3">
                 <GitCompare size={15} className="text-indigo-500" />
                 <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tighter">증감(DIFF) 비교 설정</h4>
               </div>
 
-              <div className="bg-slate-50/50 p-3 rounded-xl ring-1 ring-slate-100 space-y-2">
-                <SelectorPopover
-                  label="BASE"
-                  options={stages}
-                  value={comparison.baseId || ""}
-                  onChange={(val) => setComparisonStages(val, comparison.targetId)}
-                  className="w-full bg-white border-slate-200"
-                  placeholder="기준 선택"
-                />
-                
+              <div className="bg-slate-50/50 p-2.5 rounded-xl ring-1 ring-slate-100 flex flex-col gap-1">
                 <SelectorPopover
                   label="TARGET"
+                  labelClassName="text-purple-600 font-extrabold"
                   options={stages}
                   value={comparison.targetId || ""}
                   onChange={(val) => setComparisonStages(comparison.baseId, val)}
-                  className="w-full bg-white border-slate-200"
+                  className="w-full bg-purple-50/40 border-purple-100/70 hover:bg-purple-100/40 hover:border-purple-200 text-purple-950 focus:ring-purple-500/20"
                   placeholder="비교 선택"
+                />
+                
+                <SelectorPopover
+                  label="BASE"
+                  labelClassName="text-rose-600 font-extrabold"
+                  options={stages}
+                  value={comparison.baseId || ""}
+                  onChange={(val) => setComparisonStages(val, comparison.targetId)}
+                  className="w-full bg-rose-50/40 border-rose-100/70 hover:bg-rose-100/40 hover:border-rose-200 text-rose-950 focus:ring-rose-500/20"
+                  placeholder="기준 선택"
                 />
               </div>
               

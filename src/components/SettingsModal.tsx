@@ -15,6 +15,7 @@ import {
   Link,
   Sheet,
   RefreshCw,
+  Lock,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -561,7 +562,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const setSpreadsheetId = useAppStore(state => state.setSpreadsheetId);
   const fetchData = useAppStore(state => state.fetchData);
 
-  const [activeTab, setActiveTab] = useState<"stages" | "areas" | "mapping">(
+  const [activeTab, setActiveTab] = useState<"stages" | "areas" | "mapping" | "security">(
     "stages",
   );
   const [selectedStageId, setSelectedStageId] = useState<string>(
@@ -575,6 +576,79 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [rawText, setRawText] = useState("");
   const [mappingText, setMappingText] = useState("");
   const [expandedDivs, setExpandedDivs] = useState<Record<string, boolean>>({});
+
+  const settingsPassword = useAppStore(state => state.settingsPassword);
+  const setSettingsPassword = useAppStore(state => state.setSettingsPassword);
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const authTimeStr = localStorage.getItem("settings_auth_time");
+    if (!authTimeStr) return false;
+    const authTime = Number(authTimeStr);
+    return Date.now() - authTime < 10 * 60 * 1000;
+  });
+
+  const [passInput, setPassInput] = useState("");
+  const [passError, setPassError] = useState("");
+  const [isCapsLock, setIsCapsLock] = useState(false);
+
+  const checkCapsLock = (e: React.KeyboardEvent) => {
+    if (e.getModifierState("CapsLock")) {
+      setIsCapsLock(true);
+    } else {
+      setIsCapsLock(false);
+    }
+  };
+
+  const [curPass, setCurPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [newPassConfirm, setNewPassConfirm] = useState("");
+  const [changeError, setChangeError] = useState("");
+  const [changeSuccess, setChangeSuccess] = useState("");
+
+  const handleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPassword = settingsPassword || "1234";
+    if (passInput === correctPassword) {
+      localStorage.setItem("settings_auth_time", Date.now().toString());
+      setIsAuthenticated(true);
+      setPassError("");
+    } else {
+      setPassError("비밀번호가 올바르지 않습니다.");
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangeError("");
+    setChangeSuccess("");
+
+    const correctPassword = settingsPassword || "1234";
+    if (curPass !== correctPassword) {
+      setChangeError("현재 비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    if (!newPass.trim()) {
+      setChangeError("새 비밀번호를 입력해주세요.");
+      return;
+    }
+    if (newPass !== newPassConfirm) {
+      setChangeError("새 비밀번호가 서로 일치하지 않습니다.");
+      return;
+    }
+
+    try {
+      if (setSettingsPassword) {
+        await setSettingsPassword(newPass);
+      }
+      localStorage.setItem("settings_auth_time", Date.now().toString());
+      setChangeSuccess("비밀번호가 안전하게 변경 및 동기화되었습니다!");
+      setCurPass("");
+      setNewPass("");
+      setNewPassConfirm("");
+    } catch (err: any) {
+      setChangeError(`비밀번호 변경 실패: ${err.message || "오류"}`);
+    }
+  };
 
   const toggleDiv = (divId: string) => {
     setExpandedDivs((prev) => ({
@@ -680,6 +754,61 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center animate-in fade-in zoom-in duration-200 border border-slate-100">
+          <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mb-4">
+            <Lock className="w-6 h-6 text-indigo-600" />
+          </div>
+          <h2 className="text-sm font-bold text-slate-800 mb-1">설정 비밀번호 입력</h2>
+          <p className="text-[11px] text-slate-500 mb-4 text-center leading-relaxed">
+            보안과 데이터 무결성을 위해 설정 창 진입 시<br />비밀번호 입력이 필요합니다.
+          </p>
+          <form onSubmit={handleAuthSubmit} className="w-full space-y-3">
+            <div className="relative group">
+              <input
+                type="password"
+                value={passInput}
+                onChange={(e) => {
+                  setPassInput(e.target.value);
+                  setPassError("");
+                }}
+                onKeyUp={checkCapsLock}
+                placeholder="비밀번호 입력"
+                className="w-full text-center text-xs border border-slate-200 rounded-md px-10 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal"
+                autoFocus
+              />
+              {isCapsLock && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none animate-in fade-in zoom-in duration-200">
+                  Caps
+                </div>
+              )}
+            </div>
+            {passError && (
+              <p className="text-[10px] text-red-500 font-semibold mt-1 text-center">{passError}</p>
+            )}
+            <div className="flex gap-2 w-full pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-md text-xs font-bold transition-colors cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow transition-colors cursor-pointer"
+              >
+                확인
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[70%] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -738,6 +867,18 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           >
             <Network className="w-3.5 h-3.5" />
             부문/부서 매핑 정보
+          </button>
+          <button
+            onClick={() => setActiveTab("security")}
+            className={clsx(
+              "px-5 py-2.5 text-[12px] font-bold flex items-center gap-2 transition-all rounded-t-xl border-t border-x -mb-[1px]",
+              activeTab === "security"
+                ? "bg-indigo-50/80 text-indigo-700 border-indigo-100/80 font-extrabold shadow-[0_-2px_6px_rgba(99,102,241,0.04)] border-b-white"
+                : "text-slate-400 border-transparent hover:text-slate-600 hover:bg-slate-100/30",
+            )}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            비밀번호 변경
           </button>
         </div>
 
@@ -1042,7 +1183,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeTab === "stages" ? (
             <div className="flex flex-col h-full space-y-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -1189,6 +1330,101 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                   <br />* 단계를 지워도 해당 단계에 입력한 데이터(면적 등)는
                   내부적으로 보존됩니다.
                 </p>
+              </div>
+            </div>
+          ) : null}
+
+          {activeTab === "security" && (
+            <div className="max-w-md mx-auto py-6">
+              <div className="bg-slate-50/50 rounded-xl border border-slate-100 p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <Lock className="w-5 h-5 text-indigo-500" />
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">설정 비밀번호 변경</h3>
+                </div>
+                
+                <form onSubmit={handlePasswordChange} className="space-y-4">
+                  <div className="space-y-1.5 p-0 bg-transparent">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide px-0.5">
+                      현재 비밀번호
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={curPass}
+                        onChange={(e) => setCurPass(e.target.value)}
+                        onKeyUp={checkCapsLock}
+                        placeholder="현재 설정된 비밀번호"
+                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
+                      />
+                      {isCapsLock && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none">
+                          Caps
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 p-0 bg-transparent">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide px-0.5">
+                      새 비밀번호
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={newPass}
+                        onChange={(e) => setNewPass(e.target.value)}
+                        onKeyUp={checkCapsLock}
+                        placeholder="새로 사용할 비밀번호"
+                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
+                      />
+                      {isCapsLock && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none">
+                          Caps
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 p-0 bg-transparent">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide px-0.5">
+                      새 비밀번호 확인
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={newPassConfirm}
+                        onChange={(e) => setNewPassConfirm(e.target.value)}
+                        onKeyUp={checkCapsLock}
+                        placeholder="새 비밀번호 다시 입력"
+                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
+                      />
+                      {isCapsLock && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none">
+                          Caps
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {changeError && (
+                    <div className="p-2.5 bg-red-50 border border-red-100 text-red-600 rounded-md text-[11px] font-semibold text-center mt-1">
+                      {changeError}
+                    </div>
+                  )}
+
+                  {changeSuccess && (
+                     <div className="p-2.5 bg-emerald-50 border border-emerald-100 text-emerald-750 rounded-md text-[11px] font-semibold text-center font-bold mt-1">
+                      {changeSuccess}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold shadow hover:shadow-md transition-all cursor-pointer"
+                  >
+                    비밀번호 변경 완료
+                  </button>
+                </form>
               </div>
             </div>
           )}
