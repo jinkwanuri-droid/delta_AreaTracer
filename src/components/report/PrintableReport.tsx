@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 21.0; // Adjusted for 100% scale output with comfortable line limits (about 18-20 rows)
+        const MAX_POINTS_PER_PAGE = 23.5; // Adjusted for 100% scale output with comfortable line limits (about 20-22 rows)
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -541,7 +541,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           height: 210mm !important;
           max-height: 210mm !important;
           margin: 16px auto !important;
-          padding: 14mm 16mm 14mm 16mm !important; 
+          padding: 11mm 16mm 11mm 16mm !important; 
           position: relative !important;
           background: #ffffff !important;
           overflow: hidden !important;
@@ -572,15 +572,15 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       {/* ======================================================== */}
       {options.dashboard && (
         <div className="pdf-slide-container bg-white">
-          {/* 머리말 영역 (PPT 모바일/스샷 상부 라인 완벽 동치) */}
-          <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
+          {/* 머리말 영역 (PPT 모바일/스샷 상부 라인 완벽 동치, 위로 2.5mm 보정) */}
+          <div className="-mt-[2.5mm] flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
             <span>{projectTitle}</span>
             <span>종합면적 대시보드</span>
           </div>
-          <div className="border-b-[1.5px] border-slate-700 w-full mb-3"></div>
+          <div className="border-b-[1.5px] border-slate-700 w-full mb-[5mm]"></div>
 
           {/* 타이틀 및 현황 */}
-          <div className="flex justify-between items-baseline mb-3 px-1">
+          <div className="flex justify-between items-baseline mb-[1.5mm] px-1">
             <h2 className="text-[20px] font-extrabold text-slate-900 tracking-tight">
               종합 실별 구조 및 계획설계 요약 현황
             </h2>
@@ -651,15 +651,15 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       {/* ======================================================== */}
       {options.summary && (
         <div className="pdf-slide-container bg-white">
-          {/* 머리말 영역 */}
-          <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
+          {/* 머리말 영역 (위로 2.5mm 보정) */}
+          <div className="-mt-[2.5mm] flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
             <span>{projectTitle}</span>
             <span>부서별 총괄면적</span>
           </div>
-          <div className="border-b-[1.5px] border-slate-700 w-full mb-3"></div>
+          <div className="border-b-[1.5px] border-slate-700 w-full mb-[5mm]"></div>
 
           {/* 타이틀 및 요약정보 */}
-          <div className="flex justify-between items-baseline mb-3 px-1">
+          <div className="flex justify-between items-baseline mb-[1.5mm] px-1">
             <h2 className="text-[20px] font-extrabold text-slate-900 tracking-tight">
               부서별 면적 계획 총괄 요약계획표
             </h2>
@@ -758,15 +758,15 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                 return (
                   <div key={`${floorName}-p${currentPageNum}`} className="pdf-slide-container bg-white">
                     
-                    {/* 머리말 영역 (PPT 스크린샷과 완벽 동해) */}
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
+                    {/* 머리글 영역 (PPT 스크린샷과 완벽 동해, 위로 2.5mm 보정) */}
+                    <div className="-mt-[2.5mm] flex justify-between items-center text-[10px] text-slate-500 font-bold py-1 px-1">
                       <span>{projectTitle}</span>
                       <span>층별세부 면적계획</span>
                     </div>
-                    <div className="border-b-[1.5px] border-slate-700 w-full mb-3"></div>
+                    <div className="border-b-[1.5px] border-slate-700 w-full mb-[5mm]"></div>
 
                     {/* 타이틀 영역 - 00층 세부 면적계획 (1/8) 완벽 반영 */}
-                    <div className="flex justify-between items-baseline mb-3 px-1">
+                    <div className="flex justify-between items-baseline mb-[1.5mm] px-1">
                       <h2 className="text-[19px] font-extrabold text-slate-900 tracking-tight">
                         {floorName} 세부 면적계획 <span className="text-slate-500 font-bold ml-1">({currentPageNum}/{totalChunks})</span>
                       </h2>
