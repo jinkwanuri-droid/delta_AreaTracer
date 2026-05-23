@@ -344,10 +344,10 @@ body {
   
   html, body {
     width: 100% !important;
-    height: auto !important; /* 100vh 대신 auto 사용으로 빈 페이지 유발 차단 */
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible !important; /* 인쇄 시에는 레이아웃 흐름을 위해 visible 허용 */
+    overflow: visible !important;
     background: #ffffff !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
