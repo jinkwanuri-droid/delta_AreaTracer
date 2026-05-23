@@ -94,11 +94,6 @@ export interface AppState {
   activeTab: "dashboard" | "summary" | "detail";
   activeFloorId: string | "all" | null;
   isPdfExportMode: boolean;
-  pdfExportOptions: {
-    dashboard: boolean;
-    summary: boolean;
-    detail: boolean;
-  };
   filters: {
     divisionIds: string[];
     departmentIds: string[];
@@ -136,7 +131,6 @@ export interface AppState {
   setActiveTab: (tab: "dashboard" | "summary" | "detail") => void;
   setActiveFloorId: (id: string | null) => void;
   setIsPdfExportMode: (val: boolean) => void;
-  setPdfExportOptions: (val: { dashboard: boolean; summary: boolean; detail: boolean; }) => void;
   toggleDivisionFilter: (id: string) => void;
   toggleDepartmentFilter: (id: string) => void;
   fetchData: (force?: boolean) => Promise<void>;
@@ -252,7 +246,6 @@ export const useAppStore = create<AppState>()(
       activeTab: "detail",
       activeFloorId: "all",
       isPdfExportMode: false,
-      pdfExportOptions: { dashboard: true, summary: true, detail: true },
       filters: { divisionIds: [], departmentIds: [] },
       snapshots: [],
       medicalOnly: true,
@@ -515,7 +508,6 @@ export const useAppStore = create<AppState>()(
       setActiveTab: (tab) => set({ activeTab: tab }),
       setActiveFloorId: (id) => set({ activeFloorId: id }),
       setIsPdfExportMode: (val) => set({ isPdfExportMode: val }),
-      setPdfExportOptions: (val) => set({ pdfExportOptions: val }),
       toggleDivisionFilter: (id) =>
         set((state) => {
           const ids = state.filters.divisionIds;

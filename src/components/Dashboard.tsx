@@ -280,7 +280,6 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 };
 
 const Dashboard: React.FC = () => {
-  const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
   const floors = useAppStore(state => state.floors);
   const stages = useAppStore(state => state.stages);
   const divisions = useAppStore(state => state.divisions);
@@ -1044,7 +1043,7 @@ const Dashboard: React.FC = () => {
                         paddingAngle={4}
                         cornerRadius={7}
                         dataKey="value"
-                        isAnimationActive={!isPdfExportMode}
+                        isAnimationActive={true}
                         animationDuration={400}
                         animationEasing="ease-out"
                         onClick={(data) => {
@@ -1211,7 +1210,7 @@ const Dashboard: React.FC = () => {
                             style={{ strokeWidth, strokeOpacity, fillOpacity, transition: 'fill-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-width 400ms cubic-bezier(0.4, 0, 0.2, 1)' }}
                             dot={{ r: 2.5, strokeWidth: 1, fill: '#ffffff', strokeOpacity: strokeOpacity }}
                             activeDot={{ r: 4 }}
-                            isAnimationActive={!isPdfExportMode}
+                            isAnimationActive={true}
                             animationDuration={400}
                           >
                             {(isActive || !isAnyActive) && (
@@ -1374,8 +1373,8 @@ const Dashboard: React.FC = () => {
                             
                             return (
                               <g style={{ pointerEvents: 'none' }}>
-                                {(isActive || isPdfExportMode) && (
-                                   <text x={x + width / 2} y={y + height / 2 + 1} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={isPdfExportMode ? 8 : 9} fontWeight="bold">
+                                {isActive && (
+                                   <text x={x + width / 2} y={y + height / 2 + 1} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={9} fontWeight="bold">
                                      {Math.round(value).toLocaleString()}
                                    </text>
                                 )}
@@ -1413,7 +1412,7 @@ const Dashboard: React.FC = () => {
                             opacity={opacity}
                             style={{ pointerEvents: 'none', transition: 'opacity 400ms ease' }}
                           >
-                            {isPdfExportMode ? "" : `${total.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ㎡`}
+                            {`${total.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ㎡`}
                           </text>
                         );
                       }}

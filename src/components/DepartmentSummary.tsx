@@ -109,7 +109,6 @@ const columnHelper = createColumnHelper<any>();
   };
 
 export default function DepartmentSummary() {
-  const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
   const divisions = useAppStore(state => state.divisions);
   const departments = useAppStore(state => state.departments);
   const rooms = useAppStore(state => state.rooms);
@@ -596,7 +595,7 @@ export default function DepartmentSummary() {
       <div className="flex-1 overflow-hidden p-6">
         <div className="h-full bg-white border border-slate-300 rounded shadow-sm overflow-hidden flex flex-col">
           <div className="flex-1 overflow-auto">
-            <table className={clsx("w-full border-separate border-spacing-0 table-fixed", !isPdfExportMode && "text-[11px]")}>
+            <table className="w-full border-separate border-spacing-0 table-fixed text-[11px]">
               <thead className="sticky top-0 z-10">
                 {table.getHeaderGroups().map(headerGroup => (
                   <tr key={headerGroup.id}>
@@ -604,10 +603,7 @@ export default function DepartmentSummary() {
                       <th 
                         key={header.id}
                         style={{ width: header.getSize() }}
-                        className={clsx(
-                          "bg-[#E2E8F0] border-b border-r border-[#CBD5E1] px-2 py-2 font-bold text-[#334155] uppercase tracking-tight text-center",
-                          !isPdfExportMode && "text-[12px]"
-                        )}
+                        className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] px-2 py-2 font-bold text-[#334155] uppercase tracking-tight text-center text-[12px]"
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </th>

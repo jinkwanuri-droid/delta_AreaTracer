@@ -1,11 +1,10 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import { useAppStore } from '@/store/useAppStore';
 
 import SelectorPopover from './SelectorPopover';
 import { Layers, RefreshCw, Loader2, Download } from 'lucide-react';
 import { clsx } from 'clsx';
-import PrintableReport from './report/PrintableReport';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const project = useAppStore(state => state.project);
@@ -17,42 +16,20 @@ export default function Layout({ children }: { children: ReactNode }) {
   const isLoading = useAppStore(state => state.isLoading);
   const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
   const setIsPdfExportMode = useAppStore(state => state.setIsPdfExportMode);
-  const pdfExportOptions = useAppStore(state => state.pdfExportOptions);
-  const setPdfExportOptions = useAppStore(state => state.setPdfExportOptions);
-  
-  const [isExporting, setIsExporting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [localOptions, setLocalOptions] = useState({
-    dashboard: false,
-    summary: false,
-    detail: true // Defaulted to true as we implemented Detail PDF layout first securely
-  });
 
-  const handleExportPdf = async () => {
-    // Apply options first
-    setPdfExportOptions(localOptions);
-    setIsModalOpen(false);
-    setIsExporting(true);
+  const handlePrint = () => {
     setIsPdfExportMode(true);
-    
-    // Listen to print completion/cancel to recover UI state
-    const restoreUI = () => {
-      setIsPdfExportMode(false);
-      setIsExporting(false);
-      window.removeEventListener('afterprint', restoreUI);
-    };
-    window.addEventListener('afterprint', restoreUI);
-
-    // Give enough time for Recharts and Tailwind layouts to stabilize (600ms is perfectly stable & snappy)
+    // Wait for the DOM to update to the print layout
     setTimeout(() => {
       window.print();
-    }, 600);
+      setIsPdfExportMode(false);
+    }, 500);
   };
 
   if (isPdfExportMode) {
     return (
-      <div className="w-full bg-white min-h-screen p-0 m-0">
-        <PrintableReport />
+      <div className="w-full bg-white">
+        {children}
       </div>
     );
   }
@@ -87,29 +64,26 @@ export default function Layout({ children }: { children: ReactNode }) {
                 onClick={() => fetchData(true)}
                 disabled={isLoading}
                 className={clsx(
-                  "p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all flex items-center justify-center shrink-0 border border-slate-200 hover:border-indigo-200 shadow-sm bg-white",
-                  isLoading && "opacity-50 cursor-not-allowed"
+                   "p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all flex items-center justify-center shrink-0 border border-slate-200 hover:border-indigo-200 shadow-sm bg-white",
+                   isLoading && "opacity-50 cursor-not-allowed"
                 )}
                 title="데이터 새로고침 (DB 데이터 다시 읽기)"
               >
                 {isLoading ? (
-                  <Loader2 size={16} className="animate-spin text-indigo-400" />
+                   <Loader2 size={16} className="animate-spin text-indigo-400" />
                 ) : (
-                  <RefreshCw size={16} />
+                   <RefreshCw size={16} />
                 )}
               </button>
 
-             <button 
-                onClick={() => setIsModalOpen(true)} 
-                disabled={isExporting}
-                className={clsx(
-                  "flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all ml-2",
-                  isExporting && "opacity-70 cursor-not-allowed"
-                )}
-             >
-               {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-               PDF Export
-             </button>
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all ml-2"
+                title="PDF 인쇄 메뉴 열기 (A4 가로 권장)"
+              >
+                <Download size={16} strokeWidth={2.5} />
+                <span>PDF 출력</span>
+              </button>
           </div>
         </header>
 
@@ -118,85 +92,6 @@ export default function Layout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-
-      {/* PDF Export Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-100 max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
-              <Download size={18} className="text-indigo-500" />
-              PDF 내보내기 범위 선택
-            </h3>
-            <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-              저장할 보고서의 범위를 선택하세요. 체크된 항목들을 하나로 취합하여 가로형 A4 리포트로 출력합니다.
-            </p>
-
-            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg text-xs leading-normal shadow-sm">
-              <div className="text-slate-700">
-                <span className="font-bold text-slate-800">인쇄설정 안내:</span> A4 가로 기준, 여백 없음(None) 및 배경 그래픽 포함 옵션을 활성화 해주세요.
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-3 mb-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={localOptions.dashboard}
-                  onChange={(e) => setLocalOptions({ ...localOptions, dashboard: e.target.checked })}
-                  className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">대시보드</span>
-                  <span className="text-[10px] text-slate-400">종합 면적 분석 대시보드 차트</span>
-                </div>
-              </label>
-              
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={localOptions.summary}
-                  onChange={(e) => setLocalOptions({ ...localOptions, summary: e.target.checked })}
-                  className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">총괄면적표</span>
-                  <span className="text-[10px] text-slate-400">부서별 면적 대비 요약 소계표</span>
-                </div>
-              </label>
-              
-              <label className="flex items-center gap-3 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  checked={localOptions.detail}
-                  onChange={(e) => setLocalOptions({ ...localOptions, detail: e.target.checked })}
-                  className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
-                />
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">층별면적표</span>
-                  <span className="text-[10px] text-slate-400">세부면적계획의 B1~7F 각 층별 상세 테이블 (층별 새 페이지 구분)</span>
-                </div>
-              </label>
-            </div>
-            
-            <div className="flex items-center gap-2 justify-end border-t border-slate-100 pt-3">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 text-xs font-medium transition-colors cursor-pointer"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleExportPdf}
-                disabled={!localOptions.dashboard && !localOptions.summary && !localOptions.detail}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                내보내기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
     </div>
   );
 }

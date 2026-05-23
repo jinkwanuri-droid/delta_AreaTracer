@@ -123,21 +123,4 @@ app.get("/api/sheets/values/:spreadsheetId", async (req, res) => {
   }
 });
 
-// PDF Export (Puppeteer might still be an issue, but let's keep it isolated)
-app.post("/api/export-pdf", async (req, res) => {
-  try {
-    const { html, width, height } = req.body;
-    const puppeteer = (await import("puppeteer")).default;
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'load' });
-    const pdfBuffer = await page.pdf({ printBackground: true, width: width || 'A3', height: height || 'A3' });
-    await browser.close();
-    res.setHeader('Content-Type', 'application/pdf');
-    res.send(Buffer.from(pdfBuffer));
-  } catch (error: any) {
-    res.status(500).send('PDF Error: ' + error.message);
-  }
-});
-
 export default app;
