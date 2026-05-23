@@ -509,10 +509,10 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             padding: 0 !important;
             background: #ffffff !important;
             width: 297mm !important;
-            height: 210mm !important;
-            min-height: 210mm !important;
-            max-height: 210mm !important;
-            overflow: hidden !important;
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -526,9 +526,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           /* 인쇄 시 컨테이너를 가용 면적에 맞춤으로써 여백 관리 최적화 및 이상 외곽 박스 제거 */
           .pdf-slide-container {
             width: 297mm !important;
-            height: 210mm !important; /* 꽉 차도록 여백과 크기를 매핑 */
-            min-height: 210mm !important;
-            max-height: 210mm !important;
+            height: 209.2mm !important; /* 미세 오차(0.8mm)를 감축하여 빈 페이지가 절대로 생성되지 않도록 조절 */
+            min-height: 209.2mm !important;
+            max-height: 209.2mm !important;
             margin: 0 !important;
             padding: 9mm 8mm 13mm 8mm !important; /* 화면 오리지널 패딩과 완벽 일치시켜 꼬리말과 좌우 여백을 온전히 존중 */
             box-shadow: none !important;
@@ -540,6 +540,12 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             overflow: hidden !important;
             box-sizing: border-box !important;
             background: #ffffff !important;
+          }
+
+          /* 마지막 슬라이드는 확실히 페이지 나눔이 발생하지 않도록 강제 방어 */
+          .pdf-slide-container:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
           }
 
           /* 인쇄 시 머리말 꼬리말 오버라이딩 오차 수정 (화면 구성인 bottom-[15mm]과 깔끔하게 연동) */
@@ -796,11 +802,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     </div>
 
                      {/* 테이블 컨텐츠 영역 */}
-                     <div className="border border-slate-300 rounded-lg overflow-hidden style-table-pdf-container">
+                     <div className="border border-slate-300 style-table-pdf-container">
                        <table className="w-full text-slate-800 border-collapse table-fixed text-[1.5px] font-sans" style={{ width: '100%', minWidth: '100%', letterSpacing: '-0.07em' }}>
                          <colgroup>
                            <col style={{ width: '42px' }} />
-                           <col style={{ width: '110px' }} /> {/* 실명 너비가 140px에서 110px로 10% 이상 대폭 과감하게 축소되었습니다 */}
+                           <col style={{ width: '125px' }} /> {/* 실명 너비를 시인성을 보장하기 위해 110px에서 125px로 적절히 넓혔습니다 */}
                            {stages.map((s) => (
                              <React.Fragment key={s.id}>
                                <col style={{ width: '34px' }} />
@@ -809,7 +815,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                              </React.Fragment>
                            ))}
                            <col style={{ width: '45px' }} />
-                           <col style={{ width: 'auto' }} /> {/* ROOM NAME에서 축소된 폭이 이 NOTE 칼럼으로 자연스럽게 자동 전환 배분됩니다 */}
+                           <col style={{ width: 'auto' }} /> {/* ROOM NAME에서 확장된 폭이 이 NOTE 칼럼과 조화롭게 배분됩니다 */}
                          </colgroup>
                          <thead>
                            <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
@@ -831,7 +837,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                증감<br/>
                                <span className="text-[1.2px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
                              </th>
-                             <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[2.5px] col-note-print w-[22%]">NOTE</th>
+                             <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[2.5px] col-note-print w-[20%]">NOTE</th>
                            </tr>
                            <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
                              {stages.map((s, idx) => {
@@ -899,12 +905,18 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
                                     // 일반 소계는 연한 회색 bg-slate-100/50, 실시는 퍼플 소계 bg-[#E8D5FF]/55 적용
                                     const subBg = isPracticeStage ? "bg-[#E8D5FF]/55 text-purple-950" : "bg-[#EEF2F6]/75 text-slate-900";
+                                    const sTotal = row[`${s.id}_total`];
+                                    const sTotalVal = sTotal !== undefined && sTotal !== null ? Number(sTotal) : 0;
+                                    const totalDisplay = sTotalVal === 0 ? "" : formatNum(sTotalVal, s.id);
+
                                     return (
                                       <React.Fragment key={s.id}>
-                                        <td className="py-0.5 px-0.5 text-center border-r border-slate-200 text-slate-400 text-[1.5px] border-b border-slate-300">-</td>
-                                        <td className="py-0.5 px-0.5 text-center border-r border-slate-200 text-slate-400 text-[1.5px] border-b border-slate-300">-</td>
-                                        <td className={clsx("py-0.5 px-1 text-right border-r border-slate-200 font-extrabold text-[2px] border-b border-slate-300", subBg)}>
-                                          {formatNum(row[`${s.id}_total`], s.id)}
+                                        {/* Net과 Qty는 수치 합산 외에 빈칸으로 구성하며 좌우 테두리를 제거해 시인성을 높입니다 */}
+                                        <td className="py-0.5 px-0.5 text-center text-slate-400 text-[1.5px] border-b border-slate-300"></td>
+                                        <td className="py-0.5 px-0.5 text-center text-slate-400 text-[1.5px] border-b border-slate-300"></td>
+                                        {/* Qty의 오른쪽 선이 없어졌으므로 다음 영역의 구분을 위해 border-l을 추가합니다. 0인 소계는 빈칸으로 통일합니다. */}
+                                        <td className={clsx("py-0.5 px-1 text-right border-l border-r border-slate-200 font-extrabold text-[2px] border-b border-slate-300", subBg)}>
+                                          {totalDisplay}
                                         </td>
                                       </React.Fragment>
                                     );
