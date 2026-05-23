@@ -366,9 +366,24 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       for (let i = 0; i < flatData.length; i++) {
         const item = flatData[i];
         let weight = 1.0;
-        if (item.isGroupHeader) weight = 1.6;
-        else if (item.isSummary) weight = 1.6;
-        else if (item.isSpacer) weight = 0.4;
+        
+        if (item.isGroupHeader) {
+          weight = 1.6;
+        } else if (item.isSummary) {
+          weight = 1.6;
+        } else if (item.isSpacer) {
+          weight = 0.4;
+        } else {
+          // Normal data row: estimate height based on wrap
+          const nameLen = item.name ? item.name.length : 0;
+          
+          const thisNote = findRoomNote(roomNotes, item.no, item.floorId) || item.note || "";
+          
+          const linesFromName = Math.ceil(nameLen / 13);
+          const linesFromNote = Math.ceil(thisNote.length / 22);
+          const estLines = Math.max(1, linesFromName, linesFromNote);
+          weight = estLines * 0.95; // 0.95 points per text line
+        }
 
         // 그룹헤더(부서명)이고 현재 페이지에 일정 공간이 채워져 있을 때,
         // 이 그룹헤더부터 그에 수반되는 데이터 최소 2라인이 들어갈 공간이 부족해 오펀이 발생할 우려가 있다면
@@ -864,7 +879,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             return (
                               <tr key={row.id} className="hover:bg-slate-50/20 text-[9px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                 <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[7px] tracking-tighter">{row.no}</td>
-                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>{row.name}</td>
+                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
                                 {stages.map((s) => {
                                   const isEmpty = row[`${s.id}_isEmpty`];
                                   const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
@@ -898,7 +913,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     </>
                                   ) : "-"}
                                 </td>
-                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-snug whitespace-normal border-slate-200" style={{ wordBreak: 'break-all' }}>
+                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-snug whitespace-pre-wrap border-slate-200" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
                                   {findRoomNote(roomNotes, row.no, row.floorId) || row.note || ""}
                                 </td>
                               </tr>

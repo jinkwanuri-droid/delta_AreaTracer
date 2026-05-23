@@ -1798,7 +1798,7 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
             return (
               <tr key={row.id} className="hover:bg-slate-50/50" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <td className="py-1.5 px-2 text-center text-slate-500 font-mono border-b border-slate-200">{row.no}</td>
-                <td className="py-1.5 px-3 text-left text-slate-800 font-semibold border-b border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>{row.name}</td>
+                <td className="py-1.5 px-3 text-left text-slate-800 font-semibold border-b border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
                 {stages.map((s) => {
                   const isEmpty = row[`${s.id}_isEmpty`];
                   return (
@@ -1826,7 +1826,7 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
                     </>
                   ) : "-"}
                 </td>
-                <td className="py-1.5 px-3 text-left text-slate-600 font-normal border-l border-slate-200 border-b border-slate-200 col-note-print leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>
+                <td className="py-1.5 px-3 text-left text-slate-600 font-normal border-l border-slate-200 border-b border-slate-200 col-note-print leading-snug whitespace-pre-wrap" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
                   {row.note || "-"}
                 </td>
               </tr>
