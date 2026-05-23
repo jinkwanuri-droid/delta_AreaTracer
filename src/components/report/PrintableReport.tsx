@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 22.0; // Adjusted for 100% scale output with comfortable line limits
+        const MAX_POINTS_PER_PAGE = 24.5; // 내용부분 표에 2줄 더 들어가도록 포인트 상향
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -494,56 +494,42 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           @page { 
             size: A4 landscape; 
-            margin: auto !important; 
+            margin: 0 !important; /* 브라우저 기본 여백 완전히 제거 */
           }
           
           body, html {
-            width: auto !important;
-            height: auto !important;
+            width: 296mm !important;
+            height: 209mm !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
             background: #ffffff !important;
           }
 
-          body, html, .printable-mode, .printable-mode * {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
-          }
-
-          /* 브라우저 기본 여백 사방마진이 부여되므로, 인쇄 가용 영역을 축소 배율 없이 꽉 채우도록 100%로 지정 */
+          /* 인쇄 시 컨테이너 여백 제거하여 화면 프리뷰와 사이즈/위치 100% 동일하게 함 */
           .pdf-slide-container {
-            width: 266mm !important;
-            height: 175mm !important;
-            min-height: 175mm !important;
-            max-height: 175mm !important;
+            width: 296mm !important;
+            height: 209mm !important;
+            min-height: 209mm !important;
+            max-height: 209mm !important;
             margin: 0 !important;
-            padding: 0mm 1mm 1mm 1mm !important; 
-            box-sizing: border-box !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
-            position: relative !important;
             page-break-inside: avoid !important;
             page-break-after: always !important;
           }
-
-          /* 하단 꼬리글 영역 오버라이드: 브라우저 기본 마진 바로 위에 기분 좋게 밀착배치하여 하부 정렬 (2mm 위로 보정) */
-          .pdf-slide-container .print-footer {
-            position: absolute !important;
-            bottom: 5mm !important;
-            left: 1mm !important;
-            right: 1mm !important;
-            width: auto !important;
-          }
         }
 
-        /* 화면 프리뷰 설정: 인쇄물의 실제 브라우저 마진 및 내부 패딩 비율이 정확히 똑같이 녹아든 패딩 구성 */
+        /* 화면 프리뷰 및 인쇄 공통 설정: 인쇄물의 실제 내부 패딩 비율이 정확히 똑같이 녹아든 패딩 구성 */
         .pdf-slide-container {
           width: 297mm !important;
           height: 210mm !important;
+          min-height: 210mm !important;
           max-height: 210mm !important;
           margin: 16px auto !important;
-          padding: 11mm 16mm 11mm 16mm !important; 
+          /* 상단 여백 2mm 올림(9mm), 하단 여백 추가확보(13mm) */
+          padding: 9mm 16mm 13mm 16mm !important; 
           position: relative !important;
           background: #ffffff !important;
           overflow: hidden !important;
@@ -579,7 +565,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             <span>{projectTitle}</span>
             <span>종합면적 대시보드</span>
           </div>
-          <div className="border-b-[1.5px] border-slate-700 w-full mb-[5mm]"></div>
+          <div className="border-b-[1.5px] border-slate-700 w-full mb-[7mm]"></div>
 
           {/* 타이틀 및 현황 */}
           <div className="flex justify-between items-baseline mb-[1.5mm] px-1">
@@ -635,7 +621,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
           
            {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
-          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm] print-footer">
+          <div className="absolute bottom-[16mm] left-[15mm] right-[15mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -658,7 +644,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             <span>{projectTitle}</span>
             <span>부서별 총괄면적</span>
           </div>
-          <div className="border-b-[1.5px] border-slate-700 w-full mb-[5mm]"></div>
+          <div className="border-b-[1.5px] border-slate-700 w-full mb-[7mm]"></div>
 
           {/* 타이틀 및 요약정보 */}
           <div className="flex justify-between items-baseline mb-[1.5mm] px-1">
@@ -724,7 +710,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
 
           {/* 꼬리말 영역 */}
-          <div className="absolute bottom-[14mm] left-[15mm] right-[15mm] print-footer">
+          <div className="absolute bottom-[16mm] left-[15mm] right-[15mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -765,7 +751,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                       <span>{projectTitle}</span>
                       <span>층별세부 면적계획</span>
                     </div>
-                    <div className="border-b-[1.5px] border-slate-700 w-full mb-[5mm]"></div>
+                    <div className="border-b-[1.5px] border-slate-700 w-full mb-[7mm]"></div>
 
                     {/* 타이틀 영역 - 00층 세부 면적계획 (1/8) 완벽 반영 */}
                     <div className="flex justify-between items-baseline mb-[1.5mm] px-1">
@@ -792,25 +778,25 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                          </colgroup>
                          <thead>
                            <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
-                             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[6.5px] border-r border-slate-300">NO.</th>
-                             <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[6.5px] border-r border-slate-300">ROOM NAME</th>
+                             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[5.5px] border-r border-slate-300">NO.</th>
+                             <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[5.5px] border-r border-slate-300">ROOM NAME</th>
                              {stages.map((s, idx) => {
                                const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
                                const headBg = isPracticeStage ? "bg-[#F3E8FF] text-purple-950 font-black" : "bg-[#CBD5E1] text-slate-900";
                                return (
                                  <th key={s.id} colSpan={3} className={clsx(
-                                   "py-0.5 px-1 text-center font-extrabold border-r border-b border-slate-300 text-[6px]",
+                                   "py-0.5 px-1 text-center font-extrabold border-r border-b border-slate-300 text-[5px]",
                                    headBg
                                  )}>
                                    {s.name}
                                  </th>
                                );
                              })}
-             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[6.5px] border-r border-slate-300 leading-tight w-[10%]">
+             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[5.5px] border-r border-slate-300 leading-tight w-[10%]">
                                증감<br/>
-                               <span className="text-[3.5px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
+                               <span className="text-[3px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
                              </th>
-                             <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[6.5px] col-note-print w-[18%]">NOTE</th>
+                             <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[5.5px] col-note-print w-[18%]">NOTE</th>
                            </tr>
                            <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
                              {stages.map((s, idx) => {
@@ -871,7 +857,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             }
                             if (row.isSummary) {
                               return (
-                                <tr key={row.id} className="bg-slate-50/80 font-bold border-y border-slate-300 text-slate-950 text-[6px]">
+                                <tr key={row.id} className="bg-slate-50/80 font-bold border-y border-slate-300 text-slate-950 text-[5px]">
                                   <td className="py-0.5 px-1 border-r border-slate-200"></td>
                                   <td className="py-0.5 px-2 text-left font-extrabold border-r border-slate-200">[{row.deptName} 소계]</td>
                                   {stages.map((s) => {
@@ -880,16 +866,16 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     const subBg = isPracticeStage ? "bg-[#E8D5FF]/55 text-purple-950" : "bg-[#EEF2F6]/75 text-slate-900";
                                     return (
                                       <React.Fragment key={s.id}>
-                                        <td className="py-0.5 px-0.5 text-center border-r border-slate-200 text-slate-400 text-[4px]">-</td>
-                                        <td className="py-0.5 px-0.5 text-center border-r border-slate-200 text-slate-400 text-[4px]">-</td>
-                                        <td className={clsx("py-0.5 px-1 text-right border-r border-slate-200 font-extrabold text-[6px]", subBg)}>
+                                        <td className="py-0.5 px-0.5 text-center border-r border-slate-200 text-slate-400 text-[3.5px]">-</td>
+                                        <td className="py-0.5 px-0.5 text-center border-r border-slate-200 text-slate-400 text-[3.5px]">-</td>
+                                        <td className={clsx("py-0.5 px-1 text-right border-r border-slate-200 font-extrabold text-[5px]", subBg)}>
                                           {formatNum(row[`${s.id}_total`])}
                                         </td>
                                       </React.Fragment>
                                     );
                                   })}
                                   <td className={clsx(
-                                    "py-0.5 px-1 text-right font-extrabold border-r border-slate-200 text-[6px]",
+                                    "py-0.5 px-1 text-right font-extrabold border-r border-slate-200 text-[5px]",
                                     row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                                   )}>
                                     {row.variance > 0 ? "+" : ""}{formatNum(row.variance)}
@@ -901,33 +887,33 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
                             // 일반 데이터 행 렌더링 (화면이랑 99.9% 동치, 가시성 높은 폰트 크기로 개선)
                             return (
-                              <tr key={row.id} className="hover:bg-slate-50/20 text-[6px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[4.5px] tracking-tighter">{row.no}</td>
-                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal text-[6px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
+                              <tr key={row.id} className="hover:bg-slate-50/20 text-[5px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[4px] tracking-tighter">{row.no}</td>
+                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal text-[5px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
                                 {stages.map((s) => {
                                   const isEmpty = row[`${s.id}_isEmpty`];
                                   const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
                                   
                                   const cellBg = isPracticeStage ? "bg-[#FAF5FF]/30" : "";
                                   // 일반 total 은 연한 회색 bg-slate-100/40, 실시는 고귀한 퍼플 bg-[#F3E8FF]/30
-                                  const totalCellBg = isPracticeStage ? "bg-[#F3E8FF]/30 text-purple-950 font-bold text-[5.5px]" : "bg-slate-100/50 text-[#1E293B] text-[5.5px]";
+                                  const totalCellBg = isPracticeStage ? "bg-[#F3E8FF]/30 text-purple-950 font-bold text-[4.5px]" : "bg-slate-100/50 text-[#1E293B] text-[4.5px]";
 
                                   return (
                                     <React.Fragment key={s.id}>
-                                      <td className={clsx("py-0.5 px-0.5 text-right text-slate-500 font-mono border-r border-slate-200 text-[4.5px]", cellBg)}>
+                                      <td className={clsx("py-0.5 px-0.5 text-right text-slate-500 font-mono border-r border-slate-200 text-[4px]", cellBg)}>
                                         {isEmpty ? "" : formatNum(row[`${s.id}_unitArea`])}
                                       </td>
-                                      <td className={clsx("py-0.5 px-0.5 text-center text-slate-500 font-mono border-r border-slate-200 text-[4.5px]", cellBg)}>
+                                      <td className={clsx("py-0.5 px-0.5 text-center text-slate-500 font-mono border-r border-slate-200 text-[4px]", cellBg)}>
                                         {isEmpty ? "" : formatQty(row[`${s.id}_quantity`])}
                                       </td>
-                                      <td className={clsx("py-0.5 px-1 text-right font-mono font-semibold border-r border-slate-200 text-[5.5px]", totalCellBg)}>
+                                      <td className={clsx("py-0.5 px-1 text-right font-mono font-semibold border-r border-slate-200 text-[4.5px]", totalCellBg)}>
                                         {isEmpty ? "" : formatNum(row[`${s.id}_total`])}
                                       </td>
                                     </React.Fragment>
                                   );
                                 })}
                                 <td className={clsx(
-                                  "py-0.5 px-1 text-right font-mono font-bold border-r border-slate-200 text-[5.5px]",
+                                  "py-0.5 px-1 text-right font-mono font-bold border-r border-slate-200 text-[4.5px]",
                                   row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                                 )}>
                                   {row.variance !== undefined && row.variance !== 0 ? (
@@ -937,7 +923,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     </>
                                   ) : "-"}
                                 </td>
-                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-snug whitespace-pre-wrap border-slate-200 text-[5.5px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
+                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-snug whitespace-pre-wrap border-slate-200 text-[4.5px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
                                   {findRoomNote(roomNotes, row.no, row.floorId) || row.note || ""}
                                 </td>
                               </tr>
@@ -948,7 +934,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     </div>
 
                     {/* 꼬리말 영역 - PPT 슬라이드 최하부 라인 완벽 복제 */}
-                    <div className="absolute bottom-[14mm] left-[15mm] right-[15mm] print-footer">
+                    <div className="absolute bottom-[16mm] left-[15mm] right-[15mm] print-footer">
                       <div className="border-t border-slate-300 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
                         <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
