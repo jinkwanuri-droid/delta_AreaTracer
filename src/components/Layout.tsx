@@ -131,11 +131,9 @@ export default function Layout({ children }: { children: ReactNode }) {
               저장할 보고서의 범위를 선택하세요. 체크된 항목들을 하나로 취합하여 가로형 A4 리포트로 출력합니다.
             </p>
 
-            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg text-[11px] leading-normal flex items-start gap-2 shadow-sm animate-pulse-slow">
-              <span className="text-indigo-600 text-base leading-none">💡</span>
-              <div>
-                <span className="font-extrabold block mb-0.5 text-indigo-950">인쇄 필수 설정 안내:</span>
-                A4 가로형 전체 영역 인쇄를 위해 PDF 저장 화면에서 반드시 <strong className="text-pink-600 font-extrabold underline underline-offset-2">여백: 없음 (None)</strong> 및 <strong className="text-indigo-950 font-extrabold">배경 그래픽 포함 (Background graphics)</strong> 옵션을 활성화해주세요!
+            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg text-xs leading-normal shadow-sm">
+              <div className="text-slate-700">
+                <span className="font-bold text-slate-800">인쇄설정 안내:</span> A4 가로 기준, 여백 없음(None) 및 배경 그래픽 포함 옵션을 활성화 해주세요.
               </div>
             </div>
             
@@ -192,7 +190,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 disabled={!localOptions.dashboard && !localOptions.summary && !localOptions.detail}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                확인 (PDF 저장)
+                내보내기
               </button>
             </div>
           </div>

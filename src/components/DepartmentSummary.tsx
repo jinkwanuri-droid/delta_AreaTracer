@@ -123,6 +123,11 @@ export default function DepartmentSummary() {
 
   const departmentNotes = useAppStore(state => state.departmentNotes);
 
+  const targetStageId = useMemo(() => {
+    if (stages.length === 0) return null;
+    return comparison.targetId || stages[stages.length - 1]?.id;
+  }, [stages, comparison.targetId]);
+
   const data = useMemo(() => {
     if (stages.length < 1) return [];
 
@@ -639,7 +644,7 @@ export default function DepartmentSummary() {
                       } : {}}
                       className={clsx(
                         "transition-colors h-7",
-                        isHeader ? "" : "hover:bg-slate-50",
+                        isHeader ? "" : "hover:bg-lv1",
                         (isSubtotal || variant === 'grey') && "bg-[#F1F5F9] font-bold text-slate-900 border-t border-slate-300",
                         variant === 'dark-grey' && "bg-[#E2E8F0] font-black text-slate-900 border-t border-slate-400",
                         variant === 'white' && "bg-white text-slate-800",
@@ -666,6 +671,7 @@ export default function DepartmentSummary() {
                               key={cell.id}
                               className={clsx(
                                 "border-b border-r border-[#CBD5E1] p-0",
+                                cell.column.id === `stage-${targetStageId}` && !isSpacer && !isHeader && "bg-purple-50/50",
                                 (variant === 'dark' || variant === 'dark-ext') && "border-[#334155]",
                                 (isSubtotal || variant === 'grey' || variant === 'dark-grey') && "border-slate-300"
                               )}

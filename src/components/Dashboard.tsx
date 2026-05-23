@@ -1663,7 +1663,7 @@ const Dashboard: React.FC = () => {
                 <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                   <span className="truncate">{div.divisionName}</span>
                   <span 
-                    className="text-[7.5px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
+                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
                     style={{ backgroundColor: `${div.color}18`, color: div.color }}
                   >
                     {div.data.length}개 부서
@@ -1675,53 +1675,37 @@ const Dashboard: React.FC = () => {
                      <PieChart style={{ outline: 'none' }} tabIndex={-1}>
                         <Pie
                           data={div.data}
-                          innerRadius="50%" 
-                          outerRadius="75%"
+                          innerRadius="52%" 
+                          outerRadius="82%"
                           dataKey="value"
                           isAnimationActive={false}
-                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, name }) => {
+                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                            if (percent < 0.07) return null;
+                            
                             const RADIAN = Math.PI / 180;
-                            
-                            // 1. 내부 퍼센트 표시 (8% 이상일 때만 노출)
-                            const innerDist = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
-                            const ix = cx + innerDist * Math.cos(-midAngle * RADIAN);
-                            const iy = cy + innerDist * Math.sin(-midAngle * RADIAN);
-                            
-                            // 2. 외부 부서명 표시 (8% 이상일 때만 깔끔하게 노출)
-                            const outerDist = Number(outerRadius) + 8;
-                            const ox = cx + outerDist * Math.cos(-midAngle * RADIAN);
-                            const oy = cy + outerDist * Math.sin(-midAngle * RADIAN);
-                            const anchor = ox > cx ? 'start' : 'end';
+                            const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
                             
                             return (
                               <g style={{ pointerEvents: 'none' }}>
-                                {percent >= 0.08 && (
-                                  <text 
-                                    x={ix} 
-                                    y={iy} 
-                                    fill="#ffffff" 
-                                    textAnchor="middle" 
-                                    dominantBaseline="central" 
-                                    fontSize={9} 
-                                    fontWeight="800" 
-                                    style={{ filter: 'drop-shadow(0px 1px 1px rgba(0,0,0,0.2))' }}
-                                  >
-                                    {`${(percent * 100).toFixed(0)}%`}
-                                  </text>
-                                )}
-                                {percent >= 0.08 && (
-                                  <text 
-                                    x={ox + (ox > cx ? 4 : -4)} 
-                                    y={oy} 
-                                    fill="#475569" 
-                                    textAnchor={anchor} 
-                                    dominantBaseline="central" 
-                                    fontSize={9.5} 
-                                    fontWeight="700"
-                                  >
-                                    {name}
-                                  </text>
-                                )}
+                                <text 
+                                  x={x} 
+                                  y={y} 
+                                  fill="#ffffff" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="central" 
+                                  fontSize={11} 
+                                  fontWeight="900" 
+                                  style={{ 
+                                    filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.7))',
+                                    paintOrder: 'stroke',
+                                    stroke: 'rgba(0,0,0,0.15)',
+                                    strokeWidth: '1.5px'
+                                  }}
+                                >
+                                  {`${(percent * 100).toFixed(0)}%`}
+                                </text>
                               </g>
                             );
                           }}
@@ -1731,9 +1715,9 @@ const Dashboard: React.FC = () => {
                             <Cell 
                               key={`cell-${idx}`} 
                               fill={div.color} 
-                              fillOpacity={1 - (idx * 0.15)} 
+                              fillOpacity={Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
                               stroke="#fff" 
-                              strokeWidth={2}
+                              strokeWidth={1.5}
                               style={{ outline: 'none' }}
                             />
                           ))}
@@ -1746,9 +1730,11 @@ const Dashboard: React.FC = () => {
                      </PieChart>
                    </ResponsiveContainer>
                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                      <div className="text-center">
-                        <div className="text-[8px] font-bold text-slate-400">총 면적</div>
-                        <div className="text-[10.5px] font-black text-slate-700 leading-none mt-0.5">{f(div.data.reduce((acc, d) => acc + d.value, 0))}</div>
+                      <div className="text-center mt-1">
+                        <div className="text-[6.5px] font-bold text-slate-400 capitalize tracking-tighter">총 면적</div>
+                        <div className="text-[16px] font-black text-slate-800 leading-none mt-0.5 tabular-nums">
+                          {f(div.data.reduce((acc, d) => acc + d.value, 0))}
+                        </div>
                       </div>
                    </div>
                 </div>
