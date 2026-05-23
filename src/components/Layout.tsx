@@ -35,18 +35,11 @@ export default function Layout({ children }: { children: ReactNode }) {
     setIsExporting(true);
     setIsPdfExportMode(true);
     
-    // Listen to print completion/cancel to recover UI state
-    const restoreUI = () => {
-      setIsPdfExportMode(false);
-      setIsExporting(false);
-      window.removeEventListener('afterprint', restoreUI);
-    };
-    window.addEventListener('afterprint', restoreUI);
-
-    // Give enough time for Recharts and Tailwind layouts to stabilize (600ms is perfectly stable & snappy)
-    setTimeout(() => {
-      window.print();
-    }, 600);
+    // Instead of auto-printing, we just enter the preview mode
+    // which now has a floating download button for direct PDF generation.
+    // This addresses the user's request to avoid browser print dialog issues.
+    
+    setIsExporting(false); 
   };
 
   if (isPdfExportMode) {

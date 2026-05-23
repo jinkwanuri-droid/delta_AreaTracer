@@ -1,4 +1,4 @@
-import React, { useMemo, forwardRef } from 'react';
+import React, { useMemo, forwardRef, useState } from 'react';
 import clsx from 'clsx';
 import { useAppStore, getFloorVal, findRoomNote } from '@/store/useAppStore';
 import { 
@@ -6,11 +6,66 @@ import {
   ReportDivisionPieChart, 
   ReportDivisionTrendChart 
 } from './ReportCharts';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { Download, Loader2, X } from 'lucide-react';
 
 // PDF 출력을 위한 고성능 완벽 Pagination & PPT 슬라이드 스타일 PrintableReport
 const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   const project = useAppStore(state => state.project);
   const options = useAppStore(state => state.pdfExportOptions);
+  const setIsPdfExportMode = useAppStore(state => state.setIsPdfExportMode);
+
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+
+  const handleDownloadPdf = async () => {
+    setIsExporting(true);
+    setExportProgress(0);
+
+    // Give time for layout to settle
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    try {
+      const slides = document.querySelectorAll('.pdf-slide-container');
+      if (slides.length === 0) return;
+
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      for (let i = 0; i < slides.length; i++) {
+        setExportProgress(Math.round(((i + 1) / slides.length) * 100));
+        const slide = slides[i] as HTMLElement;
+        
+        // Use html2canvas to capture slide accurately
+        const canvas = await html2canvas(slide, {
+          scale: 2, // Higher resolution
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        
+        if (i > 0) {
+          pdf.addPage();
+        }
+        
+        // A4 landscape is 297 x 210
+        pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+      }
+
+      pdf.save(`${project?.name || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('PDF Export failed:', error);
+      alert('PDF 생성 중 오류가 발생했습니다. 브라우저 인쇄 기능을 이용해 주세요.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
   
   const stages = useAppStore(state => state.stages);
   const divisions = useAppStore(state => state.divisions);
@@ -477,7 +532,55 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   const projectTitle = project?.name || '경상남도 서부의료원 실시설계';
 
   return (
-    <div ref={ref} className="print-container-root w-full bg-white text-slate-800 printable-mode" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
+    <div ref={ref} className="print-container-root w-full bg-white text-slate-800 printable-mode relative" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
+      
+      {/* Floating Action Bar - 정식 PDF 내보내기 버튼 */}
+      <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 print:hidden">
+        <div className="bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-2xl border border-slate-200 flex flex-col gap-1 overflow-hidden transition-all hover:shadow-indigo-200/40">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isExporting}
+            className={clsx(
+              "flex items-center justify-between gap-4 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm",
+              isExporting 
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98]"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              <span>{isExporting ? `PDF 생성 중... (${exportProgress}%)` : "PDF 파일로 직접 저장하기"}</span>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setIsPdfExportMode(false)}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
+          >
+            <X size={16} />
+            <span>미리보기 닫고 돌아가기</span>
+          </button>
+        </div>
+
+        {isExporting && (
+           <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg border border-slate-100 animate-in fade-in slide-in-from-top-2">
+             <div className="flex flex-col gap-1.5 w-48">
+               <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                 <span>Processing Tracks...</span>
+                 <span>{exportProgress}%</span>
+               </div>
+               <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                 <div 
+                   className="h-full bg-indigo-500 transition-all duration-300 ease-out" 
+                   style={{ width: `${exportProgress}%` }}
+                 />
+               </div>
+             </div>
+           </div>
+        )}
+      </div>
+
       <style>{`
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
@@ -993,7 +1096,10 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     </>
                                   ) : "-"}
                                 </td>
-                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-normal whitespace-pre-wrap border-slate-200 text-[6.5pt] pdf-hatch-cell" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
+                                <td className={clsx(
+                                  "py-0.5 px-2 text-left text-slate-600 font-normal leading-normal whitespace-pre-wrap border-slate-200 text-[6.5pt]",
+                                  !(findRoomNote(roomNotes, row.no, row.floorId) || row.note) && "pdf-hatch-cell"
+                                )} style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
                                   {findRoomNote(roomNotes, row.no, row.floorId) || row.note || ""}
                                 </td>
                               </tr>
