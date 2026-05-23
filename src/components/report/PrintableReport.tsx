@@ -361,7 +361,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
       const chunks: any[][] = [];
       let currentChunk: any[] = [];
       let currentPoints = 0;
-      const MAX_POINTS_PER_PAGE = 35.5; // PPT 및 A4 가로 인쇄 시 바닥글과 간섭을 차단하고 꼬리말 밑 공백을 최소화하는 하이덴시티 황금 분할
+      const MAX_POINTS_PER_PAGE = 29.0; // Reduced from 31.0 to fit safely within A4 footer area
 
       for (let i = 0; i < flatData.length; i++) {
         const item = flatData[i];
@@ -487,24 +487,24 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif !important;
           }
 
-          /* margin을 0으로 만들어 바깥 마진이 출력물 설정에 영향받는 것을 원천적으로 복구하고 내부 패딩으로 완전한 여백 구성 */
+          /* margin을 0으로 설정하여 브라우저 기본 여백 간섭을 차단하고, 내부 패딩(12mm)으로 안전 영역 확보 */
           .pdf-slide-container {
             width: 297mm !important;
             height: 210mm !important;
             max-height: 210mm !important;
             margin: 0 !important;
-            padding: 12mm 15mm 14mm 15mm !important;
+            padding: 12mm 15mm 18mm 15mm !important; /* 하단 여백(18mm)을 더 확보하여 푸터 간섭 방지 */
             box-sizing: border-box !important;
           }
         }
 
-        /* 화면에서도 완벽한 A4 비율을 유지하면서 여백을 안전히 잡고 박스 섀도우를 얹어 고귀하고 품격있게 프리뷰 렌더링 */
+        /* 화면 프리뷰 설정 */
         .pdf-slide-container {
           width: 297mm !important;
           height: 210mm !important;
           max-height: 210mm !important;
           margin: 16px auto !important;
-          padding: 12mm 15mm 14mm 15mm !important;
+          padding: 12mm 15mm 18mm 15mm !important;
           position: relative !important;
           background: #ffffff !important;
           overflow: hidden !important;
@@ -518,12 +518,6 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
         @media print {
           .pdf-slide-container {
-            width: 297mm !important;
-            height: 210mm !important;
-            max-height: 210mm !important;
-            margin: 0 !important;
-            padding: 12mm 15mm 14mm 15mm !important;
-            box-sizing: border-box !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
@@ -868,7 +862,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
                             // 일반 데이터 행 렌더링 (화면이랑 99.9% 동치, py-1 -> py-0.5 / 95% 축소)
                             return (
-                              <tr key={row.id} className="hover:bg-slate-50/20 text-[9px]">
+                              <tr key={row.id} className="hover:bg-slate-50/20 text-[9px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                                 <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[7px] tracking-tighter">{row.no}</td>
                                 <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>{row.name}</td>
                                 {stages.map((s) => {

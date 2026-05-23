@@ -1379,7 +1379,41 @@ export function FloorDetailPrintList() {
   }
 
   return (
-    <div className="flex flex-col w-full bg-white print:bg-white text-slate-900 gap-12">
+    <>
+      <style>{`
+        @page {
+          size: A4 landscape;
+          margin: 0;
+        }
+        @media print {
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            margin: 10mm; /* Browser will hopefully use this as internal margin if "None" is selected, or we rely on padding */
+          }
+          .flex-col.w-full.bg-white {
+            padding: 10mm;
+          }
+          .page-break {
+            page-break-before: always;
+            break-before: always;
+          }
+          /* Prevent rows from breaking across pages */
+          tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          thead {
+            display: table-header-group;
+          }
+          /* Ensure backgrounds print */
+          .print-bg-exact {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      `}</style>
+      <div className="flex flex-col w-full bg-white print:bg-white text-slate-900 gap-12">
       {targetFloors.map((floor, idx) => {
         return (
           <div 
@@ -1409,7 +1443,8 @@ export function FloorDetailPrintList() {
         );
       })}
     </div>
-  );
+  </>
+);
 }
 
 function getFloorPrintTitle(floorName: string) {
@@ -1761,7 +1796,7 @@ function FloorTableForPrint({ floorId }: { floorId: string }) {
               );
             }
             return (
-              <tr key={row.id} className="hover:bg-slate-50/50">
+              <tr key={row.id} className="hover:bg-slate-50/50" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                 <td className="py-1.5 px-2 text-center text-slate-500 font-mono border-b border-slate-200">{row.no}</td>
                 <td className="py-1.5 px-3 text-left text-slate-800 font-semibold border-b border-slate-200 leading-snug whitespace-normal" style={{ wordBreak: 'break-all' }}>{row.name}</td>
                 {stages.map((s) => {
