@@ -16,6 +16,8 @@ import {
   Sheet,
   RefreshCw,
   Lock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -590,6 +592,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [passInput, setPassInput] = useState("");
   const [passError, setPassError] = useState("");
   const [isCapsLock, setIsCapsLock] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const checkCapsLock = (e: React.KeyboardEvent) => {
     if (e.getModifierState("CapsLock")) {
@@ -604,6 +607,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [newPassConfirm, setNewPassConfirm] = useState("");
   const [changeError, setChangeError] = useState("");
   const [changeSuccess, setChangeSuccess] = useState("");
+
+  const [showCurPass, setShowCurPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -768,7 +775,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
           <form onSubmit={handleAuthSubmit} className="w-full space-y-3">
             <div className="relative group">
               <input
-                type="password"
+                type={showPass ? "text" : "password"}
                 value={passInput}
                 onChange={(e) => {
                   setPassInput(e.target.value);
@@ -776,14 +783,23 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 }}
                 onKeyUp={checkCapsLock}
                 placeholder="비밀번호 입력"
-                className="w-full text-center text-xs border border-slate-200 rounded-md px-10 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal"
+                className="w-full text-center text-xs border border-slate-200 rounded-md pl-10 pr-16 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal"
                 autoFocus
               />
-              {isCapsLock && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none animate-in fade-in zoom-in duration-200">
-                  Caps
-                </div>
-              )}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                {isCapsLock && (
+                  <div className="px-1 py-0.5 bg-amber-50 border border-amber-200/50 rounded text-[8px] font-medium text-amber-600/90 select-none animate-in fade-in zoom-in duration-200 shadow-sm">
+                    Caps
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="p-1 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
+                >
+                  {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
             </div>
             {passError && (
               <p className="text-[10px] text-red-500 font-semibold mt-1 text-center">{passError}</p>
@@ -1349,18 +1365,27 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showCurPass ? "text" : "password"}
                         value={curPass}
                         onChange={(e) => setCurPass(e.target.value)}
                         onKeyUp={checkCapsLock}
                         placeholder="현재 설정된 비밀번호"
-                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
+                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-20 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
                       />
-                      {isCapsLock && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none">
-                          Caps
-                        </div>
-                      )}
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {isCapsLock && (
+                          <div className="px-1 py-0.5 bg-amber-50 border border-amber-200/50 rounded text-[8px] font-medium text-amber-600/90 select-none shadow-sm capitalize">
+                            Caps
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowCurPass(!showCurPass)}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
+                        >
+                          {showCurPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1370,18 +1395,27 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showNewPass ? "text" : "password"}
                         value={newPass}
                         onChange={(e) => setNewPass(e.target.value)}
                         onKeyUp={checkCapsLock}
                         placeholder="새로 사용할 비밀번호"
-                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
+                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-20 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
                       />
-                      {isCapsLock && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none">
-                          Caps
-                        </div>
-                      )}
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {isCapsLock && (
+                          <div className="px-1 py-0.5 bg-amber-50 border border-amber-200/50 rounded text-[8px] font-medium text-amber-600/90 select-none shadow-sm capitalize">
+                            Caps
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPass(!showNewPass)}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
+                        >
+                          {showNewPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1391,18 +1425,27 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                     </label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showConfirmPass ? "text" : "password"}
                         value={newPassConfirm}
                         onChange={(e) => setNewPassConfirm(e.target.value)}
                         onKeyUp={checkCapsLock}
                         placeholder="새 비밀번호 다시 입력"
-                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-12 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
+                        className="w-full text-xs border border-slate-200 rounded-md pl-3 pr-20 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono tracking-widest placeholder:font-sans placeholder:tracking-normal bg-white"
                       />
-                      {isCapsLock && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-amber-100 border border-amber-200 rounded text-[9px] font-black text-amber-700 select-none">
-                          Caps
-                        </div>
-                      )}
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        {isCapsLock && (
+                          <div className="px-1 py-0.5 bg-amber-50 border border-amber-200/50 rounded text-[8px] font-medium text-amber-600/90 select-none shadow-sm capitalize">
+                            Caps
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPass(!showConfirmPass)}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-md hover:bg-slate-100"
+                        >
+                          {showConfirmPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
