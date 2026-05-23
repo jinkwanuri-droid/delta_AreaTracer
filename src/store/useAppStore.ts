@@ -62,6 +62,18 @@ export interface Snapshot {
   };
 }
 
+export async function hashPassword(password: string): Promise<string> {
+  if (!password) return "";
+  const msgUint8 = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashHex;
+}
+
+// Default hash for "1234"
+const DEFAULT_PASS_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4";
+
 export interface AppState {
   project: { id: string; name: string } | null;
   stages: Stage[];
@@ -247,9 +259,14 @@ export const useAppStore = create<AppState>()(
       isLoading: false,
       spreadsheetId: null,
       floorWardOverrides: {},
-      settingsPassword: "1234",
+      settingsPassword: DEFAULT_PASS_HASH,
       setSettingsPassword: async (val: string) => {
-        set({ settingsPassword: val });
+        if (!val) {
+          set({ settingsPassword: DEFAULT_PASS_HASH });
+        } else {
+          const hashed = await hashPassword(val);
+          set({ settingsPassword: hashed });
+        }
         await get().saveGlobalSettings();
       },
       fetchGlobalSettings: async () => {
@@ -272,12 +289,22 @@ export const useAppStore = create<AppState>()(
           console.warn("Failed to retrieve local notes backup:", e);
         }
 
+        // Auto-migrate local hashed password if it's stored raw (persist middleware fallback)
+        const currentPass = get().settingsPassword;
+        if (currentPass && currentPass.length !== 64) {
+          const hashed = await hashPassword(currentPass);
+          set({ settingsPassword: hashed });
+        }
+
         try {
           const res = await fetch("/api/global-settings");
           const contentType = res.headers.get("content-type") || "";
           if (res.ok && contentType.includes("application/json")) {
             const data = await res.json();
             if (data && Object.keys(data).length > 0) {
+              const pass = data.settings_password || get().settingsPassword;
+              const finalPass = (pass && pass.length === 64) ? pass : (pass ? await hashPassword(pass) : DEFAULT_PASS_HASH);
+
               set({
                 spreadsheetId: data.spreadsheetId || get().spreadsheetId,
                 stages: data.stages || get().stages,
@@ -290,7 +317,7 @@ export const useAppStore = create<AppState>()(
                 departmentNotes: { ...localDN, ...(data.departmentNotes || {}) },
                 summaryNotes: data.summaryNotes || get().summaryNotes,
                 floorWardOverrides: data.floorWardOverrides || get().floorWardOverrides,
-                settingsPassword: data.settings_password || get().settingsPassword,
+                settingsPassword: finalPass,
               });
               return;
             }
@@ -345,6 +372,9 @@ export const useAppStore = create<AppState>()(
               if (key) roomNotes[key] = item.content;
             });
 
+            const pass = config.settings_password || get().settingsPassword;
+            const finalPass = (pass && pass.length === 64) ? pass : (pass ? await hashPassword(pass) : DEFAULT_PASS_HASH);
+
             set({
               spreadsheetId: config.spreadsheetId || get().spreadsheetId,
               stages: config.stages || get().stages,
@@ -357,7 +387,7 @@ export const useAppStore = create<AppState>()(
               floorWardOverrides: config.floorWardOverrides || get().floorWardOverrides,
               roomNotes: { ...localRN, ...roomNotes },
               departmentNotes: { ...localDN, ...deptNotes },
-              settingsPassword: config.settings_password || get().settingsPassword,
+              settingsPassword: finalPass,
             });
             console.log("Global settings successfully loaded directly from Supabase.");
           } catch (supErr) {
