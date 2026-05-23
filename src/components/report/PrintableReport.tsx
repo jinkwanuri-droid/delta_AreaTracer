@@ -512,25 +512,26 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
           /* 브라우저 기본 여백 사방마진이 부여되므로, 인쇄 가용 영역을 축소 배율 없이 꽉 채우도록 100%로 지정 */
           .pdf-slide-container {
-            width: 100% !important;
-            height: 100vh !important;
-            min-height: 100vh !important;
-            max-height: 100vh !important;
+            width: 266mm !important;
+            height: 184mm !important;
+            min-height: 184mm !important;
+            max-height: 184mm !important;
             margin: 0 !important;
-            padding: 2mm 3mm 2mm 3mm !important; 
+            padding: 0mm 1mm 1mm 1mm !important; 
             box-sizing: border-box !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
+            position: relative !important;
             page-break-inside: avoid !important;
             page-break-after: always !important;
           }
 
           /* 하단 꼬리글 영역 오버라이드: 브라우저 기본 마진 바로 위에 기분 좋게 밀착배치하여 하부 정렬 */
           .pdf-slide-container .absolute.bottom-\[14mm\] {
-            bottom: 3mm !important;
-            left: 3mm !important;
-            right: 3mm !important;
+            bottom: 0px !important;
+            left: 1mm !important;
+            right: 1mm !important;
           }
         }
 
