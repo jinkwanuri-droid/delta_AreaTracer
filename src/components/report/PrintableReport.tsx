@@ -1,4 +1,4 @@
-import React, { useMemo, forwardRef, useState } from 'react';
+import React, { useMemo, forwardRef } from 'react';
 import clsx from 'clsx';
 import { useAppStore, getFloorVal, findRoomNote } from '@/store/useAppStore';
 import { 
@@ -6,66 +6,11 @@ import {
   ReportDivisionPieChart, 
   ReportDivisionTrendChart 
 } from './ReportCharts';
-import { toCanvas } from 'html-to-image';
-import { jsPDF } from 'jspdf';
-import { Download, Loader2, X } from 'lucide-react';
 
 // PDF 출력을 위한 고성능 완벽 Pagination & PPT 슬라이드 스타일 PrintableReport
 const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   const project = useAppStore(state => state.project);
   const options = useAppStore(state => state.pdfExportOptions);
-  const setIsPdfExportMode = useAppStore(state => state.setIsPdfExportMode);
-
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
-
-  const handleDownloadPdf = async () => {
-    setIsExporting(true);
-    setExportProgress(0);
-
-    // Give time for layout to settle
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    try {
-      const slides = document.querySelectorAll('.pdf-slide-container');
-      if (slides.length === 0) return;
-
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
-
-      for (let i = 0; i < slides.length; i++) {
-        setExportProgress(Math.round(((i + 1) / slides.length) * 100));
-        const slide = slides[i] as HTMLElement;
-        
-        // Use html-to-image to capture slide accurately (supports more modern CSS than html2canvas)
-        const canvas = await toCanvas(slide, {
-          pixelRatio: 2,
-          backgroundColor: '#ffffff',
-          skipAutoScale: true,
-        });
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        
-        if (i > 0) {
-          pdf.addPage();
-        }
-        
-        // A4 landscape is 297 x 210. 
-        // We capture the slide which already contains internal margins via CSS padding.
-        pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
-      }
-
-      pdf.save(`${project?.name || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`);
-    } catch (error) {
-      console.error('PDF Export failed:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 브라우저 인쇄 기능을 이용해 주세요.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
   
   const stages = useAppStore(state => state.stages);
   const divisions = useAppStore(state => state.divisions);
@@ -423,7 +368,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 20.0; // 사용자 요청: 한 페이지 20개 항목
+        const MAX_POINTS_PER_PAGE = 22; // 사용자 요청: 한 페이지 22개 항목
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -431,11 +376,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           if (item.isGroupHeader) {
             const isFirstInPage = currentChunk.length === 0;
-            weight = isFirstInPage ? 1.0 : 1.8; 
+            weight = isFirstInPage ? 1.2 : 1.8; 
           } else if (item.isSummary) {
-            weight = 1.2; 
+            weight = 1.1; 
           } else if (item.isSpacer) {
-            weight = 0.5;
+            weight = 0.2;
           } else {
             // Normal data row: estimate height based on wrap
             const nameLen = item.name ? item.name.length : 0;
@@ -456,7 +401,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
               if (nextItem.isSpacer) continue;
               
               let nWeight = 1.0;
-              if (nextItem.isSummary) nWeight = 1.2;
+              if (nextItem.isSummary) nWeight = 1.1;
               
               neededSpace += nWeight;
               countRows++;
@@ -467,7 +412,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
               chunks.push(currentChunk);
               currentChunk = [];
               currentPoints = 0;
-              weight = 1.0; 
+              weight = 1.2; 
             } else {
               weight = 1.8; 
             }
@@ -532,94 +477,13 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   const projectTitle = project?.name || '경상남도 서부의료원 실시설계';
 
   return (
-    <div ref={ref} className="print-container-root w-full bg-slate-100 py-12 px-4 text-slate-800 printable-mode relative min-h-screen" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
-      
-      {/* Floating Action Bar - 정식 PDF 내보내기 버튼 */}
-      <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 print:hidden">
-        <div className="bg-white/95 backdrop-blur-md p-1 rounded-2xl shadow-2xl border border-slate-200 flex flex-col gap-1 overflow-hidden transition-all hover:shadow-indigo-200/40">
-          <button
-            onClick={handleDownloadPdf}
-            disabled={isExporting}
-            className={clsx(
-              "flex items-center justify-between gap-4 px-6 py-3.5 rounded-xl font-bold text-sm transition-all shadow-sm",
-              isExporting 
-                ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98]"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-              <span>{isExporting ? `PDF GENERATING... (${exportProgress}%)` : "PDF 파일로 내보내기"}</span>
-            </div>
-          </button>
-          
-          <button
-            onClick={() => setIsPdfExportMode(false)}
-            disabled={isExporting}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all"
-          >
-            <X size={16} />
-            <span>미리보기 닫고 돌아가기</span>
-          </button>
-        </div>
-
-        {isExporting && (
-           <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg border border-slate-100 animate-in fade-in slide-in-from-top-2">
-             <div className="flex flex-col gap-1.5 w-48">
-               <div className="flex justify-between text-[10px] font-bold text-slate-500">
-                 <span>Processing Tracks...</span>
-                 <span>{exportProgress}%</span>
-               </div>
-               <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                 <div 
-                   className="h-full bg-indigo-500 transition-all duration-300 ease-out" 
-                   style={{ width: `${exportProgress}%` }}
-                 />
-               </div>
-             </div>
-           </div>
-        )}
-      </div>
-
+    <div ref={ref} className="print-container-root w-full bg-white text-slate-800 printable-mode" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
       <style>{`
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
         /* 공통 프리텐다드 서체 전 영역 강제화로 숫자가 리얼 고딕으로 완벽 렌더링되게 처리 */
         .printable-mode, .printable-mode * {
           font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
-        }
-
-        /* 슬라이드 크기 및 레이아웃 시스템 현대화 */
-        .pdf-slide-container {
-          width: 297mm !important;
-          height: 210mm !important;
-          min-height: 210mm !important;
-          max-height: 210mm !important;
-          margin: 0 auto 40px auto !important; /* 미리보기 페이지 간 간격 */
-          padding: 10mm !important; /* 사용자 요청: 사방 10mm 여백 확보 */
-          box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
-          border: 1px solid #e5e7eb !important;
-          background: #ffffff !important;
-          box-sizing: border-box !important;
-          display: flex !important;
-          flex-direction: column !important;
-          position: relative !important;
-          overflow: hidden !important;
-        }
-
-        /* 빗금 패턴 (Hatch) 정의 - PDF 출력시 인식률 높임 */
-        .pdf-hatch-cell {
-          background-image: linear-gradient(
-            45deg,
-            #f9fafb 25%,
-            #f3f4f6 25%,
-            #f3f4f6 50%,
-            #f9fafb 50%,
-            #f9fafb 75%,
-            #f3f4f6 75%,
-            #f3f4f6 100%
-          ) !important;
-          background-size: 4px 4px !important;
         }
 
         /* 테이블 장평 95% 구현 및 자간 압축 극대화로 시인성 업그레이드 */
@@ -630,25 +494,49 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 0 !important;
+            margin: 0 !important; /* 브라우저 기본 마진 제거 */
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           .print-container-root {
             padding: 0 !important;
             margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
             background: #ffffff !important;
+            overflow: visible !important;
+            font-size: unset !important;
+            line-height: normal !important;
           }
+          /* 슬라이드 크기 및 레이아웃 시스템 현대화 (빈 페이지 및 다층 출력 해결) */
           .pdf-slide-container {
+            width: 297mm !important;
+            height: 210mm !important;
+            min-height: 210mm !important;
+            max-height: 210mm !important;
             margin: 0 !important;
+            padding: 10mm 12mm 15mm 12mm !important;
             box-shadow: none !important;
             border: none !important;
+            border-radius: 0 !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: relative !important;
             page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
           }
-        }
 
           /* 테이블 스타일 조정 */
           .style-table-pdf-container {
@@ -1051,14 +939,14 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                         <td className="py-0.5 px-0.5 text-center text-slate-400 text-[6pt] border-b border-slate-300 pdf-hatch-cell"></td>
                                         <td className="py-0.5 px-0.5 text-center text-slate-400 text-[6pt] border-b border-slate-300 pdf-hatch-cell"></td>
                                         {/* Qty의 오른쪽 선이 없어졌으므로 다음 영역의 구분을 위해 border-l을 추가합니다. 0인 소계는 빈칸으로 통일합니다. */}
-                                        <td className={clsx("py-0.5 px-1 text-right border-r border-slate-200 font-extrabold text-[7.5pt] border-b border-slate-300", subBg)}>
+                                        <td className={clsx("py-0.5 px-1 text-right border-r border-slate-200 font-extrabold text-[7pt] border-b border-slate-300", subBg)}>
                                           {totalDisplay}
                                         </td>
                                       </React.Fragment>
                                     );
                                   })}
                                   <td className={clsx(
-                                    "py-0.5 px-1 text-right font-extrabold border-r border-slate-200 text-[7.5pt] border-b border-slate-300",
+                                    "py-0.5 px-1 text-right font-extrabold border-r border-slate-200 text-[7pt] border-b border-slate-300",
                                     row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                                   )}>
                                     {row.variance > 0 ? "+" : ""}{formatNum(row.variance)}
@@ -1071,7 +959,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             // 일반 데이터 행 렌더링
                             return (
                               <tr key={row.id} className="hover:bg-slate-50/20 text-[7pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[6.5pt] tracking-tighter">{row.no}</td>
+                                <td className="py-0.5 px-1 text-center text-slate-500 font-sans border-r border-slate-200 whitespace-nowrap text-[7pt] tracking-tighter">{row.no}</td>
                                 <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-normal whitespace-normal text-[7pt]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
                                 {stages.map((s) => {
                                   const isEmpty = row[`${s.id}_isEmpty`];
@@ -1083,20 +971,20 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
                                   return (
                                     <React.Fragment key={s.id}>
-                                      <td className={clsx("py-0.5 px-0.5 text-right text-slate-500 font-mono border-r border-slate-200 text-[6.5pt]", cellBg, isEmpty && "pdf-hatch-cell")}>
+                                      <td className={clsx("py-0.5 px-0.5 text-right text-slate-500 font-sans border-r border-slate-200 text-[7pt]", cellBg, isEmpty && "pdf-hatch-cell")}>
                                         {isEmpty ? "" : formatNum(row[`${s.id}_unitArea`], s.id)}
                                       </td>
-                                      <td className={clsx("py-0.5 px-0.5 text-center text-slate-500 font-mono border-r border-slate-200 text-[6.5pt]", cellBg, isEmpty && "pdf-hatch-cell")}>
+                                      <td className={clsx("py-0.5 px-0.5 text-center text-slate-500 font-sans border-r border-slate-200 text-[7pt]", cellBg, isEmpty && "pdf-hatch-cell")}>
                                         {isEmpty ? "" : formatQty(row[`${s.id}_quantity`])}
                                       </td>
-                                      <td className={clsx("py-0.5 px-1 text-right font-mono font-semibold border-r border-slate-200 text-[7.5pt]", totalCellBg, isEmpty && "pdf-hatch-cell")}>
+                                      <td className={clsx("py-0.5 px-1 text-right font-sans font-semibold border-r border-slate-200 text-[7pt]", totalCellBg, isEmpty && "pdf-hatch-cell")}>
                                         {isEmpty ? "" : formatNum(row[`${s.id}_total`], s.id)}
                                       </td>
                                     </React.Fragment>
                                   );
                                 })}
                                 <td className={clsx(
-                                  "py-0.5 px-1 text-right font-mono font-bold border-r border-slate-200 text-[7.5pt]",
+                                  "py-0.5 px-1 text-right font-sans font-bold border-r border-slate-200 text-[7pt]",
                                   row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                                 )}>
                                   {row.variance !== undefined && row.variance !== 0 ? (
@@ -1106,10 +994,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     </>
                                   ) : "-"}
                                 </td>
-                                <td className={clsx(
-                                  "py-0.5 px-2 text-left text-slate-600 font-normal leading-normal whitespace-pre-wrap border-slate-200 text-[6.5pt]",
-                                  !(findRoomNote(roomNotes, row.no, row.floorId) || row.note) && "pdf-hatch-cell"
-                                )} style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
+                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-normal whitespace-pre-wrap border-slate-200 text-[7pt] pdf-hatch-cell" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
                                   {findRoomNote(roomNotes, row.no, row.floorId) || row.note || ""}
                                 </td>
                               </tr>
