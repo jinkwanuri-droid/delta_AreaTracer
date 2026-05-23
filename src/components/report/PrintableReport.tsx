@@ -498,28 +498,29 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           }
           
           body, html {
-            width: 100% !important;
-            height: 100% !important;
+            width: auto !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
+            overflow: visible !important;
             background: #ffffff !important;
           }
 
           .print-container-root {
-            width: 100% !important;
+            width: auto !important;
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
           }
 
-          /* 인쇄 시 컨테이너를 가용 면적에 100% 맞춤으로써 크기 축소를 방지하고 여백 겹침 최소화 */
+          /* 인쇄 시 컨테이너를 가용 면적에 맞춤으로써 여백 관리 최적화 */
           .pdf-slide-container {
             width: 100% !important;
-            height: 100vh !important;
-            min-height: 100vh !important;
-            max-height: 100vh !important;
+            height: 190mm !important; /* 브라우저 가용영역 높이 반영 */
+            min-height: 190mm !important;
+            max-height: 190mm !important;
             margin: 0 !important;
+            padding: 2mm 0mm 0mm 0mm !important; /* 인쇄시엔 내부 패딩을 거의 제거하여 기본여백과 중복 방지 */
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
@@ -527,6 +528,13 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             page-break-after: always !important;
             overflow: hidden !important;
             box-sizing: border-box !important;
+          }
+
+          /* 인쇄 시 머리말 꼬리말 위치를 패딩 감소에 맞게 재조정 */
+          .pdf-slide-container .print-footer {
+            bottom: 5mm !important;
+            left: 0mm !important;
+            right: 0mm !important;
           }
         }
 
