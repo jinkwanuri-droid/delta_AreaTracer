@@ -516,9 +516,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           /* 인쇄 시 컨테이너를 가용 면적에 맞춤으로써 여백 관리 최적화 */
           .pdf-slide-container {
             width: 100% !important;
-            height: 190mm !important; /* 브라우저 가용영역 높이 반영 */
-            min-height: 190mm !important;
-            max-height: 190mm !important;
+            height: 172mm !important; /* 브라우저 가용영역 높이 반영 */
+            min-height: 172mm !important;
+            max-height: 172mm !important;
             margin: 0 !important;
             padding: 2mm 0mm 0mm 0mm !important; /* 인쇄시엔 내부 패딩을 거의 제거하여 기본여백과 중복 방지 */
             box-shadow: none !important;
@@ -532,7 +532,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
           /* 인쇄 시 머리말 꼬리말 위치를 패딩 감소에 맞게 재조정 */
           .pdf-slide-container .print-footer {
-            bottom: 15mm !important;
+            bottom: 8mm !important;
             left: 8mm !important;
             right: 8mm !important;
           }
@@ -639,7 +639,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
           <div className="absolute bottom-[15mm] left-[8mm] right-[8mm] print-footer">
-            <div className="border-t border-slate-300 w-full mb-2"></div>
+            <div className="border-t-[1.5px] border-slate-700 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
               <span></span>
@@ -728,7 +728,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
           {/* 꼬리말 영역 */}
           <div className="absolute bottom-[15mm] left-[8mm] right-[8mm] print-footer">
-            <div className="border-t border-slate-300 w-full mb-2"></div>
+            <div className="border-t-[1.5px] border-slate-700 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
               <span></span>
@@ -952,7 +952,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
                     {/* 꼬리말 영역 - PPT 슬라이드 최하부 라인 완벽 복제 */}
                     <div className="absolute bottom-[15mm] left-[8mm] right-[8mm] print-footer">
-                      <div className="border-t border-slate-300 w-full mb-2"></div>
+                      <div className="border-t-[1.5px] border-slate-700 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
                         <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
                         <span></span>
