@@ -368,69 +368,48 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 22; // 사용자 요청: 한 페이지 22개 항목
+        const MAX_POINTS_PER_PAGE = 22; // 한 페이지 22개 항목 (사용자 요청)
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
           let weight = 1.0;
           
           if (item.isGroupHeader) {
-            const isFirstInPage = currentChunk.length === 0;
-            weight = isFirstInPage ? 1.2 : 1.8; 
+            // 부서 구분 행 가중치 (여백 포함)
+            weight = 1.5; 
           } else if (item.isSummary) {
             weight = 1.1; 
           } else if (item.isSpacer) {
             weight = 0.2;
           } else {
-            // Normal data row: estimate height based on wrap
+            // 일반 데이터 행 가중치
             const nameLen = item.name ? item.name.length : 0;
             const thisNote = findRoomNote(roomNotes, item.no, item.floorId) || item.note || "";
-            
             const linesFromName = Math.ceil(nameLen / 25);
             const linesFromNote = Math.ceil(thisNote.length / 40);
             const estLines = Math.max(1, linesFromName, linesFromNote);
             weight = estLines * 1.0; 
           }
 
+          // 다음 항목이 부서 헤더일 때 페이지 넘김 미리 체크 (오펀 방지)
           if (item.isGroupHeader && currentChunk.length > 0) {
-            let neededSpace = 1.2; 
-            let countRows = 0;
-            for (let j = i + 1; j < flatData.length; j++) {
-              const nextItem = flatData[j];
-              if (nextItem.isGroupHeader) break;
-              if (nextItem.isSpacer) continue;
-              
-              let nWeight = 1.0;
-              if (nextItem.isSummary) nWeight = 1.1;
-              
-              neededSpace += nWeight;
-              countRows++;
-              if (countRows >= 1) break; 
-            }
-
-            if (currentPoints + neededSpace > MAX_POINTS_PER_PAGE) {
+            const neededForHeader = 2.5; // 헤더 + 데이터 최소 1행
+            if (currentPoints + neededForHeader > MAX_POINTS_PER_PAGE) {
               chunks.push(currentChunk);
               currentChunk = [];
               currentPoints = 0;
-              weight = 1.2; 
-            } else {
-              weight = 1.8; 
             }
           }
 
-        if (currentPoints + weight > MAX_POINTS_PER_PAGE && currentChunk.length > 0) {
-          chunks.push(currentChunk);
-          currentChunk = [];
-          currentPoints = 0;
-          // Re-evaluate if group header is now at the start of the next page
-          if (item.isGroupHeader) {
-            weight = 1.4;
+          if (currentPoints + weight > MAX_POINTS_PER_PAGE && currentChunk.length > 0) {
+            chunks.push(currentChunk);
+            currentChunk = [];
+            currentPoints = 0;
           }
-        }
 
-        currentChunk.push(item);
-        currentPoints += weight;
-      }
+          currentChunk.push(item);
+          currentPoints += weight;
+        }
 
       if (currentChunk.length > 0) {
         chunks.push(currentChunk);
@@ -474,6 +453,19 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
     return pageNum;
   };
 
+  // 각 층의 시작 페이지 번호를 미리 계산 (사이드 이펙트 방지)
+  const floorPageOffsets = useMemo(() => {
+    const offsets: Record<string, number> = {};
+    let currentOffset = 0;
+    const sortedFloorNames = Object.keys(floorChunksMap).sort((a, b) => getFloorVal(a) - getFloorVal(b));
+    
+    sortedFloorNames.forEach(floorName => {
+      offsets[floorName] = currentOffset;
+      currentOffset += floorChunksMap[floorName].length;
+    });
+    return offsets;
+  }, [floorChunksMap]);
+
   const projectTitle = project?.name || '경상남도 서부의료원 실시설계';
 
   return (
@@ -494,29 +486,51 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 0;
+            margin: 0 !important;
+          }
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-container-root {
+            width: 297mm !important;
+            overflow: visible !important;
           }
           .pdf-slide-container {
             width: 297mm !important;
             height: 210mm !important;
+            min-height: 210mm !important;
+            max-height: 210mm !important;
             page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
             margin: 0 !important;
             padding: 10mm 12mm 15mm 12mm !important;
             position: relative !important;
             overflow: hidden !important;
             box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            background: #fff !important;
+            border: none !important;
+            box-shadow: none !important;
           }
           .pdf-slide-container:last-child {
             page-break-after: avoid !important;
+            break-after: avoid !important;
           }
           .style-table-pdf-container table {
             width: 100% !important;
           }
           .style-table-pdf-container th {
             font-size: 8pt !important;
+            font-family: "Inter", sans-serif !important;
           }
           .style-table-pdf-container td {
             font-size: 7pt !important;
+            font-family: "Inter", sans-serif !important;
           }
           
           /* 빈셀 빗금 해치 패턴 구현 (인쇄용) */
@@ -529,8 +543,6 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
               transparent 55%
             ) !important;
             background-size: 4px 4px !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
         }
 
@@ -747,15 +759,12 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             return sortedFloorNames.map((floorName) => {
               const chunks = floorChunksMap[floorName];
               const totalChunks = chunks.length;
+              const floorOffset = floorPageOffsets[floorName] || 0;
+
               return chunks.map((chunkRows, chunkIdx) => {
                 const currentPageNum = chunkIdx + 1;
-                const overallPageNum = getOverallPageNumber('detail', detailPageAccumulator + chunkIdx);
+                const overallPageNum = getOverallPageNumber('detail', floorOffset + chunkIdx);
                 
-                // 각 층 루프 완료 후 누적 카운트에 합산하기 위한 클로저 유도
-                if (chunkIdx === totalChunks - 1) {
-                  detailPageAccumulator += totalChunks;
-                }
-
                 return (
                   <div key={`${floorName}-p${currentPageNum}`} className="pdf-slide-container bg-white">
                     
@@ -843,8 +852,8 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                       <td colSpan={2 + stages.length * 3 + 2} className="py-1 px-2.5 border-none h-[14px]"></td>
                                     </tr>
                                   )}
-                                  <tr key={row.id} className="bg-slate-100/70 border-b border-slate-300">
-                                    <td colSpan={2 + stages.length * 3 + 2} className="py-0.5 px-2.5 font-extrabold text-[#1E293B] text-[7pt] border-b border-slate-300">
+                              <tr key={row.id} className="bg-slate-100/70 border-b border-slate-300">
+                                    <td colSpan={2 + stages.length * 3 + 2} className="py-1 px-2.5 font-extrabold text-[#1E293B] text-[7pt] border-b border-slate-300">
                                       <div className="flex items-center">
                                         <span 
                                           className="inline-block w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" 
@@ -857,7 +866,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                         />
                                         {row.deptName}
                                         {row.wardCount > 1 && (
-                                          <span className="ml-2 px-1 py-0.5 text-[5.5pt] bg-[#EEF2F6] text-slate-600 border border-slate-200 rounded font-bold">
+                                          <span className="ml-2 px-1 py-0.5 text-[6pt] bg-[#EEF2F6] text-slate-600 border border-slate-200 rounded font-bold">
                                             {row.wardCount}개 병동 적용
                                           </span>
                                         )}
