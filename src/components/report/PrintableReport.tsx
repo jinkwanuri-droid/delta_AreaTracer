@@ -494,30 +494,39 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           @page { 
             size: A4 landscape; 
-            margin: 0 !important; /* 브라우저 기본 여백 완전히 제거 */
+            margin: 0 !important; 
           }
           
           body, html {
-            width: 296mm !important;
-            height: 209mm !important;
+            width: 100% !important;
+            height: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: visible !important;
+            overflow: hidden !important;
             background: #ffffff !important;
           }
 
-          /* 인쇄 시 컨테이너 여백 제거하여 화면 프리뷰와 사이즈/위치 100% 동일하게 함 */
+          .print-container-root {
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          /* 인쇄 시 컨테이너를 가용 면적에 100% 맞춤으로써 크기 축소를 방지하고 여백 겹침 최소화 */
           .pdf-slide-container {
-            width: 296mm !important;
-            height: 209mm !important;
-            min-height: 209mm !important;
-            max-height: 209mm !important;
+            width: 100% !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            max-height: 100vh !important;
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
             border-radius: 0 !important;
             page-break-inside: avoid !important;
             page-break-after: always !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
           }
         }
 
@@ -528,8 +537,8 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           min-height: 210mm !important;
           max-height: 210mm !important;
           margin: 16px auto !important;
-          /* 상단 여백 2mm 올림(9mm), 하단 여백 추가확보(13mm) */
-          padding: 9mm 16mm 13mm 16mm !important; 
+          /* 상단 여백 2mm 올림(9mm), 하단 여백 추가확보(13mm), 좌우 패딩을 8mm로 줄여서 여백 최소화 */
+          padding: 9mm 8mm 13mm 8mm !important; 
           position: relative !important;
           background: #ffffff !important;
           overflow: hidden !important;
