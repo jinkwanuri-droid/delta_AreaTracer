@@ -532,9 +532,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
           /* 인쇄 시 머리말 꼬리말 위치를 패딩 감소에 맞게 재조정 */
           .pdf-slide-container .print-footer {
-            bottom: 10mm !important;
-            left: 0mm !important;
-            right: 0mm !important;
+            bottom: 15mm !important;
+            left: 8mm !important;
+            right: 8mm !important;
           }
         }
 
@@ -638,7 +638,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
           
           {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
-          <div className="absolute bottom-[10mm] left-[8mm] right-[8mm] print-footer">
+          <div className="absolute bottom-[15mm] left-[8mm] right-[8mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -727,7 +727,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
 
           {/* 꼬리말 영역 */}
-          <div className="absolute bottom-[10mm] left-[8mm] right-[8mm] print-footer">
+          <div className="absolute bottom-[15mm] left-[8mm] right-[8mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -951,7 +951,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     </div>
 
                     {/* 꼬리말 영역 - PPT 슬라이드 최하부 라인 완벽 복제 */}
-                    <div className="absolute bottom-[10mm] left-[8mm] right-[8mm] print-footer">
+                    <div className="absolute bottom-[15mm] left-[8mm] right-[8mm] print-footer">
                       <div className="border-t border-slate-300 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
                         <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
