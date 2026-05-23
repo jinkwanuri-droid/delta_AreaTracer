@@ -532,7 +532,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
           /* 인쇄 시 머리말 꼬리말 위치를 패딩 감소에 맞게 재조정 */
           .pdf-slide-container .print-footer {
-            bottom: 5mm !important;
+            bottom: 10mm !important;
             left: 0mm !important;
             right: 0mm !important;
           }
@@ -637,8 +637,8 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
             </div>
           </div>
           
-           {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
-          <div className="absolute bottom-[16mm] left-[15mm] right-[15mm] print-footer">
+          {/* 꼬리말 영역 (PPT 슬라이드 최하부 라인 완벽 일치) */}
+          <div className="absolute bottom-[10mm] left-[8mm] right-[8mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -727,7 +727,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           </div>
 
           {/* 꼬리말 영역 */}
-          <div className="absolute bottom-[16mm] left-[15mm] right-[15mm] print-footer">
+          <div className="absolute bottom-[10mm] left-[8mm] right-[8mm] print-footer">
             <div className="border-t border-slate-300 w-full mb-2"></div>
             <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
               <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
@@ -791,7 +791,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                              </React.Fragment>
                            ))}
                            <col style={{ width: '45px' }} />
-                           <col style={{ width: '280px' }} />
+                           <col style={{ width: 'auto' }} />
                          </colgroup>
                          <thead>
                            <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
@@ -951,7 +951,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                     </div>
 
                     {/* 꼬리말 영역 - PPT 슬라이드 최하부 라인 완벽 복제 */}
-                    <div className="absolute bottom-[16mm] left-[15mm] right-[15mm] print-footer">
+                    <div className="absolute bottom-[10mm] left-[8mm] right-[8mm] print-footer">
                       <div className="border-t border-slate-300 w-full mb-2"></div>
                       <div className="flex justify-between items-center text-[8.5px] text-slate-400 font-bold tracking-wider px-1">
                         <span className="font-extrabold text-[#1E293B] text-[9px]">경상남도청 | 해안건축</span>
