@@ -303,10 +303,18 @@ body {
    Recharts Global Focus & Accessibility Suppression
    ========================================================================== */
 .recharts-wrapper, 
+.recharts-wrapper *,
 .recharts-surface, 
-.recharts-responsive-container {
+.recharts-responsive-container,
+.recharts-responsive-container * {
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
+}
+
+.recharts-wrapper:focus,
+.recharts-surface:focus,
+.recharts-wrapper *:focus {
+  outline: none !important;
 }
 
 .recharts-pie-sector,

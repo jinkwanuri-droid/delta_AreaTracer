@@ -143,17 +143,19 @@ export const ReportDivisionPieChart: React.FC<PieChartProps> = ({ data, totalNet
           isAnimationActive={false}
           label={({ cx, cy, midAngle, innerRadius, outerRadius, value, name, percent }) => {
             const RADIAN = Math.PI / 180;
-            const radius = outerRadius + 30;
+            const radius = outerRadius + 20;
             const x = cx + radius * Math.cos(-midAngle * RADIAN);
             const y = cy + radius * Math.sin(-midAngle * RADIAN);
             const anchor = x > cx ? 'start' : 'end';
 
             return (
-              <text x={x} y={y} fill="#334155" textAnchor={anchor} dominantBaseline="central" fontSize={11} fontWeight="bold">
-                {`${name}: ${Math.round(value).toLocaleString()}㎡ (${(percent * 100).toFixed(1)}%)`}
+              <text x={x} y={y} fill="#334155" textAnchor={anchor} dominantBaseline="central" fontSize={11} fontWeight="bold" style={{ pointerEvents: 'none' }}>
+                <tspan x={x} dy="-0.5em">{name}</tspan>
+                <tspan x={x} dy="1.2em">{`${(percent * 100).toFixed(1)}%`}</tspan>
               </text>
             );
           }}
+          labelLine={false}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} stroke="#ffffff" strokeWidth={2} />
