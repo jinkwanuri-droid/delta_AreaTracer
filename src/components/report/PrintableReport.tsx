@@ -6,7 +6,7 @@ import {
   ReportDivisionPieChart, 
   ReportDivisionTrendChart 
 } from './ReportCharts';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { Download, Loader2, X } from 'lucide-react';
 
@@ -40,12 +40,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         setExportProgress(Math.round(((i + 1) / slides.length) * 100));
         const slide = slides[i] as HTMLElement;
         
-        // Use html2canvas to capture slide accurately
-        const canvas = await html2canvas(slide, {
-          scale: 2, // Higher resolution
-          useCORS: true,
-          logging: false,
-          backgroundColor: '#ffffff'
+        // Use html-to-image to capture slide accurately (supports more modern CSS than html2canvas)
+        const canvas = await toCanvas(slide, {
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+          skipAutoScale: true,
         });
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -54,7 +53,8 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           pdf.addPage();
         }
         
-        // A4 landscape is 297 x 210
+        // A4 landscape is 297 x 210. 
+        // We capture the slide which already contains internal margins via CSS padding.
         pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
       }
 
@@ -423,7 +423,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 28; // 사용자 요청: 한 페이지 28개 항목
+        const MAX_POINTS_PER_PAGE = 20.0; // 사용자 요청: 한 페이지 20개 항목
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -431,11 +431,11 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           
           if (item.isGroupHeader) {
             const isFirstInPage = currentChunk.length === 0;
-            weight = isFirstInPage ? 1.2 : 1.8; 
+            weight = isFirstInPage ? 1.0 : 1.8; 
           } else if (item.isSummary) {
-            weight = 1.1; 
+            weight = 1.2; 
           } else if (item.isSpacer) {
-            weight = 0.2;
+            weight = 0.5;
           } else {
             // Normal data row: estimate height based on wrap
             const nameLen = item.name ? item.name.length : 0;
@@ -456,7 +456,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
               if (nextItem.isSpacer) continue;
               
               let nWeight = 1.0;
-              if (nextItem.isSummary) nWeight = 1.1;
+              if (nextItem.isSummary) nWeight = 1.2;
               
               neededSpace += nWeight;
               countRows++;
@@ -467,7 +467,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
               chunks.push(currentChunk);
               currentChunk = [];
               currentPoints = 0;
-              weight = 1.2; 
+              weight = 1.0; 
             } else {
               weight = 1.8; 
             }
@@ -532,16 +532,16 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
   const projectTitle = project?.name || '경상남도 서부의료원 실시설계';
 
   return (
-    <div ref={ref} className="print-container-root w-full bg-white text-slate-800 printable-mode relative" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
+    <div ref={ref} className="print-container-root w-full bg-slate-100 py-12 px-4 text-slate-800 printable-mode relative min-h-screen" style={{ fontFamily: '"Pretendard", "Inter", sans-serif' }}>
       
       {/* Floating Action Bar - 정식 PDF 내보내기 버튼 */}
       <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 print:hidden">
-        <div className="bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-2xl border border-slate-200 flex flex-col gap-1 overflow-hidden transition-all hover:shadow-indigo-200/40">
+        <div className="bg-white/95 backdrop-blur-md p-1 rounded-2xl shadow-2xl border border-slate-200 flex flex-col gap-1 overflow-hidden transition-all hover:shadow-indigo-200/40">
           <button
             onClick={handleDownloadPdf}
             disabled={isExporting}
             className={clsx(
-              "flex items-center justify-between gap-4 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm",
+              "flex items-center justify-between gap-4 px-6 py-3.5 rounded-xl font-bold text-sm transition-all shadow-sm",
               isExporting 
                 ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
                 : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98]"
@@ -549,7 +549,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           >
             <div className="flex items-center gap-2">
               {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-              <span>{isExporting ? `PDF 생성 중... (${exportProgress}%)` : "PDF 파일로 직접 저장하기"}</span>
+              <span>{isExporting ? `PDF GENERATING... (${exportProgress}%)` : "PDF 파일로 내보내기"}</span>
             </div>
           </button>
           
@@ -589,6 +589,39 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
         }
 
+        /* 슬라이드 크기 및 레이아웃 시스템 현대화 */
+        .pdf-slide-container {
+          width: 297mm !important;
+          height: 210mm !important;
+          min-height: 210mm !important;
+          max-height: 210mm !important;
+          margin: 0 auto 40px auto !important; /* 미리보기 페이지 간 간격 */
+          padding: 10mm !important; /* 사용자 요청: 사방 10mm 여백 확보 */
+          box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
+          border: 1px solid #e5e7eb !important;
+          background: #ffffff !important;
+          box-sizing: border-box !important;
+          display: flex !important;
+          flex-direction: column !important;
+          position: relative !important;
+          overflow: hidden !important;
+        }
+
+        /* 빗금 패턴 (Hatch) 정의 - PDF 출력시 인식률 높임 */
+        .pdf-hatch-cell {
+          background-image: linear-gradient(
+            45deg,
+            #f9fafb 25%,
+            #f3f4f6 25%,
+            #f3f4f6 50%,
+            #f9fafb 50%,
+            #f9fafb 75%,
+            #f3f4f6 75%,
+            #f3f4f6 100%
+          ) !important;
+          background-size: 4px 4px !important;
+        }
+
         /* 테이블 장평 95% 구현 및 자간 압축 극대화로 시인성 업그레이드 */
         .printable-mode table {
           font-variant-numeric: tabular-nums !important;
@@ -597,48 +630,25 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         @media print {
           @page {
             size: A4 landscape;
-            margin: 0 !important; /* 브라우저 기본 마진 제거 */
+            margin: 0 !important;
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
           .print-container-root {
             padding: 0 !important;
             margin: 0 !important;
-            width: 100% !important;
-            height: auto !important;
             background: #ffffff !important;
-            overflow: visible !important;
-            font-size: unset !important;
-            line-height: normal !important;
           }
-          /* 슬라이드 크기 및 레이아웃 시스템 현대화 (빈 페이지 해결 핵심) */
           .pdf-slide-container {
-            width: 297mm !important;
-            height: 210mm !important;
-            min-height: 210mm !important;
-            max-height: 210mm !important;
             margin: 0 !important;
-            padding: 10mm 12mm 15mm 12mm !important;
             box-shadow: none !important;
             border: none !important;
-            border-radius: 0 !important;
-            break-after: page !important;
-            overflow: hidden !important; /* 인쇄시 넘침 방지 */
-            box-sizing: border-box !important;
-            background: #ffffff !important;
-            display: flex !important;
-            flex-direction: column !important;
-            position: relative !important;
             page-break-after: always !important;
           }
+        }
 
           /* 테이블 스타일 조정 */
           .style-table-pdf-container {
