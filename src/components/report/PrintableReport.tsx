@@ -368,7 +368,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         const chunks: any[][] = [];
         let currentChunk: any[] = [];
         let currentPoints = 0;
-        const MAX_POINTS_PER_PAGE = 24.5; // 내용부분 표에 2줄 더 들어가도록 포인트 상향
+        const MAX_POINTS_PER_PAGE = 16.5; // 내용 높이 150mm로 축소됨에 따라 허용 포인트 하향 조절 (기존 24.5 -> 16.5)
 
         for (let i = 0; i < flatData.length; i++) {
           const item = flatData[i];
@@ -526,9 +526,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
           /* 인쇄 시 컨테이너를 가용 면적에 맞춤으로써 여백 관리 최적화 및 이상 외곽 박스 제거 */
           .pdf-slide-container {
             width: 297mm !important;
-            height: 209.2mm !important; /* 미세 오차(0.8mm)를 감축하여 빈 페이지가 절대로 생성되지 않도록 조절 */
-            min-height: 209.2mm !important;
-            max-height: 209.2mm !important;
+            height: 150mm !important; /* 사용자 요청: 높이 150mm로 과감하게 축소 */
+            min-height: 150mm !important;
+            max-height: 150mm !important;
             margin: 0 !important;
             padding: 9mm 8mm 13mm 8mm !important; /* 화면 오리지널 패딩과 완벽 일치시켜 꼬리말과 좌우 여백을 온전히 존중 */
             box-shadow: none !important;
@@ -565,9 +565,9 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
         /* 화면 프리뷰 및 인쇄 공통 설정: 인쇄물의 실제 내부 패딩 비율이 정확히 똑같이 녹아든 패딩 구성 */
         .pdf-slide-container {
           width: 297mm !important;
-          height: 210mm !important;
-          min-height: 210mm !important;
-          max-height: 210mm !important;
+          height: 150mm !important; /* 사용자 요청: 높이 150mm로 과감하게 축소 */
+          min-height: 150mm !important;
+          max-height: 150mm !important;
           margin: 16px auto !important;
           /* 상단 여백 2mm 올림(9mm), 하단 여백 추가확보(13mm), 좌우 패딩을 8mm로 줄여서 여백 최소화 */
           padding: 9mm 8mm 13mm 8mm !important; 
@@ -590,6 +590,15 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
         .stripe-pattern { 
           background: repeating-linear-gradient(45deg, #f8fafc22, #f8fafc22 3px, #f1f5f922 3px, #f1f5f922 6px); 
+        }
+        .empty-hatch {
+          background: repeating-linear-gradient(
+            -45deg,
+            transparent,
+            transparent 2px,
+            #e2e8f0 2px,
+            #e2e8f0 3px
+          ) !important;
         }
         .tabular-nums { 
           font-variant-numeric: tabular-nums; 
@@ -801,59 +810,59 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                       </h2>
                     </div>
 
-                     {/* 테이블 컨텐츠 영역 */}
-                     <div className="border border-slate-300 style-table-pdf-container">
-                       <table className="w-full text-slate-800 border-collapse table-fixed text-[1.5px] font-sans" style={{ width: '100%', minWidth: '100%', letterSpacing: '-0.07em' }}>
-                         <colgroup>
-                           <col style={{ width: '42px' }} />
-                           <col style={{ width: '125px' }} /> {/* 실명 너비를 시인성을 보장하기 위해 110px에서 125px로 적절히 넓혔습니다 */}
-                           {stages.map((s) => (
-                             <React.Fragment key={s.id}>
-                               <col style={{ width: '34px' }} />
-                               <col style={{ width: '22px' }} />
-                               <col style={{ width: '42px' }} />
-                             </React.Fragment>
-                           ))}
-                           <col style={{ width: '45px' }} />
-                           <col style={{ width: 'auto' }} /> {/* ROOM NAME에서 확장된 폭이 이 NOTE 칼럼과 조화롭게 배분됩니다 */}
-                         </colgroup>
-                         <thead>
-                           <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
-                             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[2.5px] border-r border-slate-300">NO.</th>
-                             <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[2.5px] border-r border-slate-300">ROOM NAME</th>
-                             {stages.map((s, idx) => {
-                               const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
-                               const headBg = isPracticeStage ? "bg-[#F3E8FF] text-purple-950 font-black" : "bg-[#CBD5E1] text-slate-900";
-                               return (
-                                 <th key={s.id} colSpan={3} className={clsx(
-                                   "py-0.5 px-1 text-center font-extrabold border-r border-b border-slate-300 text-[2px]",
-                                   headBg
-                                 )}>
-                                   {s.name}
-                                 </th>
-                               );
-                             })}
-                             <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[2.5px] border-r border-slate-300 leading-tight w-[10%]">
-                               증감<br/>
-                               <span className="text-[1.2px] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
-                             </th>
-                             <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[2.5px] col-note-print w-[20%]">NOTE</th>
-                           </tr>
-                           <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
-                             {stages.map((s, idx) => {
-                               const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
-                               // 상위 전용 헤더 배경색과 완벽히 색톤 매칭 전개 (텍스트 가운데 정렬 적용)
-                               const subHeadBg = isPracticeStage ? "bg-[#FAF5FF] text-purple-900" : "bg-[#CBD5E1] text-slate-850";
-                               return (
-                                 <React.Fragment key={`${s.id}-sub`}>
-                                   <th className={clsx("py-0.5 px-0.5 text-center font-extrabold border-r border-slate-200 text-[1.5px] tracking-tighter", subHeadBg)}>Net</th>
-                                   <th className={clsx("py-0.5 px-0.5 text-center font-extrabold border-r border-slate-200 text-[1.5px] tracking-tighter", subHeadBg)}>Qty</th>
-                                   <th className={clsx("py-0.5 px-1 text-center font-black border-r border-slate-200 text-[1.5px] tracking-tighter", isPracticeStage ? "bg-[#F3E8FF] text-purple-950" : "bg-[#CBD5E1] text-slate-900")}>Total</th>
-                                 </React.Fragment>
-                               );
-                             })}
-                           </tr>
-                         </thead>
+                      {/* 테이블 컨텐츠 영역 */}
+                      <div className="border border-slate-300 style-table-pdf-container">
+                        <table className="w-full text-slate-800 border-collapse table-fixed font-sans" style={{ width: '100%', minWidth: '100%', letterSpacing: '-0.07em' }}>
+                          <colgroup>
+                            <col style={{ width: '42px' }} />
+                            <col style={{ width: '125px' }} /> {/* 실명 너비를 시인성을 보장하기 위해 110px에서 125px로 적절히 넓혔습니다 */}
+                            {stages.map((s) => (
+                              <React.Fragment key={s.id}>
+                                <col style={{ width: '34px' }} />
+                                <col style={{ width: '22px' }} />
+                                <col style={{ width: '42px' }} />
+                              </React.Fragment>
+                            ))}
+                            <col style={{ width: '45px' }} />
+                            <col style={{ width: 'auto' }} /> {/* ROOM NAME에서 확장된 폭이 이 NOTE 칼럼과 조화롭게 배분됩니다 */}
+                          </colgroup>
+                          <thead>
+                            <tr className="bg-slate-200 border-b border-slate-350 text-slate-800">
+                              <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[8pt] border-r border-slate-300">NO.</th>
+                              <th rowSpan={2} className="py-1 px-2 text-left font-extrabold text-[8pt] border-r border-slate-300">ROOM NAME</th>
+                              {stages.map((s, idx) => {
+                                const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
+                                const headBg = isPracticeStage ? "bg-[#F3E8FF] text-purple-950 font-black" : "bg-[#CBD5E1] text-slate-900";
+                                return (
+                                  <th key={s.id} colSpan={3} className={clsx(
+                                    "py-0.5 px-1 text-center font-extrabold border-r border-b border-slate-300 text-[8pt]",
+                                    headBg
+                                  )}>
+                                    {s.name}
+                                  </th>
+                                );
+                              })}
+                              <th rowSpan={2} className="py-1 px-1 text-center font-extrabold text-[8pt] border-r border-slate-300 leading-tight w-[10%]">
+                                증감<br/>
+                                <span className="text-[6pt] font-bold text-slate-500 font-mono block mt-0.5 whitespace-nowrap">(실시-중간)</span>
+                              </th>
+                              <th rowSpan={2} className="py-1 px-2 text-center font-extrabold text-[8pt] col-note-print w-[20%]">NOTE</th>
+                            </tr>
+                            <tr className="bg-slate-100 border-b border-slate-300 text-slate-600">
+                              {stages.map((s, idx) => {
+                                const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
+                                // 상위 전용 헤더 배경색과 완벽히 색톤 매칭 전개 (텍스트 가운데 정렬 적용)
+                                const subHeadBg = isPracticeStage ? "bg-[#FAF5FF] text-purple-900" : "bg-[#CBD5E1] text-slate-850";
+                                return (
+                                  <React.Fragment key={`${s.id}-sub`}>
+                                    <th className={clsx("py-0.5 px-0.5 text-center font-extrabold border-r border-slate-200 text-[8pt] tracking-tighter", subHeadBg)}>Net</th>
+                                    <th className={clsx("py-0.5 px-0.5 text-center font-extrabold border-r border-slate-200 text-[8pt] tracking-tighter", subHeadBg)}>Qty</th>
+                                    <th className={clsx("py-0.5 px-1 text-center font-black border-r border-slate-200 text-[8pt] tracking-tighter", isPracticeStage ? "bg-[#F3E8FF] text-purple-950" : "bg-[#CBD5E1] text-slate-900")}>Total</th>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </tr>
+                          </thead>
                         <tbody className="divide-y divide-slate-200 bg-white">
                           {chunkRows.map((row, idx) => {
                             if (row.isSpacer) {
@@ -873,7 +882,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     </tr>
                                   )}
                                   <tr key={row.id} className="bg-slate-100/70 border-b border-slate-300">
-                                    <td colSpan={2 + stages.length * 3 + 2} className="py-0.5 px-2.5 font-extrabold text-[#1E293B] text-[6.5px] border-b border-slate-300">
+                                    <td colSpan={2 + stages.length * 3 + 2} className="py-0.5 px-2.5 font-extrabold text-[#1E293B] text-[7pt] border-b border-slate-300">
                                       <div className="flex items-center">
                                         <span 
                                           className="inline-block w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" 
@@ -898,7 +907,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                             }
                             if (row.isSummary) {
                               return (
-                                <tr key={row.id} className="bg-slate-50/80 font-bold border-y border-slate-200 text-slate-950 text-[2px]">
+                                <tr key={row.id} className="bg-slate-50/80 font-bold border-y border-slate-200 text-slate-950 text-[7pt]">
                                   <td className="py-0.5 px-1 border-r border-slate-200 border-b border-slate-300"></td>
                                   <td className="py-0.5 px-2 text-left font-extrabold border-r border-slate-200 border-b border-slate-300">[{row.deptName} 소계]</td>
                                   {stages.map((s) => {
@@ -912,17 +921,17 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     return (
                                       <React.Fragment key={s.id}>
                                         {/* Net과 Qty는 수치 합산 외에 빈칸으로 구성하며 좌우 테두리를 제거해 시인성을 높입니다 */}
-                                        <td className="py-0.5 px-0.5 text-center text-slate-400 text-[1.5px] border-b border-slate-300"></td>
-                                        <td className="py-0.5 px-0.5 text-center text-slate-400 text-[1.5px] border-b border-slate-300"></td>
+                                        <td className="py-0.5 px-0.5 text-center text-slate-400 text-[6pt] border-b border-slate-300"></td>
+                                        <td className="py-0.5 px-0.5 text-center text-slate-400 text-[6pt] border-b border-slate-300"></td>
                                         {/* Qty의 오른쪽 선이 없어졌으므로 다음 영역의 구분을 위해 border-l을 추가합니다. 0인 소계는 빈칸으로 통일합니다. */}
-                                        <td className={clsx("py-0.5 px-1 text-right border-l border-r border-slate-200 font-extrabold text-[2px] border-b border-slate-300", subBg)}>
+                                        <td className={clsx("py-0.5 px-1 text-right border-l border-r border-slate-200 font-extrabold text-[7pt] border-b border-slate-300", subBg)}>
                                           {totalDisplay}
                                         </td>
                                       </React.Fragment>
                                     );
                                   })}
                                   <td className={clsx(
-                                    "py-0.5 px-1 text-right font-extrabold border-r border-slate-200 text-[2px] border-b border-slate-300",
+                                    "py-0.5 px-1 text-right font-extrabold border-r border-slate-200 text-[7pt] border-b border-slate-300",
                                     row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                                   )}>
                                     {row.variance > 0 ? "+" : ""}{formatNum(row.variance)}
@@ -934,33 +943,33 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
 
                             // 일반 데이터 행 렌더링 (텍스트 2px씩 줄이고 자간을 타이트하게 처리)
                             return (
-                              <tr key={row.id} className="hover:bg-slate-50/20 text-[2px]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                                <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[1.5px] tracking-tighter">{row.no}</td>
-                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-normal whitespace-normal text-[2px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
+                              <tr key={row.id} className="hover:bg-slate-50/20 text-[7pt]" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                                <td className="py-0.5 px-1 text-center text-slate-500 font-mono border-r border-slate-200 whitespace-nowrap text-[6pt] tracking-tighter">{row.no}</td>
+                                <td className="py-0.5 px-2 text-left text-slate-800 font-semibold border-r border-slate-200 leading-normal whitespace-normal text-[7pt]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>{row.name}</td>
                                 {stages.map((s) => {
                                   const isEmpty = row[`${s.id}_isEmpty`];
                                   const isPracticeStage = s.name.includes("실기") || s.name.includes("실시") || s.id === "s5";
                                   
                                   const cellBg = isPracticeStage ? "bg-[#FAF5FF]/30" : "";
                                   // 일반 total 은 연한 회색 bg-slate-100/40, 실시는 고귀한 퍼플 bg-[#F3E8FF]/30
-                                  const totalCellBg = isPracticeStage ? "bg-[#F3E8FF]/30 text-purple-950 font-bold text-[1.5px]" : "bg-slate-100/50 text-[#1E293B] text-[1.5px]";
+                                  const totalCellBg = isPracticeStage ? "bg-[#F3E8FF]/30 text-purple-950 font-bold text-[7pt]" : "bg-slate-100/50 text-[#1E293B] text-[7pt]";
 
                                   return (
                                     <React.Fragment key={s.id}>
-                                      <td className={clsx("py-0.5 px-0.5 text-right text-slate-500 font-mono border-r border-slate-200 text-[1.5px]", cellBg)}>
+                                      <td className={clsx("py-0.5 px-0.5 text-right text-slate-500 font-mono border-r border-slate-200 text-[6pt]", cellBg, isEmpty && "empty-hatch")}>
                                         {isEmpty ? "" : formatNum(row[`${s.id}_unitArea`], s.id)}
                                       </td>
-                                      <td className={clsx("py-0.5 px-0.5 text-center text-slate-500 font-mono border-r border-slate-200 text-[1.5px]", cellBg)}>
+                                      <td className={clsx("py-0.5 px-0.5 text-center text-slate-500 font-mono border-r border-slate-200 text-[6pt]", cellBg, isEmpty && "empty-hatch")}>
                                         {isEmpty ? "" : formatQty(row[`${s.id}_quantity`])}
                                       </td>
-                                      <td className={clsx("py-0.5 px-1 text-right font-mono font-semibold border-r border-slate-200 text-[1.5px]", totalCellBg)}>
+                                      <td className={clsx("py-0.5 px-1 text-right font-mono font-semibold border-r border-slate-200 text-[7pt]", totalCellBg, isEmpty && "empty-hatch")}>
                                         {isEmpty ? "" : formatNum(row[`${s.id}_total`], s.id)}
                                       </td>
                                     </React.Fragment>
                                   );
                                 })}
                                 <td className={clsx(
-                                  "py-0.5 px-1 text-right font-mono font-bold border-r border-slate-200 text-[1.5px]",
+                                  "py-0.5 px-1 text-right font-mono font-bold border-r border-slate-200 text-[7pt]",
                                   row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                                 )}>
                                   {row.variance !== undefined && row.variance !== 0 ? (
@@ -970,7 +979,7 @@ const PrintableReport = forwardRef<HTMLDivElement, {}>((props, ref) => {
                                     </>
                                   ) : "-"}
                                 </td>
-                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-normal whitespace-pre-wrap border-slate-200 text-[1.5px]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
+                                <td className="py-0.5 px-2 text-left text-slate-600 font-normal leading-normal whitespace-pre-wrap border-slate-200 text-[7pt]" style={{ wordBreak: 'break-word', wordWrap: 'break-word' }}>
                                   {findRoomNote(roomNotes, row.no, row.floorId) || row.note || ""}
                                 </td>
                               </tr>
