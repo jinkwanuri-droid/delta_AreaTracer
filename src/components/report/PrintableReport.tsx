@@ -22,7 +22,10 @@ const formatQty = (qty: number | undefined | null) => {
 };
 
 export default function PrintableReport() {
-  const { floors } = useAppStore();
+  const { floors, pdfExportTargets } = useAppStore();
+
+  const showSummary = pdfExportTargets?.includes('summary') ?? true;
+  const showDetail = pdfExportTargets?.includes('detail') ?? true;
 
   // 1. Filter and Sort Floors: B1 -> 1F -> 2F ... -> 7F
   const targetFloors = useMemo(() => {
@@ -45,7 +48,7 @@ export default function PrintableReport() {
     });
   }, [floors]);
 
-  if (targetFloors.length === 0) return null;
+  if (targetFloors.length === 0 && !showSummary) return null;
 
   return (
     <div className="bg-white text-slate-900 printable-container font-['Arial','Helvetica',sans-serif]">
@@ -148,7 +151,8 @@ export default function PrintableReport() {
         }
       `}</style>
       
-      {targetFloors.map((floor) => (
+      {showSummary && <SummaryPrintTable />}
+      {showDetail && targetFloors.map((floor) => (
         <FloorTable key={floor.id} floor={floor} />
       ))}
     </div>
@@ -474,8 +478,15 @@ function FloorTable({ floor }: { floor: any }) {
                       )}>
                         {row.variance === 0 ? "0.00" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                       </td>
-                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left col-note leading-tight">
-                        <div className="w-full truncate print:whitespace-normal">
+                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left col-note leading-tight" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                        <div style={{
+                          fontSize: row.note && row.note.length > 10
+                            ? `${Math.max(2.0, Math.min(3.0, 3.0 - (row.note.length - 10) * 0.08))}pt`
+                            : 'inherit',
+                          whiteSpace: 'nowrap',
+                          letterSpacing: row.note && row.note.length > 10 ? '-0.06em' : '-0.04em',
+                          lineHeight: '1.1',
+                        }}>
                           {row.note || ''}
                         </div>
                       </td>
@@ -494,5 +505,384 @@ function FloorTable({ floor }: { floor: any }) {
         </div>
       ))}
     </>
+  );
+}
+
+function SummaryPrintTable() {
+  const { divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, departmentNotes, comparison, medicalOnly } = useAppStore();
+
+  const baseStageId = comparison.baseId || stages[0]?.id;
+  const targetStageId = comparison.targetId || stages[stages.length - 1]?.id;
+
+  const summaryData = useMemo(() => {
+    if (stages.length < 1) return [];
+
+    const deptMap = new Map();
+    departments.forEach(dept => {
+      const stageAreas: Record<string, number> = {};
+      stages.forEach(s => stageAreas[s.id] = 0);
+
+      deptMap.set(dept.id, {
+        deptId: dept.id,
+        divisionId: dept.divisionId,
+        code: dept.code || '',
+        department: dept.name,
+        stageAreas,
+        notes: dept.note || '',
+        order: dept.order
+      });
+    });
+
+    values.forEach(v => {
+      const room = rooms.find(r => r.id === v.roomId);
+      if (!room) return;
+      const deptData = deptMap.get(room.departmentId);
+      if (!deptData) return;
+
+      const area = v.unitArea * v.quantity;
+      if (deptData.stageAreas[v.stageId] !== undefined) {
+        deptData.stageAreas[v.stageId] += area;
+      }
+    });
+
+    const rows: any[] = [];
+    const isMedicalOnly = medicalOnly;
+
+    const sortedDivisions = [...divisions]
+      .filter(div => !isMedicalOnly || /^\d+$/.test(div.id))
+      .sort((a, b) => a.order - b.order);
+
+    const grandStageTotals: Record<string, number> = {};
+    stages.forEach(s => grandStageTotals[s.id] = 0);
+
+    sortedDivisions.forEach((div, index) => {
+      const divDepts = Array.from(deptMap.values())
+        .filter(d => d.divisionId === div.id)
+        .sort((a, b) => a.order - b.order);
+
+      if (divDepts.length === 0) return;
+
+      // Group Header (Division Name)
+      rows.push({
+         id: `header-${div.id}`,
+         isHeader: true,
+         divisionName: div.name,
+         color: div.color
+      });
+
+      const divStageTotals: Record<string, number> = {};
+      stages.forEach(s => divStageTotals[s.id] = 0);
+
+      divDepts.forEach((deptData) => {
+        const targetVal = deptData.stageAreas[targetStageId] || 0;
+        const baseVal = deptData.stageAreas[baseStageId] || 0;
+        const diff = targetVal - baseVal;
+
+        rows.push({
+          ...deptData,
+          id: deptData.deptId,
+          divisionName: div.name,
+          diff,
+          divColor: div.color
+        });
+
+        stages.forEach(s => {
+          divStageTotals[s.id] += deptData.stageAreas[s.id];
+          grandStageTotals[s.id] += deptData.stageAreas[s.id];
+        });
+      });
+
+      // Subtotal
+      const targetDivVal = divStageTotals[targetStageId] || 0;
+      const baseDivVal = divStageTotals[baseStageId] || 0;
+      
+      rows.push({
+        id: `subtotal-${div.id}`,
+        isSubtotal: true,
+        divisionName: div.name,
+        department: `${div.name} 소계`,
+        stageAreas: divStageTotals,
+        diff: targetDivVal - baseDivVal,
+        divColor: div.color
+      });
+    });
+
+    const targetGrandVal = grandStageTotals[targetStageId] || 0;
+    const baseGrandVal = grandStageTotals[baseStageId] || 0;
+
+    rows.push({
+      id: 'grand-total',
+      isGrandTotal: true,
+      code: '가',
+      department: '의료시설 전용면적 합계',
+      stageAreas: grandStageTotals,
+      diff: targetGrandVal - baseGrandVal,
+    });
+
+    // Per-stage Summary Calculations
+    const commonAreaStageTotals: Record<string, number> = {};
+    const gnRatioStageTotals: Record<string, number> = {};
+    const medAreaSumStageTotals: Record<string, number> = {};
+    const garageAreaStageTotals: Record<string, number> = {};
+    const medTotalAreaStageTotals: Record<string, number> = {};
+    const outdoorAreaStageTotals: Record<string, number> = {};
+    const permitAreaStageTotals: Record<string, number> = {};
+
+    stages.forEach(s => {
+      let stageGarageArea = 0;
+      let stageOutdoorArea = 0;
+
+      values.forEach(v => {
+        if (v.stageId !== s.id) return;
+        const room = rooms.find(r => r.id === v.roomId);
+        if (!room) return;
+        
+        const area = v.unitArea * v.quantity;
+        if (room.no.startsWith('P')) {
+          stageGarageArea += area;
+        } else if (room.no.startsWith('O')) {
+          stageOutdoorArea += area;
+        }
+      });
+
+      const netAreaA = grandStageTotals[s.id] || 0;
+      const stageFloorAreas = floorAreasByStage[s.id] || {};
+      
+      let permitAreaVal = 0;
+      if (s.isTotalAreaOnly) {
+        permitAreaVal = stageFloorAreas['_TOTAL_'] || 0;
+      } else {
+        permitAreaVal = Object.entries(stageFloorAreas).reduce((sum, [key, val]) => {
+          if (key === '_TOTAL_') return sum;
+          return sum + val;
+        }, 0);
+      }
+      
+      const commonAreaB = permitAreaVal > 0 ? (permitAreaVal - netAreaA - stageGarageArea - stageOutdoorArea) : 0;
+      const gnRatio = netAreaA > 0 ? ((netAreaA + commonAreaB) / netAreaA) : 0;
+
+      commonAreaStageTotals[s.id] = commonAreaB;
+      gnRatioStageTotals[s.id] = gnRatio;
+      medAreaSumStageTotals[s.id] = netAreaA + commonAreaB;
+      garageAreaStageTotals[s.id] = stageGarageArea;
+      medTotalAreaStageTotals[s.id] = netAreaA + commonAreaB + stageGarageArea;
+      outdoorAreaStageTotals[s.id] = stageOutdoorArea;
+      permitAreaStageTotals[s.id] = permitAreaVal;
+    });
+
+    // Summary Rows
+    rows.push({
+      id: 'common-area-sum',
+      isSummaryRow: true,
+      code: '나',
+      department: '공용면적',
+      stageAreas: commonAreaStageTotals,
+      diff: commonAreaStageTotals[targetStageId] - commonAreaStageTotals[baseStageId],
+      notes: summaryNotes['common-area-sum'] ?? departmentNotes['common-area-sum'] ?? '[참고 1] 종합병원 적정 공용비/공용면적 검토',
+    });
+
+    rows.push({
+      id: 'gn-ratio',
+      isSummaryRow: true,
+      isRatio: true,
+      code: '(가+나)/가',
+      department: '공용비(G/N비)',
+      stageAreas: gnRatioStageTotals,
+      diff: gnRatioStageTotals[targetStageId] - gnRatioStageTotals[baseStageId],
+      notes: summaryNotes['gn-ratio'] ?? departmentNotes['gn-ratio'] ?? '종합병원 평균값 1.50~1.60 사잇값으로 제안',
+    });
+
+    rows.push({
+      id: 'med-area-sum',
+      isSummaryRow: true,
+      code: '가+나',
+      department: '의료시설 면적',
+      stageAreas: medAreaSumStageTotals,
+      diff: medAreaSumStageTotals[targetStageId] - medAreaSumStageTotals[baseStageId],
+      notes: summaryNotes['med-area-sum'] ?? departmentNotes['med-area-sum'] ?? '',
+    });
+
+    rows.push({
+      id: 'garage-area',
+      isSummaryRow: true,
+      code: '다',
+      department: '옥내 주차공간',
+      stageAreas: garageAreaStageTotals,
+      diff: garageAreaStageTotals[targetStageId] - garageAreaStageTotals[baseStageId],
+      notes: summaryNotes['garage-area'] ?? departmentNotes['garage-area'] ?? '주차대수 100대 내외 계획하여 면적 제안',
+    });
+
+    rows.push({
+      id: 'med-total-area',
+      isSummaryRow: true,
+      code: '가+나+다',
+      department: '의료시설 총면적',
+      stageAreas: medTotalAreaStageTotals,
+      diff: medTotalAreaStageTotals[targetStageId] - medTotalAreaStageTotals[baseStageId],
+      notes: summaryNotes['med-total-area'] ?? departmentNotes['med-total-area'] ?? '',
+    });
+
+    rows.push({
+      id: 'outdoor-area',
+      isSummaryRow: true,
+      code: '라',
+      department: '옥외 공용면적',
+      stageAreas: outdoorAreaStageTotals,
+      diff: outdoorAreaStageTotals[targetStageId] - outdoorAreaStageTotals[baseStageId],
+      notes: summaryNotes['outdoor-area'] ?? departmentNotes['outdoor-area'] ?? '-',
+    });
+
+    rows.push({
+      id: 'permit-area',
+      isSummaryRow: true,
+      code: '가~라',
+      department: '건축허가 면적',
+      stageAreas: permitAreaStageTotals,
+      diff: permitAreaStageTotals[targetStageId] - permitAreaStageTotals[baseStageId],
+      notes: summaryNotes['permit-area'] ?? '',
+    });
+
+    return rows;
+  }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, comparison, medicalOnly, departmentNotes]);
+
+  return (
+    <div className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+      <div className="flex-1">
+        {/* Header */}
+        <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '15mm' }}>
+          <div>
+            <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
+              <span>부서별 총괄 면적표</span>
+              <span className="text-[14px] font-normal text-slate-500 mb-[2px]">(1/1)</span>
+            </h2>
+          </div>
+          <div className="text-right pb-1">
+            <span className="text-[9px] font-bold text-slate-600">
+              경상남도 서부의료원 건립사업 실시설계 | 부서별 총괄 면적표
+            </span>
+          </div>
+        </div>
+
+        {/* Table */}
+        <table className="w-full border-separate border-spacing-0 table-fixed">
+          <colgroup>
+            <col style={{ width: '50px' }} />
+            <col style={{ width: '150px' }} />
+            {stages.map(s => (
+              <col key={s.id} style={{ width: '70px' }} />
+            ))}
+            <col style={{ width: '80px' }} />
+            <col style={{ width: 'auto' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">코드</th>
+              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-left font-bold text-[#334155]">부서명</th>
+              {stages.map(s => (
+                <th 
+                  key={s.id} 
+                  className={clsx(
+                    "border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold",
+                    s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
+                  )}
+                >
+                  {s.name}
+                </th>
+              ))}
+              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">증감</th>
+              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">주요 변경사항 및 비고</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {summaryData.map((row: any, i: number) => {
+              if (row.isHeader) {
+                return (
+                  <tr key={`${row.id}-${i}`} className="bg-slate-100/30">
+                    <td colSpan={3 + stages.length} className="border-b border-l border-r border-slate-300 py-0.5 px-2 font-bold text-slate-900" style={{ fontSize: '4.5pt' }}>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.color }}></div>
+                        {row.divisionName}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              const isGrand = row.isGrandTotal;
+              const isSub = row.isSubtotal;
+              const isSumRow = row.isSummaryRow;
+
+              const rowClass = clsx(
+                isGrand && "bg-slate-100 font-bold",
+                isSub && "bg-slate-50 font-bold",
+                isSumRow && (row.id === 'med-total-area' || row.id === 'permit-area' ? "bg-slate-100 font-extrabold" : "bg-white text-slate-700")
+              );
+
+              return (
+                <tr key={`${row.id}-${i}`} className={rowClass}>
+                  {/* Code */}
+                  <td className={clsx(
+                    "border-b border-l border-slate-300 py-[0.5mm] px-1 text-center font-mono text-slate-500",
+                    (isGrand || isSumRow) && "text-slate-900 font-bold"
+                  )} style={{ fontSize: '4pt' }}>
+                    {row.code || ''}
+                  </td>
+                  
+                  {/* Department Name */}
+                  <td className="border-b border-l border-r border-slate-300 py-[0.5mm] px-1.5 text-left font-medium text-slate-800" style={{ fontSize: '4.5pt' }}>
+                    <div className="flex items-center gap-1">
+                      {row.divColor && !isSub && !isGrand && !isSumRow && (
+                        <span className="w-1 h-2 rounded-xs" style={{ backgroundColor: row.divColor }}></span>
+                      )}
+                      {row.department}
+                    </div>
+                  </td>
+
+                  {/* Stage values */}
+                  {stages.map(s => {
+                    const isCurStage = s.id === targetStageId;
+                    const val = row.stageAreas?.[s.id];
+                    return (
+                      <td 
+                        key={s.id} 
+                        className={clsx(
+                          "border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-right font-mono",
+                          isCurStage && "print-current-bg-light font-bold"
+                        )}
+                        style={{ fontSize: '4.5pt', fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal' }}
+                      >
+                        {formatNum(val, row.isRatio, s.id)}
+                      </td>
+                    );
+                  })}
+
+                  {/* Diff (Variance) */}
+                  <td 
+                    className={clsx(
+                      "border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-right font-mono font-bold",
+                      row.diff > 0 ? "text-blue-600" : row.diff < 0 ? "text-red-500" : "text-slate-400 font-normal"
+                    )}
+                    style={{ fontSize: '4.5pt' }}
+                  >
+                    {row.diff === 0 ? "0.00" : (row.diff > 0 ? "+" : "") + formatNum(row.diff, row.isRatio)}
+                  </td>
+
+                  {/* Notes */}
+                  <td className="border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-left col-note leading-tight" style={{ fontSize: '3.5pt' }}>
+                    {row.notes || ''}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
+        <div>경상남도청 | 해안건축</div>
+        <div>1</div>
+      </div>
+    </div>
   );
 }
