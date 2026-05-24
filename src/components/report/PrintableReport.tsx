@@ -74,7 +74,8 @@ export default function PrintableReport() {
           }
         }
         .empty-hatch {
-          background-image: repeating-linear-gradient(45deg, #f1f5f9 0, #f1f5f9 2px, transparent 2px, transparent 8px);
+          background-color: #f1f5f9 !important;
+          background-image: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 1px, transparent 1px, transparent 4px) !important;
         }
 
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
@@ -122,13 +123,28 @@ export default function PrintableReport() {
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
-        /* 비고란 (기존의 70% 크기) */
+        /* 현재 단계(실시설계)의 옅은 퍼플톤 강력 제어 */
+        .print-current-bg-light {
+          background-color: #F5F3FF !important; /* 아주 옅은 보라 (purple-50) */
+        }
+        .print-current-bg-medium {
+          background-color: #EDE9FE !important; /* 옅은 보라 (purple-100) */
+        }
+        .print-current-text-dark {
+          color: #4C1D95 !important; /* 진보라 (purple-900) */
+        }
+        .print-current-text-medium {
+          color: #6D28D9 !important; /* 중간 보라 (purple-700) */
+        }
+
+        /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 극세사 세밀 정돈) */
         .print-page table td.col-note {
           font-size: 3.5pt !important;
-          color: #64748b !important;
+          color: #64748b !important; /* 회색 폰트 */
           line-height: 1.05 !important;
-          letter-spacing: -0.35pt !important;
-          font-family: 'Arial Narrow', 'Malgun Gothic', 'Dotum', sans-serif !important;
+          letter-spacing: -0.04em !important; /* 한글 좁은 폭(narrow) 느낌을 위한 자간 압축 */
+          font-weight: 300 !important; /* 성명보다 얇은 두께 */
+          font-family: 'Arial', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Dotum', sans-serif !important; /* 성명(실명)과 일관된 폰트 패밀리 */
         }
       `}</style>
       
@@ -324,7 +340,7 @@ function FloorTable({ floor }: { floor: any }) {
                         key={s.id} 
                         className={clsx(
                           "border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold", 
-                          isCurrent ? "bg-[#EEF2FF] text-indigo-950 font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
+                          isCurrent ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
                         )} 
                         colSpan={3}
                       >
@@ -340,9 +356,9 @@ function FloorTable({ floor }: { floor: any }) {
                     const isCurrent = s.id === targetId;
                     return (
                       <React.Fragment key={`${s.id}-sub`}>
-                        <th className={clsx("border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium col-net", isCurrent ? "bg-[#EEF2FF] text-indigo-700" : "bg-[#E2E8F0] text-slate-500")}>Net</th>
-                        <th className={clsx("border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium col-qty", isCurrent ? "bg-[#EEF2FF] text-indigo-700" : "bg-[#E2E8F0] text-slate-500")}>Qty</th>
-                        <th className={clsx("border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold col-total", isCurrent ? "bg-[#E0E7FF] text-indigo-900" : "bg-[#E2E8F0] text-slate-900")}>Total</th>
+                        <th className={clsx("border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium col-net", isCurrent ? "print-current-bg-light print-current-text-medium" : "bg-[#E2E8F0] text-slate-500")}>Net</th>
+                        <th className={clsx("border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium col-qty", isCurrent ? "print-current-bg-light print-current-text-medium" : "bg-[#E2E8F0] text-slate-500")}>Qty</th>
+                        <th className={clsx("border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold col-total", isCurrent ? "print-current-bg-medium print-current-text-dark" : "bg-[#E2E8F0] text-slate-900")}>Total</th>
                       </React.Fragment>
                     );
                   })}
@@ -378,11 +394,11 @@ function FloorTable({ floor }: { floor: any }) {
                           const isCurrent = s.id === targetId;
                           return (
                             <React.Fragment key={s.id}>
-                              <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right text-slate-400 col-net", isCurrent && "bg-[#EEF2FF]")}></td>
-                              <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center text-slate-400 col-qty", isCurrent && "bg-[#EEF2FF]")}></td>
+                              <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right text-slate-400 col-net", isCurrent && "print-current-bg-light")}></td>
+                              <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center text-slate-400 col-qty", isCurrent && "print-current-bg-light")}></td>
                               <td className={clsx(
                                 "border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold col-total",
-                                isCurrent ? "bg-[#E0E7FF] text-indigo-950" : "bg-indigo-50/50 text-[#312E81]"
+                                isCurrent ? "print-current-bg-medium print-current-text-dark" : "bg-indigo-50/50 text-[#312E81]"
                               )}>
                                 {row[`${s.id}_total`] === 0 ? '' : formatNum(row[`${s.id}_total`], s.name === '공모지침' || s.name?.includes('공모'))}
                               </td>
@@ -391,9 +407,9 @@ function FloorTable({ floor }: { floor: any }) {
                         })}
                         <td className={clsx(
                           "border-b border-r border-slate-300 py-0.5 px-1 font-inter font-bold text-right col-total",
-                          row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
+                          row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400 font-normal"
                         )}>
-                          {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
+                          {row.variance === 0 ? "0.00" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                         </td>
                         <td className="border-b border-r border-slate-300 py-0.5 px-1 text-center text-slate-400 col-note"></td>
                       </tr>
@@ -413,19 +429,19 @@ function FloorTable({ floor }: { floor: any }) {
                           <React.Fragment key={s.id}>
                             <td className={clsx(
                               "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter col-net",
-                              isEmpty ? "empty-hatch" : (isCurrent ? "bg-[#EEF2FF] text-indigo-950 font-medium" : "text-slate-500")
+                              isEmpty ? "empty-hatch" : (isCurrent ? "print-current-bg-light print-current-text-dark font-medium" : "text-slate-500")
                             )}>
                                {isEmpty ? "" : formatNum(row[`${s.id}_unit`], s.name === '공모지침' || s.name?.includes('공모'))}
                             </td>
                             <td className={clsx(
                               "border-b border-r border-slate-300 py-0.5 px-0.5 text-center font-inter col-qty",
-                              isEmpty ? "empty-hatch" : (isCurrent ? "bg-[#EEF2FF] text-indigo-950 font-medium" : "text-slate-500")
+                              isEmpty ? "empty-hatch" : (isCurrent ? "print-current-bg-light print-current-text-dark font-medium" : "text-slate-500")
                             )}>
                                {isEmpty ? "" : formatQty(row[`${s.id}_qty`])}
                             </td>
                             <td className={clsx(
                               "border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold col-total",
-                              isEmpty ? "empty-hatch" : (isCurrent ? "bg-[#E0E7FF] text-indigo-950" : "bg-slate-100/60 text-slate-900")
+                              isEmpty ? "empty-hatch" : (isCurrent ? "print-current-bg-medium print-current-text-dark" : "bg-slate-100/60 text-slate-900")
                             )}>
                                {isEmpty ? "" : formatNum(row[`${s.id}_total`], s.name === '공모지침' || s.name?.includes('공모'))}
                             </td>
@@ -434,12 +450,14 @@ function FloorTable({ floor }: { floor: any }) {
                       })}
                       <td className={clsx(
                         "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter font-bold col-total",
-                        row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
+                        row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400 font-normal"
                       )}>
-                        {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
+                        {row.variance === 0 ? "0.00" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                       </td>
-                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left text-slate-500 truncate print:whitespace-normal col-note">
-                        {row.note || ''}
+                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left col-note leading-tight">
+                        <div className="w-full truncate print:whitespace-normal">
+                          {row.note || ''}
+                        </div>
                       </td>
                     </tr>
                   );
