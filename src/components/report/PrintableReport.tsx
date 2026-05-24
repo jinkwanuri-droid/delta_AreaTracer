@@ -73,7 +73,7 @@ export default function PrintableReport() {
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
         .print-page table {
           border-collapse: separate !important;
-          font-family: 'Arial Narrow', 'Arial', sans-serif !important;
+          font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
           font-size: 6pt !important;
@@ -83,10 +83,10 @@ export default function PrintableReport() {
           line-height: 1.05 !important;
         }
         .print-page table td {
-          font-size: 4pt !important;
-          padding-top: 0.1mm !important;
-          padding-bottom: 0.1mm !important;
-          line-height: 0.85 !important;
+          font-size: 6pt !important;
+          padding-top: 0.3mm !important;
+          padding-bottom: 0.3mm !important;
+          line-height: 1.05 !important;
         }
         
         /* 실번호 열 세밀 축소 */
@@ -119,8 +119,9 @@ export default function PrintableReport() {
         .print-page table .col-note {
           font-size: 4pt !important;
           color: #64748b !important;
-          line-height: 0.85 !important;
+          line-height: 1.0 !important;
           letter-spacing: -0.15pt !important;
+          font-family: 'Arial Narrow', sans-serif !important;
         }
       `}</style>
       
