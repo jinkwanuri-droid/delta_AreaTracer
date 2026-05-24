@@ -90,28 +90,28 @@ export default function PrintableReport() {
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 5pt !important;
+          font-size: 4pt !important;
           color: #94a3b8 !important;
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table .col-net {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.1pt;
         }
         .print-page table .col-qty {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.1pt;
         }
         .print-page table .col-total {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           font-weight: 700 !important;
           letter-spacing: -0.1pt;
         }
         /* 비고란 (기존의 70% 크기) */
         .print-page table .col-note {
-          font-size: 5pt !important;
+          font-size: 4pt !important;
           color: #64748b !important;
           line-height: 1.0 !important;
         }
