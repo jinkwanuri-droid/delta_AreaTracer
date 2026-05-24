@@ -75,7 +75,7 @@ export default function PrintableReport() {
         }
         .empty-hatch {
           background-color: #f8fafc !important;
-          background-image: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 1px, transparent 1px, transparent 4px) !important;
+          background-image: repeating-linear-gradient(45deg, #cbd5e1 0, #cbd5e1 1px, transparent 1px, transparent 4px) !important;
         }
 
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
@@ -84,16 +84,16 @@ export default function PrintableReport() {
           font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
-          font-size: 5.5pt !important;
-          padding-top: 1.20mm !important;
-          padding-bottom: 1.20mm !important;
+          font-size: 5pt !important;
+          padding-top: 1.0mm !important;
+          padding-bottom: 1.0mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 4.5pt !important;
-          padding-top: 1.20mm !important;
-          padding-bottom: 1.20mm !important;
+          font-size: 4pt !important;
+          padding-top: 1.0mm !important;
+          padding-bottom: 1.0mm !important;
           line-height: 1.15 !important;
         }
         
@@ -106,19 +106,19 @@ export default function PrintableReport() {
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table td.col-net {
-          font-size: 4.5pt !important;
+          font-size: 4pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-qty {
-          font-size: 4.5pt !important;
+          font-size: 4pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-total {
-          font-size: 4.5pt !important;
+          font-size: 4pt !important;
           font-weight: 700 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
@@ -139,7 +139,7 @@ export default function PrintableReport() {
 
         /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 극세사 세밀 정돈) */
         .print-page table td.col-note {
-          font-size: 2.5pt !important;
+          font-size: 3pt !important;
           color: #64748b !important; /* 회색 폰트 */
           line-height: 1.05 !important;
           letter-spacing: -0.04em !important; /* 한글 좁은 폭(narrow) 느낌을 위한 자간 압축 */
