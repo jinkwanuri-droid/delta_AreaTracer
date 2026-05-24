@@ -242,7 +242,7 @@ function FloorTable({ floor }: { floor: any }) {
                     <React.Fragment key={s.id}>
                       <td className="border border-slate-300 py-1 px-1 text-right text-slate-400">-</td>
                       <td className="border border-slate-300 py-1 px-1 text-center text-slate-400">-</td>
-                      <td className="border border-slate-300 py-1 px-1 text-right text-indigo-700 bg-indigo-50/30">
+                      <td className="border border-slate-300 py-1 px-1 text-right text-indigo-900 bg-indigo-100/40 font-bold">
                         {formatNum(row[`${s.id}_total`])}
                       </td>
                     </React.Fragment>
