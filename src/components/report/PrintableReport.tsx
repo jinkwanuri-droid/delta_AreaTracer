@@ -75,7 +75,7 @@ export default function PrintableReport() {
         }
         .empty-hatch {
           background-color: #fafbfd !important;
-          background-image: repeating-linear-gradient(45deg, #cbd5e1 0, #cbd5e1 0.4px, transparent 0.4px, transparent 3px) !important;
+          background-image: repeating-linear-gradient(45deg, #e2e8f0 0, #e2e8f0 0.4px, transparent 0.4px, transparent 2.5px) !important;
         }
 
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
@@ -389,7 +389,18 @@ function FloorTable({ floor }: { floor: any }) {
                     return (
                       <tr key={`${row.id}-${i}`} className="bg-slate-50 font-bold">
                         <td className="border-b border-l border-slate-300 py-0.5 px-1 text-center text-slate-400"></td>
-                        <td className="border-b border-l border-r border-slate-300 py-0.5 px-1.5 text-left text-slate-800">[{row.deptName} 소계]</td>
+                        <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                          <div style={{
+                            fontSize: `[${row.deptName} 소계]`.length > 8
+                              ? `${Math.max(2.4, Math.min(4, 4 - (`[${row.deptName} 소계]`.length - 8) * 0.12))}pt`
+                              : 'inherit',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: `[${row.deptName} 소계]`.length > 8 ? '-0.05em' : '-0.02em',
+                            lineHeight: '1.1',
+                          }}>
+                            [{row.deptName} 소계]
+                          </div>
+                        </td>
                         {stages.map(s => {
                           const isCurrent = s.id === targetId;
                           return (
