@@ -74,7 +74,7 @@ export default function PrintableReport() {
           }
         }
         .empty-hatch {
-          background-color: #f1f5f9 !important;
+          background-color: #f8fafc !important;
           background-image: repeating-linear-gradient(45deg, #ffffff 0, #ffffff 1px, transparent 1px, transparent 4px) !important;
         }
 
@@ -84,14 +84,14 @@ export default function PrintableReport() {
           font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
-          font-size: 6pt !important;
+          font-size: 5.5pt !important;
           padding-top: 1.20mm !important;
           padding-bottom: 1.20mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 5pt !important;
+          font-size: 4.5pt !important;
           padding-top: 1.20mm !important;
           padding-bottom: 1.20mm !important;
           line-height: 1.15 !important;
@@ -139,7 +139,7 @@ export default function PrintableReport() {
 
         /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 극세사 세밀 정돈) */
         .print-page table td.col-note {
-          font-size: 3.5pt !important;
+          font-size: 2.5pt !important;
           color: #64748b !important; /* 회색 폰트 */
           line-height: 1.05 !important;
           letter-spacing: -0.04em !important; /* 한글 좁은 폭(narrow) 느낌을 위한 자간 압축 */
@@ -318,7 +318,7 @@ function FloorTable({ floor }: { floor: any }) {
             <table className="w-full border-separate border-spacing-0 table-fixed">
               <colgroup>
                 <col style={{ width: '50px' }} />
-                <col style={{ width: '180px' }} />
+                <col style={{ width: '170px' }} />
                 {stages.map(s => (
                   <React.Fragment key={`${s.id}-col`}>
                     <col style={{ width: '40px' }} />
