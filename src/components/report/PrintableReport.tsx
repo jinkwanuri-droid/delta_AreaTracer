@@ -68,23 +68,43 @@ export default function PrintableReport() {
          .print-page table th {
             font-size: 5.5px !important;
             line-height: 1.1 !important;
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
          }
          .print-page table td {
             font-size: 5.5px !important;
             line-height: 1.1 !important;
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
          }
          .print-page table td.col-no {
             font-size: 4px !important;
             color: #94a3b8 !important;
          }
+         .print-page table td.col-note {
+            font-size: 3.8px !important;
+            color: #64748b !important;
+         }
+         .print-page table .col-net, .print-page table .col-qty, .print-page table .col-total {
+            font-size: 4.4px !important;
+         }
         }
         .print-page table th, .print-page table td {
           font-size: 5.5px !important;
           line-height: 1.1 !important;
+          padding-top: 3px !important;
+          padding-bottom: 3px !important;
         }
         .print-page table td.col-no {
           font-size: 4.2px !important;
           color: #94a3b8 !important;
+        }
+        .print-page table td.col-note {
+          font-size: 3.8px !important;
+          color: #64748b !important;
+        }
+        .print-page table .col-net, .print-page table .col-qty, .print-page table .col-total {
+          font-size: 4.4px !important;
         }
         .empty-hatch {
           background-image: repeating-linear-gradient(45deg, #f1f5f9 0, #f1f5f9 2px, transparent 2px, transparent 8px);
@@ -244,7 +264,7 @@ function FloorTable({ floor }: { floor: any }) {
       {pages.map((pageRows, pageIdx) => (
         <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between" style={{ height: '178mm', boxSizing: 'border-box' }}>
           <div className="flex-1">
-            <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '10mm' }}>
+            <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '15mm' }}>
               <div>
                 <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
                   <span>{floorTitle} 세부 면적계획</span>
@@ -261,15 +281,15 @@ function FloorTable({ floor }: { floor: any }) {
             <table className="w-full border-separate border-spacing-0 table-fixed text-[4.5px] print:text-[4px]">
               <colgroup>
                 <col style={{ width: '50px' }} />
-                <col style={{ width: '160px' }} />
+                <col style={{ width: '170px' }} />
                 {stages.map(s => (
                   <React.Fragment key={`${s.id}-col`}>
-                    <col style={{ width: '40px' }} />
-                    <col style={{ width: '20px' }} />
-                    <col style={{ width: '40px' }} />
+                    <col style={{ width: '32px' }} />
+                    <col style={{ width: '16px' }} />
+                    <col style={{ width: '32px' }} />
                   </React.Fragment>
                 ))}
-                <col style={{ width: '40px' }} />
+                <col style={{ width: '32px' }} />
                 <col style={{ width: 'auto' }} />
               </colgroup>
               <thead>
@@ -287,9 +307,9 @@ function FloorTable({ floor }: { floor: any }) {
                 <tr>
                   {stages.map(s => (
                     <React.Fragment key={`${s.id}-sub`}>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500">Net</th>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500">Qty</th>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-slate-900">Total</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 col-net">Net</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 col-qty">Qty</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-slate-900 col-total">Total</th>
                     </React.Fragment>
                   ))}
                 </tr>
@@ -322,15 +342,15 @@ function FloorTable({ floor }: { floor: any }) {
                         <td className="border-b border-l border-r border-slate-300 py-1 px-1.5 text-left text-slate-800">[{row.deptName} 소계]</td>
                         {stages.map(s => (
                           <React.Fragment key={s.id}>
-                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-slate-400"></td>
-                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-center text-slate-400"></td>
-                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-indigo-900 font-inter font-bold bg-indigo-50">
+                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-slate-400 col-net"></td>
+                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-center text-slate-400 col-qty"></td>
+                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-indigo-900 font-inter font-bold bg-indigo-50 col-total">
                               {row[`${s.id}_total`] === 0 ? '' : formatNum(row[`${s.id}_total`])}
                             </td>
                           </React.Fragment>
                         ))}
                         <td className={clsx(
-                          "border-b border-r border-slate-300 py-1 px-1 font-inter font-bold text-right",
+                          "border-b border-r border-slate-300 py-1 px-1 font-inter font-bold text-right col-total",
                           row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                         )}>
                           {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
@@ -350,25 +370,25 @@ function FloorTable({ floor }: { floor: any }) {
                         const isEmpty = row[`${s.id}_isEmpty`];
                         return (
                           <React.Fragment key={s.id}>
-                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter text-slate-500", isEmpty && "empty-hatch")}>
+                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter text-slate-500 col-net", isEmpty && "empty-hatch")}>
                                {isEmpty ? "" : formatNum(row[`${s.id}_unit`])}
                             </td>
-                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center font-inter text-slate-500", isEmpty && "empty-hatch")}>
+                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center font-inter text-slate-500 col-qty", isEmpty && "empty-hatch")}>
                                {isEmpty ? "" : formatQty(row[`${s.id}_qty`])}
                             </td>
-                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold text-slate-900 bg-slate-100", isEmpty && "empty-hatch")}>
+                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold text-slate-900 bg-slate-100 col-total", isEmpty && "empty-hatch")}>
                                {isEmpty ? "" : formatNum(row[`${s.id}_total`])}
                             </td>
                           </React.Fragment>
                         );
                       })}
                       <td className={clsx(
-                        "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter font-bold",
+                        "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter font-bold col-total",
                         row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                       )}>
                         {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                       </td>
-                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left text-slate-500 truncate print:whitespace-normal">
+                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left text-slate-500 truncate print:whitespace-normal col-note">
                         {row.note || ''}
                       </td>
                     </tr>
