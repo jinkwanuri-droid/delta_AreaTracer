@@ -222,34 +222,34 @@ function FloorTable({ floor }: { floor: any }) {
   return (
     <>
       {pages.map((pageRows, pageIdx) => (
-        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between" style={{ minHeight: '186mm' }}>
+        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between" style={{ height: '185mm', boxSizing: 'border-box' }}>
           <div className="flex-1">
-            <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2">
+            <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '10mm' }}>
               <div>
-                <h2 className="text-[14px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
+                <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
                   <span>{floorTitle} 세부 면적계획</span>
-                  <span className="text-[10px] font-normal text-slate-500 mb-[1px]">({pageIdx + 1}/{pages.length})</span>
+                  <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({pageIdx + 1}/{pages.length})</span>
                 </h2>
               </div>
-              <div className="text-right">
+              <div className="text-right pb-1">
                 <span className="text-[9px] font-bold text-slate-600">
                   경상남도 서부의료원 건립사업 실시설계 | 층별 세부 면적계획
                 </span>
               </div>
             </div>
 
-            <table className="w-full border-separate border-spacing-0 table-fixed text-[7.5px] print:text-[6.5px]">
+            <table className="w-full border-separate border-spacing-0 table-fixed text-[4.5px] print:text-[4px]">
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '160px' }} />
                 {stages.map(s => (
                   <React.Fragment key={`${s.id}-col`}>
-                    <col style={{ width: '50px' }} />
-                    <col style={{ width: '25px' }} />
-                    <col style={{ width: '50px' }} />
+                    <col style={{ width: '40px' }} />
+                    <col style={{ width: '20px' }} />
+                    <col style={{ width: '40px' }} />
                   </React.Fragment>
                 ))}
-                <col style={{ width: '50px' }} />
+                <col style={{ width: '40px' }} />
                 <col style={{ width: 'auto' }} />
               </colgroup>
               <thead>
@@ -322,7 +322,7 @@ function FloorTable({ floor }: { floor: any }) {
 
                   return (
                     <tr key={`${row.id}-${i}`}>
-                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[6px] print:text-[5px]">{row.no}</td>
+                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[3.5px] print:text-[3px]">{row.no}</td>
                       <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-tight">
                         {row.name}
                       </td>
