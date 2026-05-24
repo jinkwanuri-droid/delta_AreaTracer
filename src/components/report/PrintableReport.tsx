@@ -514,6 +514,27 @@ function SummaryPrintTable() {
   const baseStageId = comparison.baseId || stages[0]?.id;
   const targetStageId = comparison.targetId || stages[stages.length - 1]?.id;
 
+  const formatNum = (val: number | undefined | null, isRatio = false, stageId?: string) => {
+    if (val === undefined || val === null || isNaN(val)) {
+      return "-";
+    }
+    
+    const checkVal = isRatio ? Number(val.toFixed(4)) : Number(val.toFixed(2));
+    if (checkVal === 0) {
+      if (isRatio) return "-";
+      return "0";
+    }
+    
+    if (isRatio) return val.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    const stage = stages.find(s => s.id === stageId);
+    if (stage?.code === 'A') {
+      return Math.round(val).toLocaleString('ko-KR');
+    }
+
+    return val.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const summaryData = useMemo(() => {
     if (stages.length < 1) return [];
 

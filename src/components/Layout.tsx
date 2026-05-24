@@ -99,7 +99,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
               <button
                 onClick={handlePrintClick}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold shadow-lg shadow-slate-200 hover:bg-slate-800 transition-all ml-2"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all ml-2"
                 title="PDF 인쇄 메뉴 열기 (A4 가로 권장)"
               >
                 <Download size={16} strokeWidth={2.5} />
@@ -141,7 +141,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     type="checkbox" 
                     checked={exportSummary}
                     onChange={(e) => setExportSummary(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                    className="w-4 h-4 text-indigo-600 accent-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
                   />
                   <div>
                     <span className="text-sm font-bold text-slate-700">부서별 총괄 면적표</span>
@@ -154,7 +154,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     type="checkbox" 
                     checked={exportDetail}
                     onChange={(e) => setExportDetail(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                    className="w-4 h-4 text-indigo-600 accent-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
                   />
                   <div>
                     <span className="text-sm font-bold text-slate-700">층별 세부 면적계획</span>
@@ -173,7 +173,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               </button>
               <button
                 onClick={handleGeneratePrint}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold shadow-md transition-all"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-lg text-xs font-semibold shadow-md transition-all"
               >
                 출력 확인
               </button>
