@@ -86,7 +86,7 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
   if (isGrouped) {
     return (
       <div className={clsx(
-        "w-full h-full text-right py-1.5 px-1 font-mono text-[12px] flex items-center justify-end",
+        "w-full h-full text-right py-1.5 px-1 font-mono text-[13px] flex items-center justify-end",
         meta?.isLast ? "text-indigo-600 font-semibold" : "text-slate-500"
       )}>
         {value === 0 || value === null ? "" : (
@@ -113,7 +113,7 @@ const EditableCell = ({ getValue, row, column, table }: any) => {
       onFocus={onFocus}
       onBlur={onBlur}
       className={clsx(
-        "w-full h-full bg-transparent outline-none text-right placeholder:text-transparent py-2 px-1 font-mono text-[13px]",
+        "w-full h-full bg-transparent outline-none text-right placeholder:text-transparent py-2 px-1 font-mono text-[14px]",
         meta?.isLast ? "text-indigo-600" : "text-slate-500",
         "focus:bg-yellow-50 focus:ring-1 focus:ring-indigo-400",
       )}

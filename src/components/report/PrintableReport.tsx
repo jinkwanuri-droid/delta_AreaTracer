@@ -74,8 +74,8 @@ export default function PrintableReport() {
           }
         }
         .empty-hatch {
-          background-color: #f8fafc !important;
-          background-image: repeating-linear-gradient(45deg, #cbd5e1 0, #cbd5e1 1px, transparent 1px, transparent 4px) !important;
+          background-color: #fafbfd !important;
+          background-image: repeating-linear-gradient(45deg, #cbd5e1 0, #cbd5e1 0.4px, transparent 0.4px, transparent 3px) !important;
         }
 
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
@@ -419,8 +419,17 @@ function FloorTable({ floor }: { floor: any }) {
                   return (
                     <tr key={`${row.id}-${i}`}>
                       <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono col-no">{row.no}</td>
-                      <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800">
-                        {row.name}
+                      <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                        <div style={{
+                          fontSize: row.name && row.name.length > 8
+                            ? `${Math.max(2.4, Math.min(4, 4 - (row.name.length - 8) * 0.16))}pt`
+                            : 'inherit',
+                          whiteSpace: 'nowrap',
+                          letterSpacing: row.name && row.name.length > 8 ? '-0.05em' : '-0.02em',
+                          lineHeight: '1.1',
+                        }}>
+                          {row.name}
+                        </div>
                       </td>
                       {stages.map(s => {
                         const isEmpty = row[`${s.id}_isEmpty`];
