@@ -774,7 +774,7 @@ function SummaryPrintTable() {
     if (row.isHeader) {
       return (
         <tr key={`${row.id}-${idx}`} className="bg-slate-100/30">
-          <td colSpan={3 + stages.length} className="border-b border-l border-r border-slate-300 py-0.5 px-1.5 font-bold text-slate-900" style={{ fontSize: '4.3pt' }}>
+          <td colSpan={3 + stages.length} className="border-b border-l border-r border-slate-300 py-0.5 px-1.5 font-bold text-slate-900" style={{ fontSize: '2.2pt' }}>
             <div className="flex items-center gap-1">
               <div className="w-[3px] h-[9px] rounded-full" style={{ backgroundColor: row.color }}></div>
               {row.divisionName}
@@ -800,12 +800,12 @@ function SummaryPrintTable() {
         <td className={clsx(
           "border-b border-l border-slate-300 py-[0.4mm] px-0.5 text-center font-mono text-slate-500",
           (isGrand || isSumRow) && "text-slate-900 font-bold"
-        )} style={{ fontSize: '3.8pt' }}>
+        )} style={{ fontSize: '1.9pt' }}>
           {row.code || ''}
         </td>
         
         {/* Department Name */}
-        <td className="border-b border-l border-r border-slate-300 py-[0.4mm] px-1 text-left font-medium text-slate-800" style={{ fontSize: '4.2pt', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+        <td className="border-b border-l border-r border-slate-300 py-[0.4mm] px-1 text-left font-medium text-slate-800" style={{ fontSize: '2.1pt', whiteSpace: 'nowrap', overflow: 'hidden' }}>
           <div className="flex items-center gap-1" style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
             {row.divColor && !isSub && !isGrand && !isSumRow && (
               <span className="w-1 h-2 rounded-xs flex-shrink-0" style={{ backgroundColor: row.divColor }}></span>
@@ -825,7 +825,7 @@ function SummaryPrintTable() {
                 "border-b border-r border-slate-300 py-[0.4mm] px-1 text-right font-mono",
                 isCurStage && "print-current-bg-light font-bold"
               )}
-              style={{ fontSize: '4.2pt', fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal' }}
+              style={{ fontSize: '2.1pt', fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal' }}
             >
               {formatNum(val, row.isRatio, s.id)}
             </td>
@@ -838,13 +838,13 @@ function SummaryPrintTable() {
             "border-b border-r border-slate-300 py-[0.4mm] px-1 text-right font-mono font-bold",
             row.diff > 0 ? "text-blue-600" : row.diff < 0 ? "text-red-500" : "text-slate-400 font-normal"
           )}
-          style={{ fontSize: '4.2pt' }}
+          style={{ fontSize: '2.1pt' }}
         >
           {row.diff === 0 ? "0.00" : (row.diff > 0 ? "+" : "") + formatNum(row.diff, row.isRatio)}
         </td>
 
         {/* Notes */}
-        <td className="border-b border-r border-slate-300 py-[0.4mm] px-1 text-left col-note leading-tight" style={{ fontSize: '3.4pt', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <td className="border-b border-r border-slate-300 py-[0.4mm] px-1 text-left col-note leading-tight" style={{ fontSize: '1.7pt', overflow: 'hidden', whiteSpace: 'nowrap' }}>
           <div className="truncate" title={row.notes || ''}>
             {row.notes || ''}
           </div>
@@ -887,8 +887,8 @@ function SummaryPrintTable() {
               </colgroup>
               <thead>
                 <tr>
-                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '4.3pt' }}>코드</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-left font-bold text-[#334155]" style={{ fontSize: '4.3pt', paddingLeft: '4px' }}>부서명</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>코드</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-left font-bold text-[#334155]" style={{ fontSize: '2.2pt', paddingLeft: '2px' }}>부서명</th>
                   {stages.map(s => (
                     <th 
                       key={s.id} 
@@ -896,13 +896,13 @@ function SummaryPrintTable() {
                         "border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold",
                         s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
                       )}
-                      style={{ fontSize: '4.1pt' }}
+                      style={{ fontSize: '2.1pt' }}
                     >
                       {s.name}
                     </th>
                   ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '4.3pt' }}>증감</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '4.3pt' }}>주요 변경사항 및 비고</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>증감</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>주요 변경사항 및 비고</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
@@ -925,8 +925,8 @@ function SummaryPrintTable() {
               </colgroup>
               <thead>
                 <tr>
-                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '4.3pt' }}>코드</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-left font-bold text-[#334155]" style={{ fontSize: '4.3pt', paddingLeft: '4px' }}>부서명</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>코드</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-left font-bold text-[#334155]" style={{ fontSize: '2.2pt', paddingLeft: '2px' }}>부서명</th>
                   {stages.map(s => (
                     <th 
                       key={s.id} 
@@ -934,13 +934,13 @@ function SummaryPrintTable() {
                         "border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold",
                         s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
                       )}
-                      style={{ fontSize: '4.1pt' }}
+                      style={{ fontSize: '2.1pt' }}
                     >
                       {s.name}
                     </th>
                   ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '4.3pt' }}>증감</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '4.3pt' }}>주요 변경사항 및 비고</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>증감</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>주요 변경사항 및 비고</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
