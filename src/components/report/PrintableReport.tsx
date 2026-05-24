@@ -3,15 +3,22 @@ import { useAppStore } from '@/store/useAppStore';
 import { clsx } from 'clsx';
 
 // Helper to format numbers with rounding
-const formatNum = (num: number | undefined | null) => {
+const formatNum = (num: number | undefined | null, noDecimal: boolean = false) => {
   if (num === undefined || num === null || num === 0) return "-";
-  return num.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fractionDigits = noDecimal ? 0 : 2;
+  return num.toLocaleString(undefined, { 
+    minimumFractionDigits: fractionDigits, 
+    maximumFractionDigits: fractionDigits 
+  });
 };
 
 // Helper for quantity formatting
 const formatQty = (qty: number | undefined | null) => {
   if (qty === undefined || qty === null || qty === 0) return "-";
-  return qty.toLocaleString();
+  if (qty % 1 !== 0) {
+    return qty.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
+  }
+  return qty.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
 export default function PrintableReport() {
@@ -77,16 +84,16 @@ export default function PrintableReport() {
         }
         .print-page table th {
           font-size: 6pt !important;
-          padding-top: 0.5mm !important;
-          padding-bottom: 0.5mm !important;
+          padding-top: 0.65mm !important;
+          padding-bottom: 0.65mm !important;
           font-weight: 700 !important;
-          line-height: 1.05 !important;
+          line-height: 1.15 !important;
         }
         .print-page table td {
           font-size: 6pt !important;
-          padding-top: 0.3mm !important;
-          padding-bottom: 0.3mm !important;
-          line-height: 1.05 !important;
+          padding-top: 0.45mm !important;
+          padding-bottom: 0.45mm !important;
+          line-height: 1.15 !important;
         }
         
         /* 실번호 열 세밀 축소 */
@@ -359,7 +366,7 @@ function FloorTable({ floor }: { floor: any }) {
                             <td className="border-b border-r border-slate-300 py-0.5 px-0.5 text-right text-slate-400 col-net"></td>
                             <td className="border-b border-r border-slate-300 py-0.5 px-0.5 text-center text-slate-400 col-qty"></td>
                             <td className="border-b border-r border-slate-300 py-0.5 px-0.5 text-right text-indigo-900 font-inter font-bold bg-indigo-50 col-total">
-                              {row[`${s.id}_total`] === 0 ? '' : formatNum(row[`${s.id}_total`])}
+                              {row[`${s.id}_total`] === 0 ? '' : formatNum(row[`${s.id}_total`], s.name === '공모지침' || s.name?.includes('공모'))}
                             </td>
                           </React.Fragment>
                         ))}
@@ -385,13 +392,13 @@ function FloorTable({ floor }: { floor: any }) {
                         return (
                           <React.Fragment key={s.id}>
                             <td className={clsx("border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter text-slate-500 col-net", isEmpty && "empty-hatch")}>
-                               {isEmpty ? "" : formatNum(row[`${s.id}_unit`])}
+                               {isEmpty ? "" : formatNum(row[`${s.id}_unit`], s.name === '공모지침' || s.name?.includes('공모'))}
                             </td>
                             <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center font-inter text-slate-500 col-qty", isEmpty && "empty-hatch")}>
                                {isEmpty ? "" : formatQty(row[`${s.id}_qty`])}
                             </td>
                             <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold text-slate-900 bg-slate-100 col-total", isEmpty && "empty-hatch")}>
-                               {isEmpty ? "" : formatNum(row[`${s.id}_total`])}
+                               {isEmpty ? "" : formatNum(row[`${s.id}_total`], s.name === '공모지침' || s.name?.includes('공모'))}
                             </td>
                           </React.Fragment>
                         );
