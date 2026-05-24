@@ -86,7 +86,11 @@ function FloorTable({ floor }: { floor: any }) {
 
   // Filter rooms for this floor
   const floorRooms = useMemo(() => {
-    return rooms.filter(r => r.floorId === floor.id).sort((a, b) => {
+    return rooms.filter(r => r.floorId === floor.id).filter(r => {
+      const dept = departments.find(d => d.id === r.departmentId);
+      if (!dept) return false;
+      return /^(0?[1-5]|[1-5])$/.test(dept.divisionId); // Show only division 1~5
+    }).sort((a, b) => {
       const dA = departments.find(d => d.id === a.departmentId)?.order || 999;
       const dB = departments.find(d => d.id === b.departmentId)?.order || 999;
       if (dA !== dB) return dA - dB;
@@ -139,6 +143,7 @@ function FloorTable({ floor }: { floor: any }) {
       if (room.departmentId !== currentDeptId) {
         if (currentDeptId !== null) {
           addSummary(currentDeptId, deptRooms);
+          result.push({ id: `spacer-${currentDeptId}`, isSpacer: true });
         }
         currentDeptId = room.departmentId;
         deptRooms = [];
@@ -188,6 +193,13 @@ function FloorTable({ floor }: { floor: any }) {
     groupedRows.forEach((row) => {
       if (count === 0 && row.isSpacer) return;
 
+      // Automatically break page if header is near page end (less than 3 rows left)
+      if (row.isHeader && count > 0 && ROWS_PER_PAGE - count < 3) {
+        p.push(current);
+        current = [];
+        count = 0;
+      }
+
       if (count >= ROWS_PER_PAGE) {
         p.push(current);
         current = [];
@@ -195,7 +207,7 @@ function FloorTable({ floor }: { floor: any }) {
       }
       
       current.push(row);
-      count += row.isSpacer ? 0.5 : 1;
+      count += row.isSpacer ? 0.3 : 1;
     });
     
     if (current.length > 0) {
@@ -226,31 +238,38 @@ function FloorTable({ floor }: { floor: any }) {
               </div>
             </div>
 
-            <table className="w-full border-separate border-spacing-0 table-fixed text-[9px] print:text-[8px]">
+            <table className="w-full border-separate border-spacing-0 table-fixed text-[7.5px] print:text-[6.5px]">
               <thead>
                 <tr>
-                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-1 px-1 w-6 text-center font-bold text-[#334155]" rowSpan={2}>NO</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-left font-bold text-[#334155]" rowSpan={2}>실 명칭</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-1 px-1 w-9 text-center font-bold text-[#334155]" rowSpan={2}>NO</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 w-40 text-left font-bold text-[#334155]" rowSpan={2}>실 명칭</th>
                   {stages.map(s => (
                     <th key={s.id} className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center font-bold text-[#334155]" colSpan={3}>
                       {s.name}
                     </th>
                   ))}
                   <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center w-10 font-bold text-[#334155]" rowSpan={2}>증감</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center w-16 font-bold text-[#334155]" rowSpan={2}>비고</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center w-auto font-bold text-[#334155]" rowSpan={2}>비고</th>
                 </tr>
                 <tr>
                   {stages.map(s => (
                     <React.Fragment key={`${s.id}-sub`}>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 w-7">Net</th>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 w-5">Qty</th>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-slate-900 w-9">Total</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 w-[20px]">Net</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 w-[10px]">Qty</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-slate-900 w-[25px]">Total</th>
                     </React.Fragment>
                   ))}
                 </tr>
               </thead>
               <tbody className="bg-white">
                 {pageRows.map((row: any, i: number) => {
+                  if (row.isSpacer) {
+                    return (
+                      <tr key={`${row.id}-${i}`}>
+                        <td colSpan={4 + stages.length * 3} className="h-2"></td>
+                      </tr>
+                    );
+                  }
                   if (row.isHeader) {
                      return (
                        <tr key={`${row.id}-${i}`} className="bg-slate-100/30">
@@ -273,15 +292,15 @@ function FloorTable({ floor }: { floor: any }) {
                             <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-slate-400">-</td>
                             <td className="border-b border-r border-slate-300 py-1 px-0.5 text-center text-slate-400">-</td>
                             <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-indigo-900 font-inter font-bold bg-indigo-50">
-                              {formatNum(row[`${s.id}_total`])}
+                              {row[`${s.id}_total`] === 0 ? '' : formatNum(row[`${s.id}_total`])}
                             </td>
                           </React.Fragment>
                         ))}
                         <td className={clsx(
-                          "border-b border-r border-slate-300 py-1 px-1 font-inter text-[9px] print:text-[8px] font-bold text-right",
+                          "border-b border-r border-slate-300 py-1 px-1 font-inter font-bold text-right",
                           row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                         )}>
-                          {row.variance > 0 ? "+" : ""}{formatNum(row.variance)}
+                          {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                         </td>
                         <td className="border-b border-r border-slate-300 py-1 px-1 text-center text-slate-400">-</td>
                       </tr>
@@ -290,7 +309,7 @@ function FloorTable({ floor }: { floor: any }) {
 
                   return (
                     <tr key={`${row.id}-${i}`}>
-                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[8px] print:text-[7px]">{row.no}</td>
+                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[7px] print:text-[6.5px]">{row.no}</td>
                       <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-tight">
                         {row.name}
                       </td>
@@ -304,19 +323,19 @@ function FloorTable({ floor }: { floor: any }) {
                             <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center font-inter text-slate-500", isEmpty && "empty-hatch")}>
                                {isEmpty ? "" : formatQty(row[`${s.id}_qty`])}
                             </td>
-                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold text-slate-900 bg-slate-50/20", isEmpty && "empty-hatch")}>
+                            <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold text-slate-900 bg-slate-100", isEmpty && "empty-hatch")}>
                                {isEmpty ? "" : formatNum(row[`${s.id}_total`])}
                             </td>
                           </React.Fragment>
                         );
                       })}
                       <td className={clsx(
-                        "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter text-[9px] print:text-[8px] font-bold",
+                        "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter font-bold",
                         row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                       )}>
                         {row.variance === 0 ? "-" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                       </td>
-                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left text-slate-500 text-[8px] print:text-[7px] truncate max-w-[50px] print:max-w-[80px]">
+                      <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left text-slate-500 truncate print:whitespace-normal">
                         {row.note || ''}
                       </td>
                     </tr>
