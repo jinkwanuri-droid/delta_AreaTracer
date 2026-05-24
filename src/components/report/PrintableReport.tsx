@@ -240,17 +240,17 @@ function FloorTable({ floor }: { floor: any }) {
 
             <table className="w-full border-separate border-spacing-0 table-fixed text-[7.5px] print:text-[6.5px]">
               <colgroup>
-                <col style={{ width: '50px' }} /> {/* NO */}
-                <col style={{ width: '160px' }} /> {/* 실 명칭 */}
+                <col style={{ width: '50px' }} />
+                <col style={{ width: '160px' }} />
                 {stages.map(s => (
                   <React.Fragment key={`${s.id}-col`}>
-                    <col style={{ width: '50px' }} /> {/* Net */}
-                    <col style={{ width: '25px' }} /> {/* Qty */}
-                    <col style={{ width: '50px' }} /> {/* Total */}
+                    <col style={{ width: '50px' }} />
+                    <col style={{ width: '25px' }} />
+                    <col style={{ width: '50px' }} />
                   </React.Fragment>
                 ))}
-                <col style={{ width: '50px' }} /> {/* 증감 */}
-                <col style={{ width: 'auto' }} /> {/* 비고 */}
+                <col style={{ width: '50px' }} />
+                <col style={{ width: 'auto' }} />
               </colgroup>
               <thead>
                 <tr>
