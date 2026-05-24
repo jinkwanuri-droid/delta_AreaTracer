@@ -339,15 +339,15 @@ body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 0 !important; /* 빈 화면이 발생하지 않도록 전역 마진 자체를 제거하여 PrintableReport의 정밀 마진 선언을 강화합니다 */
+    margin: 10mm;
   }
   
   html, body {
-    width: 297mm !important;
-    height: 210mm !important;
+    width: 100% !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: hidden !important; /* 스크롤바와 여유 공간으로 인한 슬라이드 오버플로우 및 빈 장 유도 전격 차단 */
+    overflow: visible !important;
     background: #ffffff !important;
     color: #1e293b !important;
     -webkit-print-color-adjust: exact !important;
@@ -357,7 +357,7 @@ body {
   /* Force background colors and borders to print accurately in all browsers */
   * {
     -webkit-print-color-adjust: exact !important;
-    color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Hide raw web app UI panels during PDF printing */
@@ -367,7 +367,6 @@ body {
   button, 
   .no-print, 
   [role="dialog"], 
-  .fixed,
   .sidebar,
   .selector-popover,
   .tab-navigator-container,
@@ -380,8 +379,7 @@ body {
   #root, 
   div.flex.h-screen, 
   main, 
-  .flex-1,
-  #root > div {
+  .flex-1 {
     display: block !important;
     width: 100% !important;
     height: auto !important;
