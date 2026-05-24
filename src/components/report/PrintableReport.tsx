@@ -75,34 +75,43 @@ export default function PrintableReport() {
           border-collapse: separate !important;
         }
         .print-page table th {
-          font-size: 4.5pt !important;
-          padding-top: 0.4mm !important;
-          padding-bottom: 0.4mm !important;
+          font-size: 6pt !important;
+          padding-top: 0.5mm !important;
+          padding-bottom: 0.5mm !important;
           font-weight: 700 !important;
           line-height: 1.05 !important;
         }
         .print-page table td {
-          font-size: 4pt !important;
-          padding-top: 0.25mm !important;
-          padding-bottom: 0.25mm !important;
-          line-height: 1.02 !important;
+          font-size: 6pt !important;
+          padding-top: 0.3mm !important;
+          padding-bottom: 0.3mm !important;
+          line-height: 1.05 !important;
         }
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 3.5pt !important;
+          font-size: 5pt !important;
           color: #94a3b8 !important;
         }
-        /* Net, Qty, Total 데이터 열 (기존의 80% 크기) */
-        .print-page table .col-net,
-        .print-page table .col-qty,
+        /* Net, Qty, Total 데이터 열 */
+        .print-page table .col-net {
+          font-size: 6pt !important;
+          font-weight: 400 !important;
+          letter-spacing: -0.1pt;
+        }
+        .print-page table .col-qty {
+          font-size: 6pt !important;
+          font-weight: 400 !important;
+          letter-spacing: -0.1pt;
+        }
         .print-page table .col-total {
-          font-size: 3.7pt !important;
+          font-size: 6pt !important;
+          font-weight: 700 !important;
           letter-spacing: -0.1pt;
         }
         /* 비고란 (기존의 70% 크기) */
         .print-page table .col-note {
-          font-size: 3.5pt !important;
+          font-size: 5pt !important;
           color: #64748b !important;
           line-height: 1.0 !important;
         }
