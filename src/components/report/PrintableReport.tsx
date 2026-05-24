@@ -239,24 +239,37 @@ function FloorTable({ floor }: { floor: any }) {
             </div>
 
             <table className="w-full border-separate border-spacing-0 table-fixed text-[7.5px] print:text-[6.5px]">
+              <colgroup>
+                <col style={{ width: '44px' }} /> {/* NO */}
+                <col style={{ width: '180px' }} /> {/* 실 명칭 */}
+                {stages.map(s => (
+                  <React.Fragment key={`${s.id}-col`}>
+                    <col style={{ width: '32px' }} /> {/* Net */}
+                    <col style={{ width: '18px' }} /> {/* Qty */}
+                    <col style={{ width: '38px' }} /> {/* Total */}
+                  </React.Fragment>
+                ))}
+                <col style={{ width: '40px' }} /> {/* 증감 */}
+                <col style={{ width: 'auto' }} /> {/* 비고 */}
+              </colgroup>
               <thead>
                 <tr>
-                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-1 px-1 w-9 text-center font-bold text-[#334155]" rowSpan={2}>NO</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 w-40 text-left font-bold text-[#334155]" rowSpan={2}>실 명칭</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-1 px-1 text-center font-bold text-[#334155]" rowSpan={2}>NO</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-left font-bold text-[#334155]" rowSpan={2}>실 명칭</th>
                   {stages.map(s => (
                     <th key={s.id} className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center font-bold text-[#334155]" colSpan={3}>
                       {s.name}
                     </th>
                   ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center w-10 font-bold text-[#334155]" rowSpan={2}>증감</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center w-auto font-bold text-[#334155]" rowSpan={2}>비고</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center font-bold text-[#334155]" rowSpan={2}>증감</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-1 px-1 text-center font-bold text-[#334155]" rowSpan={2}>비고</th>
                 </tr>
                 <tr>
                   {stages.map(s => (
                     <React.Fragment key={`${s.id}-sub`}>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 w-[20px]">Net</th>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500 w-[10px]">Qty</th>
-                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-slate-900 w-[25px]">Total</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500">Net</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-medium text-slate-500">Qty</th>
+                      <th className="bg-[#E2E8F0] border-b border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-slate-900">Total</th>
                     </React.Fragment>
                   ))}
                 </tr>
