@@ -614,6 +614,13 @@ function SummaryPrintTable() {
       if (divDepts.length === 0) return;
 
       // Group Header (Division Name)
+      if (index > 0) {
+        rows.push({
+          id: `spacer-${div.id}`,
+          isSpacer: true
+        });
+      }
+
       rows.push({
          id: `header-${div.id}`,
          isHeader: true,
@@ -660,6 +667,12 @@ function SummaryPrintTable() {
 
     const targetGrandVal = grandStageTotals[targetStageId] || 0;
     const baseGrandVal = grandStageTotals[baseStageId] || 0;
+
+    // Spacer row before grand total
+    rows.push({
+      id: 'spacer-before-grand-total',
+      isSpacer: true
+    });
 
     rows.push({
       id: 'grand-total',
@@ -796,11 +809,47 @@ function SummaryPrintTable() {
     return rows;
   }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, comparison, medicalOnly, departmentNotes]);
 
+  const splitIndex = useMemo(() => {
+    return summaryData.findIndex(row => row.isHeader && row.divisionName?.includes('중앙진료부'));
+  }, [summaryData]);
+
+  const pages = useMemo(() => {
+    if (splitIndex === -1) {
+      return [
+        {
+          pageIdx: 0,
+          total: 1,
+          rows: summaryData
+        }
+      ];
+    }
+    return [
+      {
+        pageIdx: 0,
+        total: 2,
+        rows: summaryData.slice(0, splitIndex)
+      },
+      {
+        pageIdx: 1,
+        total: 2,
+        rows: summaryData.slice(splitIndex)
+      }
+    ];
+  }, [summaryData, splitIndex]);
+
   const renderRow = (row: any, idx: number) => {
+    if (row.isSpacer) {
+      return (
+        <tr key={row.id}>
+          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.45mm] bg-white" style={{ height: '3.5mm' }}></td>
+        </tr>
+      );
+    }
+
     if (row.isHeader) {
       return (
         <tr key={`${row.id}-${idx}`} className="bg-slate-100/30">
-          <td colSpan={3 + stages.length} className="border-b border-l border-r border-slate-300 py-0.5 px-2 font-bold text-slate-900">
+          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.45mm] px-2 font-bold text-slate-900">
             <div className="flex items-center gap-1.5">
               <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.color }}></div>
               {row.divisionName}
@@ -824,18 +873,15 @@ function SummaryPrintTable() {
       <tr key={`${row.id}-${idx}`} className={rowClass}>
         {/* Code */}
         <td className={clsx(
-          "border-b border-l border-slate-300 py-[0.5mm] px-1 text-center font-mono text-slate-500",
+          "border-b border-l border-slate-300 py-[0.45mm] px-1 text-center text-slate-500",
           (isGrand || isSumRow) && "text-slate-900 font-bold"
-        )}>
+        )} style={{ fontFamily: "'Arial Narrow', sans-serif", letterSpacing: '-0.2pt' }}>
           {row.code || ''}
         </td>
         
         {/* Department Name */}
-        <td className="border-b border-l border-r border-slate-300 py-[0.5mm] px-1.5 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+        <td className="border-b border-l border-r border-slate-300 py-[0.45mm] px-1.5 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
           <div className="flex items-center gap-1.5" style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
-            {row.divColor && !isSub && !isGrand && !isSumRow && (
-              <span className="w-1 h-2.5 rounded-xs flex-shrink-0" style={{ backgroundColor: row.divColor }}></span>
-            )}
             <span className="truncate">{row.department}</span>
           </div>
         </td>
@@ -848,10 +894,14 @@ function SummaryPrintTable() {
             <td 
               key={s.id} 
               className={clsx(
-                "border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-right font-mono",
+                "border-b border-r border-slate-300 py-[0.45mm] px-1.5 text-right",
                 isCurStage && "print-current-bg-light font-bold"
               )}
-              style={{ fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal' }}
+              style={{ 
+                fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal',
+                fontFamily: "'Arial Narrow', sans-serif",
+                letterSpacing: '-0.2pt'
+              }}
             >
               {formatNum(val, row.isRatio, s.id)}
             </td>
@@ -861,15 +911,19 @@ function SummaryPrintTable() {
         {/* Diff (Variance) */}
         <td 
           className={clsx(
-            "border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-right font-mono font-bold",
+            "border-b border-r border-slate-300 py-[0.45mm] px-1.5 text-right font-bold",
             row.diff > 0 ? "text-blue-600" : row.diff < 0 ? "text-red-500" : "text-slate-400 font-normal"
           )}
+          style={{ 
+            fontFamily: "'Arial Narrow', sans-serif", 
+            letterSpacing: '-0.2pt' 
+          }}
         >
           {row.diff === 0 ? "0.00" : (row.diff > 0 ? "+" : "") + formatNum(row.diff, row.isRatio)}
         </td>
 
         {/* Notes */}
-        <td className="border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-left col-note leading-tight" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <td className="border-b border-r border-slate-300 py-[0.45mm] px-1.5 text-left col-note leading-tight" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
           <div className="truncate" title={row.notes || ''}>
             {row.notes || ''}
           </div>
@@ -879,64 +933,68 @@ function SummaryPrintTable() {
   };
 
   return (
-    <div className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
-      <div className="flex-1">
-        {/* Header */}
-        <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5" style={{ height: '14mm' }}>
-          <div>
-            <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
-              <span>부서별 총괄 면적표</span>
-              <span className="text-[14px] font-normal text-slate-500 mb-[2px]">(1/1)</span>
-            </h2>
+    <>
+      {pages.map((page) => (
+        <div key={`summary-page-${page.pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+          <div className="flex-1">
+            {/* Header */}
+            <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5" style={{ height: '14mm' }}>
+              <div>
+                <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
+                  <span>부서별 총괄 면적표</span>
+                  <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page.pageIdx + 1}/{page.total})</span>
+                </h2>
+              </div>
+              <div className="text-right pb-1">
+                <span className="text-[9px] font-bold text-slate-600">
+                  경상남도 서부의료원 건립사업 실시설계 | 부서별 총괄 면적표
+                </span>
+              </div>
+            </div>
+
+            {/* Table */}
+            <table className="w-full border-separate border-spacing-0 table-fixed">
+              <colgroup>
+                <col style={{ width: '65px' }} />
+                <col style={{ width: '170px' }} />
+                {stages.map(s => (
+                  <col key={s.id} style={{ width: '70px' }} />
+                ))}
+                <col style={{ width: '70px' }} />
+                <col style={{ width: 'auto' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">코드</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-left font-bold text-[#334155]" style={{ paddingLeft: '6px' }}>부서명</th>
+                  {stages.map(s => (
+                    <th 
+                      key={s.id} 
+                      className={clsx(
+                        "border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold",
+                        s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
+                      )}
+                    >
+                      {s.name}
+                    </th>
+                  ))}
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">증감</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">주요 변경사항 및 비고</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                {page.rows.map((row: any, i: number) => renderRow(row, i))}
+              </tbody>
+            </table>
           </div>
-          <div className="text-right pb-1">
-            <span className="text-[9px] font-bold text-slate-600">
-              경상남도 서부의료원 건립사업 실시설계 | 부서별 총괄 면적표
-            </span>
+
+          {/* Footer */}
+          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
+            <div>경상남도청 | 해안건축</div>
+            <div>{page.pageIdx + 1}</div>
           </div>
         </div>
-
-        {/* Table */}
-        <table className="w-full border-separate border-spacing-0 table-fixed">
-          <colgroup>
-            <col style={{ width: '50px' }} />
-            <col style={{ width: '170px' }} />
-            {stages.map(s => (
-              <col key={s.id} style={{ width: '70px' }} />
-            ))}
-            <col style={{ width: '80px' }} />
-            <col style={{ width: 'auto' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">코드</th>
-              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-left font-bold text-[#334155]" style={{ paddingLeft: '6px' }}>부서명</th>
-              {stages.map(s => (
-                <th 
-                  key={s.id} 
-                  className={clsx(
-                    "border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold",
-                    s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
-                  )}
-                >
-                  {s.name}
-                </th>
-              ))}
-              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">증감</th>
-              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">주요 변경사항 및 비고</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white">
-            {summaryData.map((row: any, i: number) => renderRow(row, i))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Footer */}
-      <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
-        <div>경상남도청 | 해안건축</div>
-        <div>1</div>
-      </div>
-    </div>
+      ))}
+    </>
   );
 }
