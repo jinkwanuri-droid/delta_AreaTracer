@@ -69,6 +69,42 @@ export default function PrintableReport() {
         .empty-hatch {
           background-image: repeating-linear-gradient(45deg, #f1f5f9 0, #f1f5f9 2px, transparent 2px, transparent 8px);
         }
+
+        /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
+        .print-page table {
+          border-collapse: separate !important;
+        }
+        .print-page table th {
+          font-size: 5.3pt !important;
+          padding-top: 3.0px !important;
+          padding-bottom: 3.0px !important;
+          font-weight: 700 !important;
+          line-height: 1.1 !important;
+        }
+        .print-page table td {
+          font-size: 5.3pt !important;
+          padding-top: 3.0px !important;
+          padding-bottom: 3.0px !important;
+          line-height: 1.1 !important;
+        }
+        
+        /* 실번호 열 세밀 축소 */
+        .print-page table td.col-no {
+          font-size: 4.2pt !important;
+          color: #94a3b8 !important;
+        }
+        /* Net, Qty, Total 데이터 열 (기존의 80% 크기) */
+        .print-page table .col-net,
+        .print-page table .col-qty,
+        .print-page table .col-total {
+          font-size: 4.2pt !important;
+        }
+        /* 비고란 (기존의 70% 크기) */
+        .print-page table .col-note {
+          font-size: 3.7pt !important;
+          color: #64748b !important;
+          line-height: 1.0 !important;
+        }
       `}</style>
       
       {targetFloors.map((floor) => (
