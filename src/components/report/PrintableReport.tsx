@@ -72,43 +72,37 @@ export default function PrintableReport() {
 
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
         .print-page table {
-          border-collapse: collapse !important;
+          border-collapse: separate !important;
         }
         .print-page table th {
-          font-size: 5.4px !important;
-          padding-top: 1px !important;
-          padding-bottom: 1px !important;
+          font-size: 4.5pt !important;
+          padding-top: 0.4mm !important;
+          padding-bottom: 0.4mm !important;
           font-weight: 700 !important;
-          line-height: 1.02 !important;
+          line-height: 1.05 !important;
         }
         .print-page table td {
-          font-size: 5px !important;
-          padding-top: 1px !important;
-          padding-bottom: 1px !important;
+          font-size: 4pt !important;
+          padding-top: 0.25mm !important;
+          padding-bottom: 0.25mm !important;
           line-height: 1.02 !important;
         }
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 4px !important;
+          font-size: 3.5pt !important;
           color: #94a3b8 !important;
         }
-        /* Net, Qty, Total 데이터 열 */
+        /* Net, Qty, Total 데이터 열 (기존의 80% 크기) */
         .print-page table .col-net,
         .print-page table .col-qty,
         .print-page table .col-total {
-          font-size: 3px !important;
-        }
-        .print-page table .col-net,
-        .print-page table .col-qty {
-          font-weight: 300 !important;
-        }
-        .print-page table .col-total {
-          font-weight: 600 !important;
+          font-size: 3.7pt !important;
+          letter-spacing: -0.1pt;
         }
         /* 비고란 (기존의 70% 크기) */
         .print-page table .col-note {
-          font-size: 4.5px !important;
+          font-size: 3.5pt !important;
           color: #64748b !important;
           line-height: 1.0 !important;
         }
@@ -265,7 +259,7 @@ function FloorTable({ floor }: { floor: any }) {
   return (
     <>
       {pages.map((pageRows, pageIdx) => (
-        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '185mm', boxSizing: 'border-box' }}>
+        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
           <div className="flex-1">
             <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '15mm' }}>
               <div>
@@ -281,7 +275,7 @@ function FloorTable({ floor }: { floor: any }) {
               </div>
             </div>
 
-            <table className="w-full border-collapse table-fixed text-[4.5px] print:text-[4px]">
+            <table className="w-full border-separate border-spacing-0 table-fixed text-[4.5px] print:text-[4px]">
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '170px' }} />
@@ -366,7 +360,7 @@ function FloorTable({ floor }: { floor: any }) {
                   return (
                     <tr key={`${row.id}-${i}`}>
                       <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono col-no">{row.no}</td>
-                      <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-none">
+                      <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-tight">
                         {row.name}
                       </td>
                       {stages.map(s => {
