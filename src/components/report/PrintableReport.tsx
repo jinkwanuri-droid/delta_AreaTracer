@@ -41,7 +41,7 @@ export default function PrintableReport() {
   if (targetFloors.length === 0) return null;
 
   return (
-    <div className="bg-white text-slate-900 printable-container font-['Pretendard','Inter',sans-serif]">
+    <div className="bg-white text-slate-900 printable-container font-['Arial','Helvetica',sans-serif]">
       <style>{`
         @page {
           size: A4 landscape;
@@ -73,6 +73,7 @@ export default function PrintableReport() {
         /* 테이블 폰트 및 행 패딩 강력 제어 (Tailwind/글로벌 스타일 오버라이드) */
         .print-page table {
           border-collapse: separate !important;
+          font-family: 'Arial Narrow', 'Arial', sans-serif !important;
         }
         .print-page table th {
           font-size: 6pt !important;
@@ -82,38 +83,44 @@ export default function PrintableReport() {
           line-height: 1.05 !important;
         }
         .print-page table td {
-          font-size: 6pt !important;
-          padding-top: 0.3mm !important;
-          padding-bottom: 0.3mm !important;
-          line-height: 1.05 !important;
+          font-size: 4pt !important;
+          padding-top: 0.1mm !important;
+          padding-bottom: 0.1mm !important;
+          line-height: 0.85 !important;
         }
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
           font-size: 4pt !important;
           color: #94a3b8 !important;
+          font-family: 'Arial Narrow', sans-serif !important;
+          letter-spacing: -0.2pt !important;
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table .col-net {
           font-size: 4pt !important;
           font-weight: 400 !important;
-          letter-spacing: -0.1pt;
+          letter-spacing: -0.15pt !important;
+          font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table .col-qty {
           font-size: 4pt !important;
           font-weight: 400 !important;
-          letter-spacing: -0.1pt;
+          letter-spacing: -0.15pt !important;
+          font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table .col-total {
           font-size: 4pt !important;
           font-weight: 700 !important;
-          letter-spacing: -0.1pt;
+          letter-spacing: -0.15pt !important;
+          font-family: 'Arial Narrow', sans-serif !important;
         }
         /* 비고란 (기존의 70% 크기) */
         .print-page table .col-note {
           font-size: 4pt !important;
           color: #64748b !important;
-          line-height: 1.0 !important;
+          line-height: 0.85 !important;
+          letter-spacing: -0.15pt !important;
         }
       `}</style>
       
@@ -284,7 +291,7 @@ function FloorTable({ floor }: { floor: any }) {
               </div>
             </div>
 
-            <table className="w-full border-separate border-spacing-0 table-fixed text-[4.5px] print:text-[4px]">
+            <table className="w-full border-separate border-spacing-0 table-fixed">
               <colgroup>
                 <col style={{ width: '50px' }} />
                 <col style={{ width: '170px' }} />
@@ -369,7 +376,7 @@ function FloorTable({ floor }: { floor: any }) {
                   return (
                     <tr key={`${row.id}-${i}`}>
                       <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono col-no">{row.no}</td>
-                      <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-tight">
+                      <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800">
                         {row.name}
                       </td>
                       {stages.map(s => {
