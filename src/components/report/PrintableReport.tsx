@@ -84,21 +84,21 @@ export default function PrintableReport() {
         }
         .print-page table th {
           font-size: 6pt !important;
-          padding-top: 0.65mm !important;
-          padding-bottom: 0.65mm !important;
+          padding-top: 1.20mm !important;
+          padding-bottom: 1.20mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 6pt !important;
-          padding-top: 0.45mm !important;
-          padding-bottom: 0.45mm !important;
+          font-size: 5pt !important;
+          padding-top: 1.20mm !important;
+          padding-bottom: 1.20mm !important;
           line-height: 1.15 !important;
         }
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 4pt !important;
+          font-size: 3pt !important;
           color: #94a3b8 !important;
           font-family: 'Arial Narrow', sans-serif !important;
           letter-spacing: -0.2pt !important;
@@ -124,7 +124,7 @@ export default function PrintableReport() {
         }
         /* 비고란 (기존의 70% 크기) */
         .print-page table .col-note {
-          font-size: 4pt !important;
+          font-size: 3pt !important;
           color: #64748b !important;
           line-height: 1.0 !important;
           letter-spacing: -0.15pt !important;
@@ -302,15 +302,15 @@ function FloorTable({ floor }: { floor: any }) {
             <table className="w-full border-separate border-spacing-0 table-fixed">
               <colgroup>
                 <col style={{ width: '50px' }} />
-                <col style={{ width: '170px' }} />
+                <col style={{ width: '180px' }} />
                 {stages.map(s => (
                   <React.Fragment key={`${s.id}-col`}>
-                    <col style={{ width: '32px' }} />
-                    <col style={{ width: '16px' }} />
-                    <col style={{ width: '32px' }} />
+                    <col style={{ width: '40px' }} />
+                    <col style={{ width: '20px' }} />
+                    <col style={{ width: '50px' }} />
                   </React.Fragment>
                 ))}
-                <col style={{ width: '32px' }} />
+                <col style={{ width: '50px' }} />
                 <col style={{ width: 'auto' }} />
               </colgroup>
               <thead>
