@@ -160,10 +160,25 @@ export default function PrintableReport() {
 }
 
 function FloorTable({ floor }: { floor: any }) {
-  const { rooms, departments, stages, values, comparison, divisions } = useAppStore();
+  const { rooms, departments, stages: rawStages, visibleStageIds, values, comparison, divisions } = useAppStore();
 
-  const baseId = comparison.baseId || stages[0]?.id;
-  const targetId = comparison.targetId || stages[stages.length - 1]?.id;
+  const stages = useMemo(() => {
+    return rawStages.filter(s => visibleStageIds ? visibleStageIds.includes(s.id) : true).sort((a, b) => a.order - b.order);
+  }, [rawStages, visibleStageIds]);
+
+  const baseId = useMemo(() => {
+    if (comparison.baseId && stages.some(s => s.id === comparison.baseId)) {
+      return comparison.baseId;
+    }
+    return stages[0]?.id;
+  }, [comparison.baseId, stages]);
+
+  const targetId = useMemo(() => {
+    if (comparison.targetId && stages.some(s => s.id === comparison.targetId)) {
+      return comparison.targetId;
+    }
+    return stages[stages.length - 1]?.id;
+  }, [comparison.targetId, stages]);
 
   // Filter rooms for this floor
   const floorRooms = useMemo(() => {
@@ -509,10 +524,25 @@ function FloorTable({ floor }: { floor: any }) {
 }
 
 function SummaryPrintTable() {
-  const { divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, departmentNotes, comparison, medicalOnly } = useAppStore();
+  const { divisions, departments, rooms, values, stages: rawStages, visibleStageIds, floorAreasByStage, summaryNotes, departmentNotes, comparison, medicalOnly } = useAppStore();
 
-  const baseStageId = comparison.baseId || stages[0]?.id;
-  const targetStageId = comparison.targetId || stages[stages.length - 1]?.id;
+  const stages = useMemo(() => {
+    return rawStages.filter(s => visibleStageIds ? visibleStageIds.includes(s.id) : true).sort((a, b) => a.order - b.order);
+  }, [rawStages, visibleStageIds]);
+
+  const baseStageId = useMemo(() => {
+    if (comparison.baseId && stages.some(s => s.id === comparison.baseId)) {
+      return comparison.baseId;
+    }
+    return stages[0]?.id;
+  }, [comparison.baseId, stages]);
+
+  const targetStageId = useMemo(() => {
+    if (comparison.targetId && stages.some(s => s.id === comparison.targetId)) {
+      return comparison.targetId;
+    }
+    return stages[stages.length - 1]?.id;
+  }, [comparison.targetId, stages]);
 
   const formatNum = (val: number | undefined | null, isRatio = false, stageId?: string) => {
     if (val === undefined || val === null || isNaN(val)) {
@@ -766,17 +796,13 @@ function SummaryPrintTable() {
     return rows;
   }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, comparison, medicalOnly, departmentNotes]);
 
-  const halfIndex = Math.ceil(summaryData.length / 2);
-  const leftRows = summaryData.slice(0, halfIndex);
-  const rightRows = summaryData.slice(halfIndex);
-
   const renderRow = (row: any, idx: number) => {
     if (row.isHeader) {
       return (
         <tr key={`${row.id}-${idx}`} className="bg-slate-100/30">
-          <td colSpan={3 + stages.length} className="border-b border-l border-r border-slate-300 py-0.5 px-1.5 font-bold text-slate-900" style={{ fontSize: '2.2pt' }}>
-            <div className="flex items-center gap-1">
-              <div className="w-[3px] h-[9px] rounded-full" style={{ backgroundColor: row.color }}></div>
+          <td colSpan={3 + stages.length} className="border-b border-l border-r border-slate-300 py-0.5 px-2 font-bold text-slate-900">
+            <div className="flex items-center gap-1.5">
+              <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.color }}></div>
               {row.divisionName}
             </div>
           </td>
@@ -798,17 +824,17 @@ function SummaryPrintTable() {
       <tr key={`${row.id}-${idx}`} className={rowClass}>
         {/* Code */}
         <td className={clsx(
-          "border-b border-l border-slate-300 py-[0.4mm] px-0.5 text-center font-mono text-slate-500",
+          "border-b border-l border-slate-300 py-[0.5mm] px-1 text-center font-mono text-slate-500",
           (isGrand || isSumRow) && "text-slate-900 font-bold"
-        )} style={{ fontSize: '1.9pt' }}>
+        )}>
           {row.code || ''}
         </td>
         
         {/* Department Name */}
-        <td className="border-b border-l border-r border-slate-300 py-[0.4mm] px-1 text-left font-medium text-slate-800" style={{ fontSize: '2.1pt', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-          <div className="flex items-center gap-1" style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
+        <td className="border-b border-l border-r border-slate-300 py-[0.5mm] px-1.5 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+          <div className="flex items-center gap-1.5" style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
             {row.divColor && !isSub && !isGrand && !isSumRow && (
-              <span className="w-1 h-2 rounded-xs flex-shrink-0" style={{ backgroundColor: row.divColor }}></span>
+              <span className="w-1 h-2.5 rounded-xs flex-shrink-0" style={{ backgroundColor: row.divColor }}></span>
             )}
             <span className="truncate">{row.department}</span>
           </div>
@@ -822,10 +848,10 @@ function SummaryPrintTable() {
             <td 
               key={s.id} 
               className={clsx(
-                "border-b border-r border-slate-300 py-[0.4mm] px-1 text-right font-mono",
+                "border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-right font-mono",
                 isCurStage && "print-current-bg-light font-bold"
               )}
-              style={{ fontSize: '2.1pt', fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal' }}
+              style={{ fontWeight: (isGrand || isSub || isSumRow) ? 'bold' : 'normal' }}
             >
               {formatNum(val, row.isRatio, s.id)}
             </td>
@@ -835,16 +861,15 @@ function SummaryPrintTable() {
         {/* Diff (Variance) */}
         <td 
           className={clsx(
-            "border-b border-r border-slate-300 py-[0.4mm] px-1 text-right font-mono font-bold",
+            "border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-right font-mono font-bold",
             row.diff > 0 ? "text-blue-600" : row.diff < 0 ? "text-red-500" : "text-slate-400 font-normal"
           )}
-          style={{ fontSize: '2.1pt' }}
         >
           {row.diff === 0 ? "0.00" : (row.diff > 0 ? "+" : "") + formatNum(row.diff, row.isRatio)}
         </td>
 
         {/* Notes */}
-        <td className="border-b border-r border-slate-300 py-[0.4mm] px-1 text-left col-note leading-tight" style={{ fontSize: '1.7pt', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <td className="border-b border-r border-slate-300 py-[0.5mm] px-1.5 text-left col-note leading-tight" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
           <div className="truncate" title={row.notes || ''}>
             {row.notes || ''}
           </div>
@@ -871,84 +896,40 @@ function SummaryPrintTable() {
           </div>
         </div>
 
-        {/* 2-Column Tables Layout */}
-        <div className="grid grid-cols-2 gap-x-4 items-start">
-          {/* Left Column Table */}
-          <div>
-            <table className="w-full border-separate border-spacing-0 table-fixed">
-              <colgroup>
-                <col style={{ width: '28px' }} />
-                <col style={{ width: '85px' }} />
-                {stages.map(s => (
-                  <col key={s.id} style={{ width: '45px' }} />
-                ))}
-                <col style={{ width: '45px' }} />
-                <col style={{ width: 'auto' }} />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>코드</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-left font-bold text-[#334155]" style={{ fontSize: '2.2pt', paddingLeft: '2px' }}>부서명</th>
-                  {stages.map(s => (
-                    <th 
-                      key={s.id} 
-                      className={clsx(
-                        "border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold",
-                        s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
-                      )}
-                      style={{ fontSize: '2.1pt' }}
-                    >
-                      {s.name}
-                    </th>
-                  ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>증감</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>주요 변경사항 및 비고</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {leftRows.map((row: any, i: number) => renderRow(row, i))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Right Column Table */}
-          <div>
-            <table className="w-full border-separate border-spacing-0 table-fixed">
-              <colgroup>
-                <col style={{ width: '28px' }} />
-                <col style={{ width: '85px' }} />
-                {stages.map(s => (
-                  <col key={s.id} style={{ width: '45px' }} />
-                ))}
-                <col style={{ width: '45px' }} />
-                <col style={{ width: 'auto' }} />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>코드</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-left font-bold text-[#334155]" style={{ fontSize: '2.2pt', paddingLeft: '2px' }}>부서명</th>
-                  {stages.map(s => (
-                    <th 
-                      key={s.id} 
-                      className={clsx(
-                        "border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold",
-                        s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
-                      )}
-                      style={{ fontSize: '2.1pt' }}
-                    >
-                      {s.name}
-                    </th>
-                  ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>증감</th>
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-0.5 text-center font-bold text-[#334155]" style={{ fontSize: '2.2pt' }}>주요 변경사항 및 비고</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {rightRows.map((row: any, i: number) => renderRow(row, i))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Table */}
+        <table className="w-full border-separate border-spacing-0 table-fixed">
+          <colgroup>
+            <col style={{ width: '50px' }} />
+            <col style={{ width: '170px' }} />
+            {stages.map(s => (
+              <col key={s.id} style={{ width: '70px' }} />
+            ))}
+            <col style={{ width: '80px' }} />
+            <col style={{ width: 'auto' }} />
+          </colgroup>
+          <thead>
+            <tr>
+              <th className="bg-[#E2E8F0] border-y border-r border-l border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">코드</th>
+              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-left font-bold text-[#334155]" style={{ paddingLeft: '6px' }}>부서명</th>
+              {stages.map(s => (
+                <th 
+                  key={s.id} 
+                  className={clsx(
+                    "border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold",
+                    s.id === targetStageId ? "print-current-bg-medium print-current-text-dark font-extrabold" : "bg-[#E2E8F0] text-[#334155]"
+                  )}
+                >
+                  {s.name}
+                </th>
+              ))}
+              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">증감</th>
+              <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">주요 변경사항 및 비고</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white">
+            {summaryData.map((row: any, i: number) => renderRow(row, i))}
+          </tbody>
+        </table>
       </div>
 
       {/* Footer */}
