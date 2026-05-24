@@ -222,8 +222,8 @@ function FloorTable({ floor }: { floor: any }) {
   return (
     <>
       {pages.map((pageRows, pageIdx) => (
-        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between overflow-hidden" style={{ height: '186mm' }}>
-          <div>
+        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between" style={{ minHeight: '186mm' }}>
+          <div className="flex-1">
             <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2">
               <div>
                 <h2 className="text-[14px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
@@ -240,16 +240,16 @@ function FloorTable({ floor }: { floor: any }) {
 
             <table className="w-full border-separate border-spacing-0 table-fixed text-[7.5px] print:text-[6.5px]">
               <colgroup>
-                <col style={{ width: '44px' }} /> {/* NO */}
-                <col style={{ width: '180px' }} /> {/* 실 명칭 */}
+                <col style={{ width: '50px' }} /> {/* NO */}
+                <col style={{ width: '160px' }} /> {/* 실 명칭 */}
                 {stages.map(s => (
                   <React.Fragment key={`${s.id}-col`}>
-                    <col style={{ width: '32px' }} /> {/* Net */}
-                    <col style={{ width: '18px' }} /> {/* Qty */}
-                    <col style={{ width: '38px' }} /> {/* Total */}
+                    <col style={{ width: '50px' }} /> {/* Net */}
+                    <col style={{ width: '25px' }} /> {/* Qty */}
+                    <col style={{ width: '50px' }} /> {/* Total */}
                   </React.Fragment>
                 ))}
-                <col style={{ width: '40px' }} /> {/* 증감 */}
+                <col style={{ width: '50px' }} /> {/* 증감 */}
                 <col style={{ width: 'auto' }} /> {/* 비고 */}
               </colgroup>
               <thead>
@@ -298,12 +298,12 @@ function FloorTable({ floor }: { floor: any }) {
                   if (row.isSummary) {
                     return (
                       <tr key={`${row.id}-${i}`} className="bg-slate-50 font-bold">
-                        <td className="border-b border-l border-slate-300 py-1 px-1 text-center text-slate-400">-</td>
+                        <td className="border-b border-l border-slate-300 py-1 px-1 text-center text-slate-400"></td>
                         <td className="border-b border-l border-r border-slate-300 py-1 px-1.5 text-left text-slate-800">[{row.deptName} 소계]</td>
                         {stages.map(s => (
                           <React.Fragment key={s.id}>
-                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-slate-400">-</td>
-                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-center text-slate-400">-</td>
+                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-slate-400"></td>
+                            <td className="border-b border-r border-slate-300 py-1 px-0.5 text-center text-slate-400"></td>
                             <td className="border-b border-r border-slate-300 py-1 px-0.5 text-right text-indigo-900 font-inter font-bold bg-indigo-50">
                               {row[`${s.id}_total`] === 0 ? '' : formatNum(row[`${s.id}_total`])}
                             </td>
@@ -315,14 +315,14 @@ function FloorTable({ floor }: { floor: any }) {
                         )}>
                           {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                         </td>
-                        <td className="border-b border-r border-slate-300 py-1 px-1 text-center text-slate-400">-</td>
+                        <td className="border-b border-r border-slate-300 py-1 px-1 text-center text-slate-400"></td>
                       </tr>
                     );
                   }
 
                   return (
                     <tr key={`${row.id}-${i}`}>
-                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[7px] print:text-[6.5px]">{row.no}</td>
+                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[6px] print:text-[5px]">{row.no}</td>
                       <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-tight">
                         {row.name}
                       </td>
@@ -358,8 +358,8 @@ function FloorTable({ floor }: { floor: any }) {
             </table>
           </div>
 
-          {/* Footer Component fixed at the bottom of the 186mm page */}
-          <div className="flex-none h-[10mm] border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
+          {/* Footer Component fixed at the bottom of the page */}
+          <div className="mt-4 flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
             <div>경상남도청 | 해안건축</div>
             <div>{pageIdx + 1}</div>
           </div>
