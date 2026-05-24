@@ -65,6 +65,26 @@ export default function PrintableReport() {
              page-break-after: always;
              page-break-inside: avoid;
           }
+         .print-page table th {
+            font-size: 5.5px !important;
+            line-height: 1.1 !important;
+         }
+         .print-page table td {
+            font-size: 5.5px !important;
+            line-height: 1.1 !important;
+         }
+         .print-page table td.col-no {
+            font-size: 4px !important;
+            color: #94a3b8 !important;
+         }
+        }
+        .print-page table th, .print-page table td {
+          font-size: 5.5px !important;
+          line-height: 1.1 !important;
+        }
+        .print-page table td.col-no {
+          font-size: 4.2px !important;
+          color: #94a3b8 !important;
         }
         .empty-hatch {
           background-image: repeating-linear-gradient(45deg, #f1f5f9 0, #f1f5f9 2px, transparent 2px, transparent 8px);
@@ -183,7 +203,7 @@ function FloorTable({ floor }: { floor: any }) {
     return result;
   }, [floorRooms, departments, divisions, stages, valsMap, baseId, targetId]);
 
-  const ROWS_PER_PAGE = 30; // 80% scale row height enables ~30 rows per page comfortably
+  const ROWS_PER_PAGE = 22; // Keep content safe from print layout overflows
 
   const pages = useMemo(() => {
     const p = [];
@@ -222,7 +242,7 @@ function FloorTable({ floor }: { floor: any }) {
   return (
     <>
       {pages.map((pageRows, pageIdx) => (
-        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between" style={{ height: '185mm', boxSizing: 'border-box' }}>
+        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col justify-between" style={{ height: '178mm', boxSizing: 'border-box' }}>
           <div className="flex-1">
             <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '10mm' }}>
               <div>
@@ -322,7 +342,7 @@ function FloorTable({ floor }: { floor: any }) {
 
                   return (
                     <tr key={`${row.id}-${i}`}>
-                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono text-[3.5px] print:text-[3px]">{row.no}</td>
+                      <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono col-no">{row.no}</td>
                       <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800 leading-tight">
                         {row.name}
                       </td>
@@ -346,7 +366,7 @@ function FloorTable({ floor }: { floor: any }) {
                         "border-b border-r border-slate-300 py-0.5 px-1 text-right font-inter font-bold",
                         row.variance > 0 ? "text-blue-600" : row.variance < 0 ? "text-red-500" : "text-slate-400"
                       )}>
-                        {row.variance === 0 ? "-" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
+                        {row.variance === 0 ? "" : (row.variance > 0 ? "+" : "") + formatNum(row.variance)}
                       </td>
                       <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left text-slate-500 truncate print:whitespace-normal">
                         {row.note || ''}
