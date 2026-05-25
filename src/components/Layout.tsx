@@ -3,7 +3,7 @@ import Sidebar from './Sidebar';
 import { useAppStore } from '@/store/useAppStore';
 
 import SelectorPopover from './SelectorPopover';
-import { Layers, RefreshCw, Loader2, Download } from 'lucide-react';
+import { Layers, RefreshCw, Loader2, Download, X } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -170,19 +170,30 @@ export default function Layout({ children }: { children: ReactNode }) {
                     </button>
                   </div>
                   {exportCover && showCoverInfoForm && (
-                     <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3 animate-in fade-in slide-in-from-top-1">
-                       <div>
-                         <label className="block text-xs font-bold text-slate-700 mb-1">리포트 제목</label>
-                         <input type="text" value={localCoverInfo.title} onChange={e => setLocalCoverInfo({...localCoverInfo, title: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
-                       </div>
-                       <div className="grid grid-cols-2 gap-3">
-                         <div>
-                           <label className="block text-xs font-bold text-slate-700 mb-1">날짜</label>
-                           <input type="text" value={localCoverInfo.date} onChange={e => setLocalCoverInfo({...localCoverInfo, date: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
+                     <div className="fixed inset-0 bg-slate-900/40 z-[70] flex items-center justify-center p-4">
+                       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95">
+                         <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                           <h3 className="font-bold text-slate-800">표지 상세정보 입력</h3>
+                           <button onClick={() => setShowCoverInfoForm(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
                          </div>
-                         <div>
-                           <label className="block text-xs font-bold text-slate-700 mb-1">발주처</label>
-                           <input type="text" value={localCoverInfo.client} onChange={e => setLocalCoverInfo({...localCoverInfo, client: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
+                         <div className="p-4 space-y-4">
+                           <div>
+                             <label className="block text-xs font-bold text-slate-700 mb-1">리포트 제목</label>
+                             <input type="text" value={localCoverInfo.title} onChange={e => setLocalCoverInfo({...localCoverInfo, title: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
+                           </div>
+                           <div className="grid grid-cols-2 gap-3">
+                             <div>
+                               <label className="block text-xs font-bold text-slate-700 mb-1">날짜</label>
+                               <input type="text" value={localCoverInfo.date} onChange={e => setLocalCoverInfo({...localCoverInfo, date: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
+                             </div>
+                             <div>
+                               <label className="block text-xs font-bold text-slate-700 mb-1">발주처</label>
+                               <input type="text" value={localCoverInfo.client} onChange={e => setLocalCoverInfo({...localCoverInfo, client: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
+                             </div>
+                           </div>
+                         </div>
+                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                           <button onClick={() => setShowCoverInfoForm(false)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700">확인</button>
                          </div>
                        </div>
                      </div>
