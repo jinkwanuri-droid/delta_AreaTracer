@@ -1116,6 +1116,7 @@ const Dashboard: React.FC = () => {
                         cornerRadius={7}
                         dataKey="value"
                         isAnimationActive={!isPdfExportMode}
+                        animationBegin={0}
                         animationDuration={400}
                         animationEasing="ease-out"
                         onClick={(data) => {
@@ -1146,7 +1147,7 @@ const Dashboard: React.FC = () => {
                               style={{ fontFamily: '"Pretendard Variable", sans-serif', opacity: opacityVal, transition: 'opacity 300ms ease' }}
                             >
                               <tspan x={x} dy="-0.6em">{name}</tspan>
-                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={10} fontWeight="medium">
+                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={11.5} fontWeight="normal">
                                 {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
                               </tspan>
                             </text>
@@ -1500,10 +1501,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+        <div 
           className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between lg:col-span-3 col-span-1 relative overflow-hidden h-[400px]"
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
@@ -1529,16 +1527,16 @@ const Dashboard: React.FC = () => {
             <div className="space-y-1 flex-1 flex flex-col justify-end">
               {wardBedsData.list.map((item, idx) => (
                 <div key={idx} className="flex justify-between items-center text-[10px] border-b border-slate-100/60 pb-1 last:border-0 last:pb-0">
-                  <span className="text-slate-500 font-bold">{item.label}</span>
-                  <div className="flex items-center text-right text-[10px]">
-                    <div className="w-12 text-right pr-1">
+                  <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
+                  <div className="flex items-center text-right text-[10px] gap-2">
+                    <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
                       ) : (
                         <span className="text-[9px] text-slate-300/40 select-none">-</span>
                       )}
                     </div>
-                    <div className="w-13 text-right">
+                    <div className="w-20 text-right whitespace-nowrap">
                       <span className="text-slate-800 font-black">{item.beds}병상</span>
                     </div>
                   </div>
@@ -1563,7 +1561,7 @@ const Dashboard: React.FC = () => {
             </div>
 
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Division Dept Shares */}

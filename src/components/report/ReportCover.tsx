@@ -27,33 +27,33 @@ export default function ReportCover() {
 
         {/* Title Group (approx 40% from top) */}
         <div className="absolute top-[40%] left-0 w-full flex flex-col items-center justify-center">
-          <h1 className="text-[44px] font-[700] tracking-tight text-slate-900 mb-6 text-center leading-none">
+          <h1 className="text-[35px] font-[900] tracking-tight text-slate-900 mb-6 text-center leading-none">
             경상남도 서부의료원 건립사업
           </h1>
           <div>
-             <h2 className="text-[44px] font-[700] tracking-tight text-slate-900 text-center leading-none">
+             <h2 className="text-[35px] font-[700] tracking-tight text-slate-900 text-center leading-none">
                {coverInfo.title}
              </h2>
           </div>
         </div>
 
         {/* Stage and Date (approx 60% from top, which is 40% from bottom) */}
-        <div className="absolute top-[60%] left-0 w-full flex flex-col items-center gap-4">
-          <div className="px-5 py-1.5 rounded-full bg-slate-100 font-[400] text-[16px] text-slate-800 text-center border border-slate-200">
+        <div className="absolute top-[60%] left-0 w-full flex flex-col items-center gap-[6px]">
+          <div className="px-5 font-[500] text-[16px] text-slate-800 text-center border border-slate-200 bg-slate-100 rounded-full" style={{ paddingTop: '5.5px', paddingBottom: '5.5px' }}>
             {stageName}
           </div>
-          <div className="px-5 py-1 font-[400] text-[16px] text-slate-800 text-center">
+          <div className="px-5 py-1 font-[300] text-[16px] text-slate-800 text-center">
             {coverInfo.date}
           </div>
         </div>
 
-        {/* Client and Architect (20% from bottom -> 80% from top) */}
-        <div className="absolute top-[80%] left-0 w-full flex justify-center items-center gap-4">
-          <div className="font-[500] text-[14px] text-slate-800">
+        {/* Client and Architect (15% from bottom -> 85% from top) */}
+        <div className="absolute top-[85%] left-0 w-full flex justify-center items-center gap-4">
+          <div className="font-[600] text-[16px] text-slate-800">
             {coverInfo.client}
           </div>
-          <div className="w-[1px] h-[12px] bg-slate-300"></div>
-          <div className="font-[500] text-[14px] text-slate-800 tracking-wide">
+          <div className="w-[1px] h-[12px] bg-slate-400"></div>
+          <div className="font-[600] text-[16px] text-slate-800 tracking-wide">
             해안건축
           </div>
         </div>
