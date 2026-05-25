@@ -159,7 +159,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                       />
                       <div>
                         <span className="text-sm font-bold text-slate-700">표지</span>
-                        <p className="text-[11px] text-slate-400">보고서 표지 생성 (제목, 날짜, 발주처 등 표기)</p>
+                        <p className="text-[11px] text-slate-400">보고서 표지 생성 (상세정보 입력)</p>
                       </div>
                     </label>
                     <button 
