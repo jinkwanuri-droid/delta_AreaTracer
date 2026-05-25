@@ -19,6 +19,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const setPdfExportTargets = useAppStore(state => state.setPdfExportTargets);
 
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [exportDashboard, setExportDashboard] = useState(true);
   const [exportSummary, setExportSummary] = useState(true);
   const [exportDetail, setExportDetail] = useState(true);
 
@@ -28,6 +29,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const handleGeneratePrint = () => {
     const targets = [];
+    if (exportDashboard) targets.push('dashboard');
     if (exportSummary) targets.push('summary');
     if (exportDetail) targets.push('detail');
     
@@ -136,6 +138,19 @@ export default function Layout({ children }: { children: ReactNode }) {
               </p>
               
               <div className="space-y-3 pt-2">
+                <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50/50 transition-all cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={exportDashboard}
+                    onChange={(e) => setExportDashboard(e.target.checked)}
+                    className="w-4 h-4 text-indigo-600 accent-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-sm font-bold text-slate-700">대시보드</span>
+                    <p className="text-[11px] text-slate-400">전체 면적 개요 및 주요 통계 지표</p>
+                  </div>
+                </label>
+
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50/50 transition-all cursor-pointer">
                   <input 
                     type="checkbox" 

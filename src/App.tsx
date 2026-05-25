@@ -8,7 +8,7 @@ import PrintableReport from '@/components/report/PrintableReport';
 import { initAuth } from '@/lib/auth';
 
 export default function App() {
-  const { fetchData, fetchGlobalSettings, activeTab, isPdfExportMode } = useAppStore();
+  const { fetchData, fetchGlobalSettings, activeTab, isPdfExportMode, pdfExportTargets } = useAppStore();
 
   useEffect(() => {
     // 1. Fetch Global Settings first for multi-device sync
@@ -33,10 +33,16 @@ export default function App() {
     return () => unsubscribe();
   }, [fetchData]);
 
+  // Determine if Dashboard should be printed
+  const printDashboard = isPdfExportMode && pdfExportTargets?.includes('dashboard');
+
   return (
     <Layout>
       {isPdfExportMode ? (
-        <PrintableReport />
+        <>
+          {printDashboard && <Dashboard />}
+          <PrintableReport />
+        </>
       ) : (
         <>
           {activeTab === 'dashboard' && <Dashboard />}

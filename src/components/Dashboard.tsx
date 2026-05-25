@@ -296,6 +296,7 @@ const Dashboard: React.FC = () => {
 
   const [activeTrendDivId, setActiveTrendDivId] = useState<string | null>(null);
   const [isInitialMount, setIsInitialMount] = useState(true);
+  const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -623,34 +624,78 @@ const Dashboard: React.FC = () => {
     }).filter(d => d.data.length > 0);
   }, [currentStage, divisions, medicalOnly, medicalDivisionIds, filteredValues, departments, rooms]);
 
-  return (
-    <div className="flex-1 h-full min-h-0 overflow-y-auto flex flex-col gap-6 p-6 bg-slate-50 select-none">
-      {/* Dashboard Toolbar */}
-      <div className="flex items-center justify-between mb-1">
-        <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            차트로 보는 경상남도 서부의료원 면적 계획
-          </h2>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => toggleMedicalOnly(!medicalOnly)}
-            className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border transition-all text-[11px] font-bold",
-              medicalOnly 
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
-                : "bg-white text-slate-500 border-slate-200 hover:border-indigo-400"
-            )}
-          >
-            <Stethoscope size={14} />
-            의료시설 전용면적
-          </button>
-        </div>
+  const PrintHeader = ({ page, total }: { page: number, total: number }) => (
+    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '14mm' }}>
+      <div>
+        <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
+          <span>대시보드</span>
+          <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page}/{total})</span>
+        </h2>
       </div>
+      <div className="text-right pb-1">
+        <span className="text-[9px] font-bold text-slate-600">
+          경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">대시보드</span>
+        </span>
+      </div>
+    </div>
+  );
 
-      {/* Main Grid: Reorganized for flexible ordering on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+  const PrintPageWrapper = ({ children, page, total }: { children: React.ReactNode, page: number, total: number }) => {
+    if (isPdfExportMode) {
+      return (
+        <div className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+          <PrintHeader page={page} total={total} />
+          {children}
+        </div>
+      );
+    }
+    return <>{children}</>;
+  };
+
+  return (
+    <div className={cn(
+      "flex-1 flex flex-col gap-6 select-none",
+      isPdfExportMode ? "bg-white text-slate-900 printable-container font-['Arial','Helvetica',sans-serif]" : "h-full min-h-0 overflow-y-auto p-6 bg-slate-50"
+    )}>
+      {isPdfExportMode && (
+        <style>{`
+          @page { size: A4 landscape; margin: 10mm; }
+          .printable-container { width: 100%; max-width: none; padding: 0; margin: 0; }
+          .print-page { page-break-after: always; page-break-inside: avoid; }
+          .print-page:last-child { page-break-after: auto; }
+        `}</style>
+      )}
+
+      {/* Dashboard Toolbar - Hide when printing */}
+      {!isPdfExportMode && (
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              차트로 보는 경상남도 서부의료원 면적 계획
+            </h2>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => toggleMedicalOnly(!medicalOnly)}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border transition-all text-[11px] font-bold",
+                medicalOnly 
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
+                  : "bg-white text-slate-500 border-slate-200 hover:border-indigo-400"
+              )}
+            >
+              <Stethoscope size={14} />
+              의료시설 전용면적
+            </button>
+          </div>
+        </div>
+      )}
+
+      <PrintPageWrapper page={1} total={2}>
+        {/* Main Grid: Reorganized for flexible ordering on mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
         
         {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
         <div className="lg:col-span-2 order-1">
@@ -1268,8 +1313,10 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      </PrintPageWrapper>
 
+      <PrintPageWrapper page={2} total={2}>
       {/* Floor & Ward Row */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 w-full">
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
@@ -1755,6 +1802,7 @@ const Dashboard: React.FC = () => {
            ))}
         </div>
       </div>
+      </PrintPageWrapper>
     </div>
   );
 };

@@ -75,6 +75,9 @@ export default function PrintableReport() {
              page-break-after: always;
              page-break-inside: avoid;
           }
+          .print-page:last-child {
+             page-break-after: auto;
+          }
         }
         .empty-hatch {
           background-color: #fafbfd !important;
@@ -329,7 +332,7 @@ function FloorTable({ floor }: { floor: any }) {
               </div>
               <div className="text-right pb-1">
                 <span className="text-[9px] font-bold text-slate-600">
-                  경상남도 서부의료원 건립사업 실시설계 | 층별 세부 면적계획
+                  경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">층별 세부 면적계획</span>
                 </span>
               </div>
             </div>
@@ -980,7 +983,7 @@ function SummaryPrintTable() {
               </div>
               <div className="text-right pb-1">
                 <span className="text-[9px] font-bold text-slate-600">
-                  경상남도 서부의료원 건립사업 실시설계 | 부서별 총괄 면적표
+                  경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">부서별 총괄 면적표</span>
                 </span>
               </div>
             </div>
