@@ -809,39 +809,72 @@ function SummaryPrintTable() {
     return rows;
   }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, comparison, medicalOnly, departmentNotes]);
 
-  const splitIndex = useMemo(() => {
-    return summaryData.findIndex(row => row.isHeader && row.divisionName?.includes('중앙진료부'));
-  }, [summaryData]);
-
   const pages = useMemo(() => {
-    if (splitIndex === -1) {
-      return [
-        {
-          pageIdx: 0,
-          total: 1,
-          rows: summaryData
+    const resultPages: any[][] = [];
+    let currentPageRows: any[] = [];
+    
+    // 전체 행의 가중 높이(Weight)를 계산하여 페이지를 분할합니다.
+    // py-[0.41mm]를 기준으로 1페이지당 여유있게 Footer가 표기되기 위해 최대 단위는 28이 이상적입니다.
+    let currentRowsCount = 0;
+    const maxPageRows = 28; 
+
+    for (let i = 0; i < summaryData.length; i++) {
+      const row = summaryData[i];
+
+      // 만약 세부 부문 그룹헤더를 맞닥뜨렸다면 뒤따르는 부서 수와 결합하여 체크합니다.
+      if (row.isHeader) {
+        // 이 헤더 아래에 있는 소속 대분류 항목들의 행 개수 (헤더 포함 다음 헤더, 스페이서 또는 총계 전단까지)
+        let groupRowsCount = 1;
+        for (let j = i + 1; j < summaryData.length; j++) {
+          const nextRow = summaryData[j];
+          if (nextRow.isHeader || nextRow.isSpacer || nextRow.isGrandTotal || nextRow.isSummaryRow) {
+            break;
+          }
+          groupRowsCount++;
         }
-      ];
-    }
-    return [
-      {
-        pageIdx: 0,
-        total: 2,
-        rows: summaryData.slice(0, splitIndex)
-      },
-      {
-        pageIdx: 1,
-        total: 2,
-        rows: summaryData.slice(splitIndex)
+
+        // 현재 페이지에 남은 빈 공간(remainingSpace) 계산
+        const remainingSpace = maxPageRows - currentRowsCount;
+
+        // 그룹 전체를 이번 페이지에 담지 못하면서, 이번 페이지에 헤더와 부서가 5줄 미만(즉, 부서가 4개 이하)으로만 간신히 보이고 다음 페이지로 가 버리는 상황이라면
+        // 혹은 헤더를 다 넣기에 잔여 빈공간이 너무 부족한 경우(헤더+부서 5개 이하)
+        // 이 그룹헤더부터 다음 페이지의 시작으로 넘어가게 합니다.
+        if (groupRowsCount > remainingSpace && remainingSpace < 6) {
+          if (currentPageRows.length > 0) {
+            resultPages.push(currentPageRows);
+            currentPageRows = [];
+            currentRowsCount = 0;
+          }
+        }
       }
-    ];
-  }, [summaryData, splitIndex]);
+
+      currentPageRows.push(row);
+      currentRowsCount += row.isSpacer ? 1.2 : 1;
+
+      // 최대 허용 행 수에 도달하면 페이지 자름
+      if (currentRowsCount >= maxPageRows) {
+        resultPages.push(currentPageRows);
+        currentPageRows = [];
+        currentRowsCount = 0;
+      }
+    }
+
+    if (currentPageRows.length > 0) {
+      resultPages.push(currentPageRows);
+    }
+
+    return resultPages.map((rows, idx, arr) => ({
+      pageIdx: idx,
+      total: arr.length,
+      rows
+    }));
+  }, [summaryData]);
 
   const renderRow = (row: any, idx: number) => {
     if (row.isSpacer) {
       return (
         <tr key={row.id}>
-          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.45mm] bg-white" style={{ height: '3.5mm' }}></td>
+          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.41mm] bg-white" style={{ height: '3.2mm' }}></td>
         </tr>
       );
     }
@@ -849,7 +882,7 @@ function SummaryPrintTable() {
     if (row.isHeader) {
       return (
         <tr key={`${row.id}-${idx}`} className="bg-slate-100/30">
-          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.45mm] px-2 font-bold text-slate-900">
+          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.41mm] px-2 font-bold text-slate-900">
             <div className="flex items-center gap-1.5">
               <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.color }}></div>
               {row.divisionName}
@@ -873,14 +906,14 @@ function SummaryPrintTable() {
       <tr key={`${row.id}-${idx}`} className={rowClass}>
         {/* Code */}
         <td className={clsx(
-          "border-b border-l border-slate-300 py-[0.45mm] px-1 text-center text-slate-500",
+          "border-b border-l border-slate-300 py-[0.41mm] px-1 text-center text-slate-500",
           (isGrand || isSumRow) && "text-slate-900 font-bold"
         )} style={{ fontFamily: "'Arial Narrow', sans-serif", letterSpacing: '-0.2pt' }}>
           {row.code || ''}
         </td>
         
         {/* Department Name */}
-        <td className="border-b border-l border-r border-slate-300 py-[0.45mm] px-1.5 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
+        <td className="border-b border-l border-r border-slate-300 py-[0.41mm] px-1.5 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
           <div className="flex items-center gap-1.5" style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>
             <span className="truncate">{row.department}</span>
           </div>
@@ -894,7 +927,7 @@ function SummaryPrintTable() {
             <td 
               key={s.id} 
               className={clsx(
-                "border-b border-r border-slate-300 py-[0.45mm] px-1.5 text-right",
+                "border-b border-r border-slate-300 py-[0.41mm] px-1.5 text-right",
                 isCurStage && "print-current-bg-light font-bold"
               )}
               style={{ 
@@ -911,7 +944,7 @@ function SummaryPrintTable() {
         {/* Diff (Variance) */}
         <td 
           className={clsx(
-            "border-b border-r border-slate-300 py-[0.45mm] px-1.5 text-right font-bold",
+            "border-b border-r border-slate-300 py-[0.41mm] px-1.5 text-right font-bold",
             row.diff > 0 ? "text-blue-600" : row.diff < 0 ? "text-red-500" : "text-slate-400 font-normal"
           )}
           style={{ 
@@ -923,7 +956,7 @@ function SummaryPrintTable() {
         </td>
 
         {/* Notes */}
-        <td className="border-b border-r border-slate-300 py-[0.45mm] px-1.5 text-left col-note leading-tight" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
+        <td className="border-b border-r border-slate-300 py-[0.41mm] px-1.5 text-left col-note leading-tight" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}>
           <div className="truncate" title={row.notes || ''}>
             {row.notes || ''}
           </div>
