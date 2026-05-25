@@ -712,9 +712,9 @@ const Dashboard: React.FC = () => {
 
         
         {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
-        <div className="lg:col-span-2 order-1">
+        <div className="lg:col-span-2 order-1 h-full">
           {/* KPI Cards: 2x2 Grid with enhanced height and sizing */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 grid-rows-2 gap-4 h-full">
             
             {/* KPI 1: 전체 연면적 */}
             <motion.div 
@@ -1097,8 +1097,9 @@ const Dashboard: React.FC = () => {
               </div>
               
               <div className="flex flex-col items-center justify-center w-full h-full my-auto flex-1 min-h-[300px]">
-                <div className="w-full h-full relative flex-1 mx-auto flex items-center justify-center z-0">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                <div className="w-full h-full flex-1 mx-auto z-0 grid">
+                  <div className="col-start-1 row-start-1 w-full h-full text-center">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <PieChart 
                       key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
                       margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
@@ -1174,8 +1175,9 @@ const Dashboard: React.FC = () => {
                       />
                     </PieChart>
                   </ResponsiveContainer>
+                  </div>
                   {/* Center total text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-0">
                     <span className="text-[10px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
                     <span className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
                       {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -1190,9 +1192,9 @@ const Dashboard: React.FC = () => {
 
         <div className="lg:col-span-3 order-4 lg:order-4 group">
           {/* 단계별 부문별 면적 추이 (Big Line/Area Chart) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between h-full" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
-              <div>
+              <div className="flex-1 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <BarChart3 size={17} className="text-emerald-500" />
@@ -1223,12 +1225,12 @@ const Dashboard: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <div className="h-[280px] sm:h-[300px] w-full">
+                <div className="flex-1 w-full min-h-[290px]">
                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
                       data={stageDivisionData} 
-                      margin={{ top: 10, right: 35, left: 0, bottom: 2 }}
+                      margin={{ top: 10, right: 35, left: 0, bottom: 25 }}
                       style={{ outline: 'none' }}
                       tabIndex={-1}
                     >
@@ -1564,6 +1566,115 @@ const Dashboard: React.FC = () => {
         </motion.div>
       </div>
 
+      {/* Division Dept Shares */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex items-center gap-2 mb-2">
+          <Stethoscope size={18} className="text-indigo-500" />
+          <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6">
+           {divisionDeptShares.map((div, i) => (
+              <div key={i} className="flex flex-col p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all">
+                {/* Visual Header for Division Block */}
+                <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                  <span className="truncate">{div.divisionName}</span>
+                  <span 
+                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
+                    style={{ backgroundColor: `${div.color}18`, color: div.color }}
+                  >
+                    {div.data.length}개 부서
+                  </span>
+                </div>
+
+                <div className="w-full aspect-square grid mb-0 pb-1">
+                   <div className="col-start-1 row-start-1 w-full h-full text-center">
+                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                     <PieChart style={{ outline: 'none' }} tabIndex={-1}>
+                        <Pie
+                          data={div.data}
+                          innerRadius="52%" 
+                          outerRadius="82%"
+                          dataKey="value"
+                          isAnimationActive={false}
+                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                            if (percent < 0.07) return null;
+                            
+                            const RADIAN = Math.PI / 180;
+                            const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            
+                            return (
+                              <g style={{ pointerEvents: 'none' }}>
+                                <text 
+                                  x={x} 
+                                  y={y} 
+                                  fill="#ffffff" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="central" 
+                                  fontSize={11} 
+                                  fontWeight="900" 
+                                  style={{ 
+                                    filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.7))',
+                                    paintOrder: 'stroke',
+                                    stroke: 'rgba(0,0,0,0.15)',
+                                    strokeWidth: '1.5px'
+                                  }}
+                                >
+                                  {`${(percent * 100).toFixed(0)}%`}
+                                </text>
+                              </g>
+                            );
+                          }}
+                          labelLine={false}
+                        >
+                          {div.data.map((entry, idx) => (
+                            <Cell 
+                              key={`cell-${idx}`} 
+                              fill={div.color} 
+                              fillOpacity={Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
+                              stroke="#fff" 
+                              strokeWidth={1.5}
+                              style={{ outline: 'none' }}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          content={<CustomTooltip isPie pieTotal={div.data.reduce((acc, d) => acc + d.value, 0)} />} 
+                          cursor={false} 
+                          wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }} 
+                        />
+                     </PieChart>
+                   </ResponsiveContainer>
+                   </div>
+                   <div className="col-start-1 row-start-1 flex items-center justify-center pointer-events-none z-0">
+                      <div className="text-center mt-1">
+                        <div className="text-[6.5px] font-bold text-slate-400 capitalize tracking-tighter">총 면적</div>
+                        <div className="text-[16px] font-black text-slate-800 leading-none mt-0.5 tabular-nums">
+                          {f(div.data.reduce((acc, d) => acc + d.value, 0))}
+                        </div>
+                      </div>
+                   </div>
+                </div>
+                <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
+                   <div className="space-y-0 text-[8px]">
+                     {div.data.slice(0, 5).map((dept, idx) => (
+                        <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
+                           <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
+                             <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
+                             <span className="text-[8px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
+                           </div>
+                           <span className="text-[8px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
+                        </div>
+                     ))}
+                   </div>
+                   {div.data.length > 5 && <div className="text-center text-[8px] text-slate-400 mt-1 italic font-medium">...외 {div.data.length - 5}개 부서</div>}
+                </div>
+              </div>
+           ))}
+        </div>
+      </div>
       {/* Top Changes Grid - Grouped into Guideline and Intermediate Comparison Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         {/* Card Main 1: 공모지침 대비 현재면적 */}
@@ -1721,114 +1832,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Division Dept Shares */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-2 mb-2">
-          <Stethoscope size={18} className="text-indigo-500" />
-          <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6">
-           {divisionDeptShares.map((div, i) => (
-              <div key={i} className="flex flex-col p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all">
-                {/* Visual Header for Division Block */}
-                <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
-                  <span className="truncate">{div.divisionName}</span>
-                  <span 
-                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
-                    style={{ backgroundColor: `${div.color}18`, color: div.color }}
-                  >
-                    {div.data.length}개 부서
-                  </span>
-                </div>
-
-                <div className="w-full aspect-square relative mb-0 pb-1">
-                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                     <PieChart style={{ outline: 'none' }} tabIndex={-1}>
-                        <Pie
-                          data={div.data}
-                          innerRadius="52%" 
-                          outerRadius="82%"
-                          dataKey="value"
-                          isAnimationActive={false}
-                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
-                            if (percent < 0.07) return null;
-                            
-                            const RADIAN = Math.PI / 180;
-                            const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
-                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                            
-                            return (
-                              <g style={{ pointerEvents: 'none' }}>
-                                <text 
-                                  x={x} 
-                                  y={y} 
-                                  fill="#ffffff" 
-                                  textAnchor="middle" 
-                                  dominantBaseline="central" 
-                                  fontSize={11} 
-                                  fontWeight="900" 
-                                  style={{ 
-                                    filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.7))',
-                                    paintOrder: 'stroke',
-                                    stroke: 'rgba(0,0,0,0.15)',
-                                    strokeWidth: '1.5px'
-                                  }}
-                                >
-                                  {`${(percent * 100).toFixed(0)}%`}
-                                </text>
-                              </g>
-                            );
-                          }}
-                          labelLine={false}
-                        >
-                          {div.data.map((entry, idx) => (
-                            <Cell 
-                              key={`cell-${idx}`} 
-                              fill={div.color} 
-                              fillOpacity={Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
-                              stroke="#fff" 
-                              strokeWidth={1.5}
-                              style={{ outline: 'none' }}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<CustomTooltip isPie pieTotal={div.data.reduce((acc, d) => acc + d.value, 0)} />} 
-                          cursor={false} 
-                          wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }} 
-                        />
-                     </PieChart>
-                   </ResponsiveContainer>
-                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                      <div className="text-center mt-1">
-                        <div className="text-[6.5px] font-bold text-slate-400 capitalize tracking-tighter">총 면적</div>
-                        <div className="text-[16px] font-black text-slate-800 leading-none mt-0.5 tabular-nums">
-                          {f(div.data.reduce((acc, d) => acc + d.value, 0))}
-                        </div>
-                      </div>
-                   </div>
-                </div>
-                <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
-                   <div className="space-y-0 text-[8px]">
-                     {div.data.slice(0, 5).map((dept, idx) => (
-                        <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
-                           <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
-                             <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
-                             <span className="text-[8px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
-                           </div>
-                           <span className="text-[8px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
-                        </div>
-                     ))}
-                   </div>
-                   {div.data.length > 5 && <div className="text-center text-[8px] text-slate-400 mt-1 italic font-medium">...외 {div.data.length - 5}개 부서</div>}
-                </div>
-              </div>
-           ))}
-        </div>
-      </div>
-      </PrintPageWrapper>
+            </PrintPageWrapper>
     </div>
   );
 };
