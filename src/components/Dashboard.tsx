@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -297,6 +297,7 @@ const Dashboard: React.FC = () => {
   const [activeTrendDivId, setActiveTrendDivId] = useState<string | null>(null);
   const [isInitialMount, setIsInitialMount] = useState(true);
   const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
+  const chartCxRef = useRef<Record<string, Record<number, number>>>({});
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -660,9 +661,22 @@ const Dashboard: React.FC = () => {
       {isPdfExportMode && (
         <style>{`
           @page { size: A4 landscape; margin: 10mm; }
+          @media print {
+            html, body, #root {
+              background: white !important;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              min-height: auto !important;
+              overflow: visible !important;
+            }
+          }
           .printable-container { width: 100%; max-width: none; padding: 0; margin: 0; }
           .print-page { page-break-after: always; page-break-inside: avoid; }
           .print-page:last-child { page-break-after: auto; }
+          .recharts-tooltip-wrapper { display: none !important; }
         `}</style>
       )}
 
@@ -864,6 +878,10 @@ const Dashboard: React.FC = () => {
                     activeDot={false}
                     dot={(props: any) => {
                       const { cx, cy, index, payload } = props;
+                      
+                      if (!chartCxRef.current.gross) chartCxRef.current.gross = {};
+                      chartCxRef.current.gross[index] = cx;
+                      
                       if (!payload || index === 0) return null;
                       
                       const prevPayload = areaByStage[index - 1];
@@ -888,12 +906,13 @@ const Dashboard: React.FC = () => {
                         bg = 'rgba(238, 242, 255, 0.95)';
                       }
                       
-                      const dist = window.innerWidth > 1024 ? 90 : 50; 
+                      const prevCx = chartCxRef.current.gross[index - 1];
+                      const midX = prevCx !== undefined ? (cx + prevCx) / 2 : cx - 50; 
                       
                       return (
                         <g style={{ zIndex: 50, pointerEvents: 'none' }}>
                           <rect 
-                            x={cx - dist} 
+                            x={midX - 17} 
                             y={Math.max(cy - 25, 5)} 
                             width={34} 
                             height={14} 
@@ -903,7 +922,7 @@ const Dashboard: React.FC = () => {
                             strokeWidth={0.5} 
                           />
                           <text 
-                            x={cx - dist + 17} 
+                            x={midX} 
                             y={Math.max(cy - 25, 5) + 7} 
                             fill={color} 
                             fontSize={8.5} 
@@ -925,6 +944,10 @@ const Dashboard: React.FC = () => {
                     activeDot={false}
                     dot={(props: any) => {
                       const { cx, cy, index, payload } = props;
+                      
+                      if (!chartCxRef.current.net) chartCxRef.current.net = {};
+                      chartCxRef.current.net[index] = cx;
+
                       if (!payload || index === 0) return null;
                       
                       const prevPayload = areaByStage[index - 1];
@@ -949,12 +972,13 @@ const Dashboard: React.FC = () => {
                         bg = 'rgba(238, 242, 255, 0.95)';
                       }
                       
-                      const dist = window.innerWidth > 1024 ? 90 : 50; 
+                      const prevCx = chartCxRef.current.net[index - 1];
+                      const midX = prevCx !== undefined ? (cx + prevCx) / 2 : cx - 50; 
                       
                       return (
                         <g style={{ zIndex: 50, pointerEvents: 'none' }}>
                           <rect 
-                            x={cx - dist} 
+                            x={midX - 17} 
                             y={Math.max(cy + 5, 5)} 
                             width={34} 
                             height={14} 
@@ -964,7 +988,7 @@ const Dashboard: React.FC = () => {
                             strokeWidth={0.5} 
                           />
                           <text 
-                            x={cx - dist + 17} 
+                            x={midX} 
                             y={Math.max(cy + 5, 5) + 7} 
                             fill={color} 
                             fontSize={8.5} 
@@ -1057,7 +1081,9 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-6">
         {/* Row 2: Donut Chart and Detailed Trends */}
         <div className="lg:col-span-2 order-3 lg:order-3">
           {/* Division share donut */}
@@ -1088,7 +1114,7 @@ const Dashboard: React.FC = () => {
                         paddingAngle={4}
                         cornerRadius={7}
                         dataKey="value"
-                        isAnimationActive={true}
+                        isAnimationActive={!isPdfExportMode}
                         animationDuration={400}
                         animationEasing="ease-out"
                         onClick={(data) => {
@@ -1255,7 +1281,7 @@ const Dashboard: React.FC = () => {
                             style={{ strokeWidth, strokeOpacity, fillOpacity, transition: 'fill-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-width 400ms cubic-bezier(0.4, 0, 0.2, 1)' }}
                             dot={{ r: 2.5, strokeWidth: 1, fill: '#ffffff', strokeOpacity: strokeOpacity }}
                             activeDot={{ r: 4 }}
-                            isAnimationActive={true}
+                            isAnimationActive={!isPdfExportMode}
                             animationDuration={400}
                           >
                             {(isActive || !isAnyActive) && (
@@ -1404,7 +1430,7 @@ const Dashboard: React.FC = () => {
                           strokeWidth={1.5}
                           radius={[4, 4, 4, 4]} 
                           barSize={20} 
-                          isAnimationActive={true}
+                          isAnimationActive={!isPdfExportMode}
                           animationDuration={400}
                           style={{ fillOpacity: barOpacity, cursor: 'pointer', transition: 'fill-opacity 400ms ease', outline: 'none' }}
                           onClick={() => {
@@ -1544,7 +1570,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid size={18} className="text-indigo-500" />
-            <h3 className="text-sm font-black text-slate-800">공모지침 대비 면적변화</h3>
+            <h3 className="text-sm font-black text-slate-800 tracking-tight">공모지침 대비 면적변화</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sub Card: 최대 증가 */}
@@ -1621,7 +1647,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-2 mb-4">
             <Layers size={18} className="text-indigo-500" />
-            <h3 className="text-sm font-black text-slate-800">중간설계 대비 면적변화</h3>
+            <h3 className="text-sm font-black text-slate-800 tracking-tight">중간설계 대비 면적변화</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sub Card: 최대 증가 */}
@@ -1699,7 +1725,7 @@ const Dashboard: React.FC = () => {
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div className="flex items-center gap-2 mb-2">
           <Stethoscope size={18} className="text-indigo-500" />
-          <h3 className="text-sm font-bold text-slate-800">부문 내 부서 구성비</h3>
+          <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6">

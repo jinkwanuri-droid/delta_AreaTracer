@@ -95,6 +95,11 @@ export interface AppState {
   activeFloorId: string | "all" | null;
   isPdfExportMode: boolean;
   pdfExportTargets: string[];
+  coverInfo: {
+    title: string;
+    date: string;
+    client: string;
+  };
   filters: {
     divisionIds: string[];
     departmentIds: string[];
@@ -133,6 +138,7 @@ export interface AppState {
   setActiveFloorId: (id: string | null) => void;
   setIsPdfExportMode: (val: boolean) => void;
   setPdfExportTargets: (targets: string[]) => void;
+  setCoverInfo: (info: {title: string, date: string, client: string}) => void;
   toggleDivisionFilter: (id: string) => void;
   toggleDepartmentFilter: (id: string) => void;
   fetchData: (force?: boolean) => Promise<void>;
@@ -249,6 +255,11 @@ export const useAppStore = create<AppState>()(
       activeFloorId: "all",
       isPdfExportMode: false,
       pdfExportTargets: ['summary', 'detail'],
+      coverInfo: {
+        title: '실시설계 적정성검토 면적검토서',
+        date: '2026.06.',
+        client: '경상남도청',
+      },
       filters: { divisionIds: [], departmentIds: [] },
       snapshots: [],
       medicalOnly: true,
@@ -512,6 +523,7 @@ export const useAppStore = create<AppState>()(
       setActiveFloorId: (id) => set({ activeFloorId: id }),
       setIsPdfExportMode: (val) => set({ isPdfExportMode: val }),
       setPdfExportTargets: (targets) => set({ pdfExportTargets: targets }),
+      setCoverInfo: (info) => set({ coverInfo: info }),
       toggleDivisionFilter: (id) =>
         set((state) => {
           const ids = state.filters.divisionIds;

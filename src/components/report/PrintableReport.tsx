@@ -58,12 +58,15 @@ export default function PrintableReport() {
           margin: 10mm;
         }
         @media print {
-          body {
+          html, body, #root {
             background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
-            margin: 0;
-            padding: 0;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: auto !important;
+            overflow: visible !important;
           }
           .printable-container {
              width: 100%;
@@ -370,7 +373,13 @@ function FloorTable({ floor }: { floor: any }) {
                       </th>
                     );
                   })}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]" rowSpan={2}>증감</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]" rowSpan={2}>
+                    증감<br/>
+                    <span className="text-[7px] leading-tight font-medium text-slate-500">
+                      {targetId && baseId && stages.find(s => s.id === targetId)?.name && stages.find(s => s.id === baseId)?.name ? 
+                        `(${stages.find(s => s.id === targetId)!.name[0]}-${stages.find(s => s.id === baseId)!.name[0]})` : ''}
+                    </span>
+                  </th>
                   <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]" rowSpan={2}>비고</th>
                 </tr>
                 <tr>
@@ -1014,7 +1023,13 @@ function SummaryPrintTable() {
                       {s.name}
                     </th>
                   ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">증감</th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">
+                    증감<br/>
+                    <span className="text-[7px] leading-tight font-medium text-slate-500">
+                      {targetStageId && baseStageId && stages.find(s => s.id === targetStageId)?.name && stages.find(s => s.id === baseStageId)?.name ? 
+                        `(${stages.find(s => s.id === targetStageId)!.name[0]}-${stages.find(s => s.id === baseStageId)!.name[0]})` : ''}
+                    </span>
+                  </th>
                   <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">주요 변경사항 및 비고</th>
                 </tr>
               </thead>
