@@ -58,15 +58,12 @@ export default function PrintableReport() {
           margin: 10mm;
         }
         @media print {
-          html, body, #root {
+          body {
             background: white !important;
             print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
-            margin: 0 !important;
-            padding: 0 !important;
-            height: auto !important;
-            min-height: auto !important;
-            overflow: visible !important;
+            margin: 0;
+            padding: 0;
           }
           .printable-container {
              width: 100%;
@@ -77,9 +74,6 @@ export default function PrintableReport() {
           .print-page {
              page-break-after: always;
              page-break-inside: avoid;
-          }
-          .print-page:last-child {
-             page-break-after: auto;
           }
         }
         .empty-hatch {
@@ -335,7 +329,7 @@ function FloorTable({ floor }: { floor: any }) {
               </div>
               <div className="text-right pb-1">
                 <span className="text-[9px] font-bold text-slate-600">
-                  경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">층별 세부 면적계획</span>
+                  경상남도 서부의료원 건립사업 실시설계 | 층별 세부 면적계획
                 </span>
               </div>
             </div>
@@ -373,13 +367,7 @@ function FloorTable({ floor }: { floor: any }) {
                       </th>
                     );
                   })}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]" rowSpan={2}>
-                    증감<br/>
-                    <span className="text-[7px] leading-tight font-medium text-slate-500">
-                      {targetId && baseId && stages.find(s => s.id === targetId)?.name && stages.find(s => s.id === baseId)?.name ? 
-                        `(${stages.find(s => s.id === targetId)!.name[0]}-${stages.find(s => s.id === baseId)!.name[0]})` : ''}
-                    </span>
-                  </th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]" rowSpan={2}>증감</th>
                   <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]" rowSpan={2}>비고</th>
                 </tr>
                 <tr>
@@ -992,7 +980,7 @@ function SummaryPrintTable() {
               </div>
               <div className="text-right pb-1">
                 <span className="text-[9px] font-bold text-slate-600">
-                  경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">부서별 총괄 면적표</span>
+                  경상남도 서부의료원 건립사업 실시설계 | 부서별 총괄 면적표
                 </span>
               </div>
             </div>
@@ -1023,13 +1011,7 @@ function SummaryPrintTable() {
                       {s.name}
                     </th>
                   ))}
-                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">
-                    증감<br/>
-                    <span className="text-[7px] leading-tight font-medium text-slate-500">
-                      {targetStageId && baseStageId && stages.find(s => s.id === targetStageId)?.name && stages.find(s => s.id === baseStageId)?.name ? 
-                        `(${stages.find(s => s.id === targetStageId)!.name[0]}-${stages.find(s => s.id === baseStageId)!.name[0]})` : ''}
-                    </span>
-                  </th>
+                  <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">증감</th>
                   <th className="bg-[#E2E8F0] border-y border-r border-[#CBD5E1] py-0.5 px-1 text-center font-bold text-[#334155]">주요 변경사항 및 비고</th>
                 </tr>
               </thead>

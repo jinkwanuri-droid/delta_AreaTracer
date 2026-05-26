@@ -3,7 +3,7 @@ import Sidebar from './Sidebar';
 import { useAppStore } from '@/store/useAppStore';
 
 import SelectorPopover from './SelectorPopover';
-import { Layers, RefreshCw, Loader2, Download, X } from 'lucide-react';
+import { Layers, RefreshCw, Loader2, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Layout({ children }: { children: ReactNode }) {
@@ -19,25 +19,15 @@ export default function Layout({ children }: { children: ReactNode }) {
   const setPdfExportTargets = useAppStore(state => state.setPdfExportTargets);
 
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [exportCover, setExportCover] = useState(true);
-  const [showCoverInfoForm, setShowCoverInfoForm] = useState(false);
-  const [exportDashboard, setExportDashboard] = useState(true);
   const [exportSummary, setExportSummary] = useState(true);
   const [exportDetail, setExportDetail] = useState(true);
 
-  const coverInfo = useAppStore(state => state.coverInfo);
-  const setCoverInfo = useAppStore(state => state.setCoverInfo);
-  const [localCoverInfo, setLocalCoverInfo] = useState(coverInfo);
-
   const handlePrintClick = () => {
     setShowPrintModal(true);
-    setLocalCoverInfo(coverInfo);
   };
 
   const handleGeneratePrint = () => {
     const targets = [];
-    if (exportCover) targets.push('cover');
-    if (exportDashboard) targets.push('dashboard');
     if (exportSummary) targets.push('summary');
     if (exportDetail) targets.push('detail');
     
@@ -46,8 +36,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (exportCover) setCoverInfo(localCoverInfo);
-    
     setPdfExportTargets(targets);
     setShowPrintModal(false);
     setIsPdfExportMode(true);
@@ -148,71 +136,6 @@ export default function Layout({ children }: { children: ReactNode }) {
               </p>
               
               <div className="space-y-3 pt-2">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50/50 transition-all">
-                    <label className="flex items-center flex-1 gap-3 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={exportCover}
-                        onChange={(e) => setExportCover(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 accent-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
-                      />
-                      <div>
-                        <span className="text-sm font-bold text-slate-700">표지</span>
-                        <p className="text-[11px] text-slate-400">보고서 표지 생성 (제목, 날짜, 발주처 등 표기)</p>
-                      </div>
-                    </label>
-                    <button 
-                      onClick={() => setShowCoverInfoForm(!showCoverInfoForm)}
-                      className="px-2.5 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors whitespace-nowrap"
-                    >
-                      상세정보 입력
-                    </button>
-                  </div>
-                  {exportCover && showCoverInfoForm && (
-                     <div className="fixed inset-0 bg-slate-900/40 z-[70] flex items-center justify-center p-4">
-                       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95">
-                         <div className="flex items-center justify-between p-4 border-b border-slate-100">
-                           <h3 className="font-bold text-slate-800">표지 상세정보 입력</h3>
-                           <button onClick={() => setShowCoverInfoForm(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
-                         </div>
-                         <div className="p-4 space-y-4">
-                           <div>
-                             <label className="block text-xs font-bold text-slate-700 mb-1">리포트 제목</label>
-                             <input type="text" value={localCoverInfo.title} onChange={e => setLocalCoverInfo({...localCoverInfo, title: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
-                           </div>
-                           <div className="grid grid-cols-2 gap-3">
-                             <div>
-                               <label className="block text-xs font-bold text-slate-700 mb-1">날짜</label>
-                               <input type="text" value={localCoverInfo.date} onChange={e => setLocalCoverInfo({...localCoverInfo, date: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
-                             </div>
-                             <div>
-                               <label className="block text-xs font-bold text-slate-700 mb-1">발주처</label>
-                               <input type="text" value={localCoverInfo.client} onChange={e => setLocalCoverInfo({...localCoverInfo, client: e.target.value})} className="w-full text-sm p-2 rounded border border-slate-300" />
-                             </div>
-                           </div>
-                         </div>
-                         <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                           <button onClick={() => setShowCoverInfoForm(false)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700">확인</button>
-                         </div>
-                       </div>
-                     </div>
-                  )}
-                </div>
-
-                <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50/50 transition-all cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={exportDashboard}
-                    onChange={(e) => setExportDashboard(e.target.checked)}
-                    className="w-4 h-4 text-indigo-600 accent-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
-                  />
-                  <div>
-                    <span className="text-sm font-bold text-slate-700">대시보드</span>
-                    <p className="text-[11px] text-slate-400">전체 면적 개요 및 주요 통계 지표</p>
-                  </div>
-                </label>
-
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:bg-slate-50/50 transition-all cursor-pointer">
                   <input 
                     type="checkbox" 
