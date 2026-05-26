@@ -5,10 +5,11 @@ import DetailTable from '@/components/DetailTable';
 import DepartmentSummary from '@/components/DepartmentSummary';
 import Dashboard from '@/components/Dashboard';
 import PrintableReport from '@/components/report/PrintableReport';
+import ReportCover from '@/components/report/ReportCover';
 import { initAuth } from '@/lib/auth';
 
 export default function App() {
-  const { fetchData, fetchGlobalSettings, activeTab, isPdfExportMode } = useAppStore();
+  const { fetchData, fetchGlobalSettings, activeTab, isPdfExportMode, pdfExportTargets } = useAppStore();
 
   useEffect(() => {
     // 1. Fetch Global Settings first for multi-device sync
@@ -33,10 +34,18 @@ export default function App() {
     return () => unsubscribe();
   }, [fetchData]);
 
+  // Determine if components should be printed
+  const printCover = isPdfExportMode && pdfExportTargets?.includes('cover');
+  const printDashboard = isPdfExportMode && pdfExportTargets?.includes('dashboard');
+
   return (
     <Layout>
       {isPdfExportMode ? (
-        <PrintableReport />
+        <>
+          {printCover && <ReportCover />}
+          {printDashboard && <Dashboard />}
+          <PrintableReport />
+        </>
       ) : (
         <>
           {activeTab === 'dashboard' && <Dashboard />}

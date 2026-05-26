@@ -94,6 +94,12 @@ export interface AppState {
   activeTab: "dashboard" | "summary" | "detail";
   activeFloorId: string | "all" | null;
   isPdfExportMode: boolean;
+  pdfExportTargets: string[];
+  coverInfo: {
+    title: string;
+    date: string;
+    client: string;
+  };
   filters: {
     divisionIds: string[];
     departmentIds: string[];
@@ -131,6 +137,8 @@ export interface AppState {
   setActiveTab: (tab: "dashboard" | "summary" | "detail") => void;
   setActiveFloorId: (id: string | null) => void;
   setIsPdfExportMode: (val: boolean) => void;
+  setPdfExportTargets: (targets: string[]) => void;
+  setCoverInfo: (info: {title: string, date: string, client: string}) => void;
   toggleDivisionFilter: (id: string) => void;
   toggleDepartmentFilter: (id: string) => void;
   fetchData: (force?: boolean) => Promise<void>;
@@ -227,6 +235,8 @@ export const findRoomNote = (roomNotes: Record<string, string> | undefined | nul
   return "";
 };
 
+let activeFetchPromise: Promise<void> | null = null;
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -243,9 +253,15 @@ export const useAppStore = create<AppState>()(
       departmentNotes: {},
       visibleStageIds: [],
       comparison: { baseId: null, targetId: null },
-      activeTab: "detail",
+      activeTab: "dashboard",
       activeFloorId: "all",
       isPdfExportMode: false,
+      pdfExportTargets: ['summary', 'detail'],
+      coverInfo: {
+        title: '실시설계 적정성검토 면적검토서',
+        date: '2026.06.',
+        client: '경상남도청',
+      },
       filters: { divisionIds: [], departmentIds: [] },
       snapshots: [],
       medicalOnly: true,
@@ -508,6 +524,8 @@ export const useAppStore = create<AppState>()(
       setActiveTab: (tab) => set({ activeTab: tab }),
       setActiveFloorId: (id) => set({ activeFloorId: id }),
       setIsPdfExportMode: (val) => set({ isPdfExportMode: val }),
+      setPdfExportTargets: (targets) => set({ pdfExportTargets: targets }),
+      setCoverInfo: (info) => set({ coverInfo: info }),
       toggleDivisionFilter: (id) =>
         set((state) => {
           const ids = state.filters.divisionIds;
@@ -546,6 +564,12 @@ export const useAppStore = create<AppState>()(
           };
         }),
       fetchData: async (force = false) => {
+        if (activeFetchPromise) {
+          return activeFetchPromise;
+        }
+        let resolvePromise: () => void = () => {};
+        activeFetchPromise = new Promise<void>((r) => { resolvePromise = r; });
+
         set({ isLoading: true });
         const state = get();
         
@@ -801,6 +825,8 @@ export const useAppStore = create<AppState>()(
           throw e;
         } finally {
           set({ isLoading: false });
+          resolvePromise();
+          activeFetchPromise = null;
         }
       },
       fetchTableList: async () => {}, // No-op, removed
@@ -1261,7 +1287,6 @@ export const useAppStore = create<AppState>()(
         roomNotes: state.roomNotes,
         departmentNotes: state.departmentNotes,
         spreadsheetId: state.spreadsheetId,
-        activeTab: state.activeTab,
         activeFloorId: state.activeFloorId,
         filters: state.filters,
         medicalOnly: state.medicalOnly,

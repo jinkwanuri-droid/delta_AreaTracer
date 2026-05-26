@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -296,6 +296,8 @@ const Dashboard: React.FC = () => {
 
   const [activeTrendDivId, setActiveTrendDivId] = useState<string | null>(null);
   const [isInitialMount, setIsInitialMount] = useState(true);
+  const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
+  const chartCxRef = useRef<Record<string, Record<number, number>>>({});
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -623,39 +625,96 @@ const Dashboard: React.FC = () => {
     }).filter(d => d.data.length > 0);
   }, [currentStage, divisions, medicalOnly, medicalDivisionIds, filteredValues, departments, rooms]);
 
-  return (
-    <div className="flex-1 h-full min-h-0 overflow-y-auto flex flex-col gap-6 p-6 bg-slate-50 select-none">
-      {/* Dashboard Toolbar */}
-      <div className="flex items-center justify-between mb-1">
-        <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            차트로 보는 경상남도 서부의료원 면적 계획
-          </h2>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => toggleMedicalOnly(!medicalOnly)}
-            className={cn(
-              "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border transition-all text-[11px] font-bold",
-              medicalOnly 
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
-                : "bg-white text-slate-500 border-slate-200 hover:border-indigo-400"
-            )}
-          >
-            <Stethoscope size={14} />
-            의료시설 전용면적
-          </button>
-        </div>
+  const PrintHeader = ({ page, total }: { page: number, total: number }) => (
+    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '14mm' }}>
+      <div>
+        <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
+          <span>대시보드</span>
+          <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page}/{total})</span>
+        </h2>
       </div>
+      <div className="text-right pb-1">
+        <span className="text-[9px] font-bold text-slate-600">
+          경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">대시보드</span>
+        </span>
+      </div>
+    </div>
+  );
 
-      {/* Main Grid: Reorganized for flexible ordering on mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+  const PrintPageWrapper = ({ children, page, total }: { children: React.ReactNode, page: number, total: number }) => {
+    if (isPdfExportMode) {
+      return (
+        <div className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+          <PrintHeader page={page} total={total} />
+          {children}
+        </div>
+      );
+    }
+    return <>{children}</>;
+  };
+
+  return (
+    <div className={cn(
+      "flex-1 flex flex-col gap-6 select-none",
+      isPdfExportMode ? "bg-white text-slate-900 dashboard-print-container font-['Arial','Helvetica',sans-serif] p-0" : "h-full min-h-0 overflow-y-auto p-6 bg-slate-50"
+    )}>
+      {isPdfExportMode && (
+        <style>{`
+          @page { size: A4 landscape; margin: 10mm; }
+          @media print {
+            html, body, #root {
+              background: white !important;
+              print-color-adjust: exact;
+              -webkit-print-color-adjust: exact;
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              min-height: auto !important;
+              overflow: visible !important;
+            }
+          }
+          .dashboard-print-container { width: 100% !important; max-width: 100% !important; min-width: auto !important; padding: 0 !important; margin: 0 !important; }
+          .print-page { page-break-after: always; page-break-inside: avoid; }
+          .print-page:last-child { page-break-after: auto; }
+          .recharts-tooltip-wrapper { display: none !important; }
+        `}</style>
+      )}
+
+      {/* Dashboard Toolbar - Hide when printing */}
+      {!isPdfExportMode && (
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+              차트로 보는 경상남도 서부의료원 면적 계획
+            </h2>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => toggleMedicalOnly(!medicalOnly)}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border transition-all text-[11px] font-bold",
+                medicalOnly 
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
+                  : "bg-white text-slate-500 border-slate-200 hover:border-indigo-400"
+              )}
+            >
+              <Stethoscope size={14} />
+              의료시설 전용면적
+            </button>
+          </div>
+        </div>
+      )}
+
+      <PrintPageWrapper page={1} total={5}>
+        {/* Main Grid: Reorganized for flexible ordering on mobile */}
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5" : "grid-cols-1 lg:grid-cols-5")}>
+
         
         {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
-        <div className="lg:col-span-2 order-1">
+        <div className={cn("order-1 h-full", isPdfExportMode ? "col-span-2" : "lg:col-span-2")}>
           {/* KPI Cards: 2x2 Grid with enhanced height and sizing */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className={cn("grid gap-4 h-full", isPdfExportMode ? "grid-cols-2 grid-rows-2" : "grid-cols-1 sm:grid-cols-2 grid-rows-2")}>
             
             {/* KPI 1: 전체 연면적 */}
             <motion.div 
@@ -775,7 +834,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Step trend bar chart - Reordered for mobile */}
-        <div className="lg:col-span-3 order-2 lg:order-2">
+        <div className={cn("order-2", isPdfExportMode ? "col-span-3" : "lg:col-span-3 lg:order-2")}>
           {/* 5위치: 단계별 면적추이(전용/공용) */}
           <div className="bg-white p-5 h-full rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex items-center justify-between mb-2">
@@ -819,6 +878,10 @@ const Dashboard: React.FC = () => {
                     activeDot={false}
                     dot={(props: any) => {
                       const { cx, cy, index, payload } = props;
+                      
+                      if (!chartCxRef.current.gross) chartCxRef.current.gross = {};
+                      chartCxRef.current.gross[index] = cx;
+                      
                       if (!payload || index === 0) return null;
                       
                       const prevPayload = areaByStage[index - 1];
@@ -843,12 +906,13 @@ const Dashboard: React.FC = () => {
                         bg = 'rgba(238, 242, 255, 0.95)';
                       }
                       
-                      const dist = window.innerWidth > 1024 ? 90 : 50; 
+                      const prevCx = chartCxRef.current.gross[index - 1];
+                      const midX = prevCx !== undefined ? (cx + prevCx) / 2 : cx - 50; 
                       
                       return (
                         <g style={{ zIndex: 50, pointerEvents: 'none' }}>
                           <rect 
-                            x={cx - dist} 
+                            x={midX - 17} 
                             y={Math.max(cy - 25, 5)} 
                             width={34} 
                             height={14} 
@@ -858,7 +922,7 @@ const Dashboard: React.FC = () => {
                             strokeWidth={0.5} 
                           />
                           <text 
-                            x={cx - dist + 17} 
+                            x={midX} 
                             y={Math.max(cy - 25, 5) + 7} 
                             fill={color} 
                             fontSize={8.5} 
@@ -880,6 +944,10 @@ const Dashboard: React.FC = () => {
                     activeDot={false}
                     dot={(props: any) => {
                       const { cx, cy, index, payload } = props;
+                      
+                      if (!chartCxRef.current.net) chartCxRef.current.net = {};
+                      chartCxRef.current.net[index] = cx;
+
                       if (!payload || index === 0) return null;
                       
                       const prevPayload = areaByStage[index - 1];
@@ -904,12 +972,13 @@ const Dashboard: React.FC = () => {
                         bg = 'rgba(238, 242, 255, 0.95)';
                       }
                       
-                      const dist = window.innerWidth > 1024 ? 90 : 50; 
+                      const prevCx = chartCxRef.current.net[index - 1];
+                      const midX = prevCx !== undefined ? (cx + prevCx) / 2 : cx - 50; 
                       
                       return (
                         <g style={{ zIndex: 50, pointerEvents: 'none' }}>
                           <rect 
-                            x={cx - dist} 
+                            x={midX - 17} 
                             y={Math.max(cy + 5, 5)} 
                             width={34} 
                             height={14} 
@@ -919,7 +988,7 @@ const Dashboard: React.FC = () => {
                             strokeWidth={0.5} 
                           />
                           <text 
-                            x={cx - dist + 17} 
+                            x={midX} 
                             y={Math.max(cy + 5, 5) + 7} 
                             fill={color} 
                             fontSize={8.5} 
@@ -1012,9 +1081,13 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Row 2: Donut Chart and Detailed Trends */}
-        <div className="lg:col-span-2 order-3 lg:order-3">
+      </div>
+      </PrintPageWrapper>
+      
+      <PrintPageWrapper page={2} total={5}>
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
+          {/* Row 2: Donut Chart and Detailed Trends */}
+          <div className={cn("order-3 lg:order-3", isPdfExportMode ? "col-span-2" : "lg:col-span-2")}>
           {/* Division share donut */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
@@ -1026,8 +1099,9 @@ const Dashboard: React.FC = () => {
               </div>
               
               <div className="flex flex-col items-center justify-center w-full h-full my-auto flex-1 min-h-[300px]">
-                <div className="w-full h-full relative flex-1 mx-auto flex items-center justify-center z-0">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                <div className="w-full h-full flex-1 mx-auto z-0 grid">
+                  <div className="col-start-1 row-start-1 w-full h-full text-center">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <PieChart 
                       key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
                       margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
@@ -1043,7 +1117,8 @@ const Dashboard: React.FC = () => {
                         paddingAngle={4}
                         cornerRadius={7}
                         dataKey="value"
-                        isAnimationActive={true}
+                        isAnimationActive={!isPdfExportMode}
+                        animationBegin={0}
                         animationDuration={400}
                         animationEasing="ease-out"
                         onClick={(data) => {
@@ -1074,7 +1149,7 @@ const Dashboard: React.FC = () => {
                               style={{ fontFamily: '"Pretendard Variable", sans-serif', opacity: opacityVal, transition: 'opacity 300ms ease' }}
                             >
                               <tspan x={x} dy="-0.6em">{name}</tspan>
-                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={10} fontWeight="medium">
+                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={11.5} fontWeight="normal">
                                 {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
                               </tspan>
                             </text>
@@ -1103,8 +1178,9 @@ const Dashboard: React.FC = () => {
                       />
                     </PieChart>
                   </ResponsiveContainer>
+                  </div>
                   {/* Center total text */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
+                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-0">
                     <span className="text-[10px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
                     <span className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
                       {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -1117,11 +1193,11 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-3 order-4 lg:order-4 group">
+        <div className={cn("group", isPdfExportMode ? "col-span-3" : "lg:col-span-3 order-4 lg:order-4")}>
           {/* 단계별 부문별 면적 추이 (Big Line/Area Chart) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between h-full" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
-              <div>
+              <div className="flex-1 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <BarChart3 size={17} className="text-emerald-500" />
@@ -1152,12 +1228,12 @@ const Dashboard: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <div className="h-[280px] sm:h-[300px] w-full">
+                <div className="flex-1 w-full min-h-[290px]">
                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
                       data={stageDivisionData} 
-                      margin={{ top: 10, right: 35, left: 0, bottom: 2 }}
+                      margin={{ top: 10, right: 35, left: 0, bottom: 25 }}
                       style={{ outline: 'none' }}
                       tabIndex={-1}
                     >
@@ -1210,7 +1286,7 @@ const Dashboard: React.FC = () => {
                             style={{ strokeWidth, strokeOpacity, fillOpacity, transition: 'fill-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-opacity 400ms cubic-bezier(0.4, 0, 0.2, 1), stroke-width 400ms cubic-bezier(0.4, 0, 0.2, 1)' }}
                             dot={{ r: 2.5, strokeWidth: 1, fill: '#ffffff', strokeOpacity: strokeOpacity }}
                             activeDot={{ r: 4 }}
-                            isAnimationActive={true}
+                            isAnimationActive={!isPdfExportMode}
                             animationDuration={400}
                           >
                             {(isActive || !isAnyActive) && (
@@ -1268,12 +1344,14 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      </PrintPageWrapper>
 
+      <PrintPageWrapper page={3} total={5}>
       {/* Floor & Ward Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 w-full">
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10" : "grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px] justify-between lg:col-span-7 col-span-1">
+        <div className={cn("bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px] justify-between", isPdfExportMode ? "col-span-7" : "lg:col-span-7 col-span-1")}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1357,7 +1435,7 @@ const Dashboard: React.FC = () => {
                           strokeWidth={1.5}
                           radius={[4, 4, 4, 4]} 
                           barSize={20} 
-                          isAnimationActive={true}
+                          isAnimationActive={!isPdfExportMode}
                           animationDuration={400}
                           style={{ fillOpacity: barOpacity, cursor: 'pointer', transition: 'fill-opacity 400ms ease', outline: 'none' }}
                           onClick={() => {
@@ -1374,7 +1452,7 @@ const Dashboard: React.FC = () => {
                             return (
                               <g style={{ pointerEvents: 'none' }}>
                                 {isActive && (
-                                   <text x={x + width / 2} y={y + height / 2 + 1} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={9} fontWeight="bold">
+                                   <text x={x + width / 2} y={y + height / 2 + 1} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight="bold">
                                      {Math.round(value).toLocaleString()}
                                    </text>
                                 )}
@@ -1425,11 +1503,8 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between lg:col-span-3 col-span-1 relative overflow-hidden h-[400px]"
+        <div 
+          className={cn("bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden h-[400px]", isPdfExportMode ? "col-span-3" : "lg:col-span-3 col-span-1")}
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
           {/* Subtle gradient glow in bg */}
@@ -1438,14 +1513,14 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Hospital size={18} className="text-amber-500" />
-              <h3 className="text-sm font-black text-slate-800 tracking-tight">허가병상 구성</h3>
+              <h3 className="text-base font-black text-slate-800 tracking-tight">허가병상 구성</h3>
             </div>
             <div className="text-right items-baseline flex gap-1">
-              <span className="text-[11px] font-bold text-slate-400 mt-1">총</span>
-              <h3 className="text-[20px] font-black text-slate-800 tracking-tight leading-none">
+              <span className="text-[13px] font-bold text-slate-400 mt-1">총</span>
+              <h3 className="text-[22px] font-black text-slate-800 tracking-tight leading-none">
                 {wardBedsData.totalBedsSum}
               </h3>
-              <span className="text-[11px] font-bold text-slate-400 mt-1">병상</span>
+              <span className="text-[13px] font-bold text-slate-400 mt-1">병상</span>
             </div>
           </div>
           
@@ -1453,17 +1528,17 @@ const Dashboard: React.FC = () => {
             
             <div className="space-y-1 flex-1 flex flex-col justify-end">
               {wardBedsData.list.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[10px] border-b border-slate-100/60 pb-1 last:border-0 last:pb-0">
-                  <span className="text-slate-500 font-bold">{item.label}</span>
-                  <div className="flex items-center text-right text-[10px]">
-                    <div className="w-12 text-right pr-1">
+                <div key={idx} className="flex justify-between items-center text-[12px] border-b border-slate-100/60 pb-1 last:border-0 last:pb-0">
+                  <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
+                  <div className="flex items-center text-right text-[12px] gap-2">
+                    <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
                       ) : (
-                        <span className="text-[9px] text-slate-300/40 select-none">-</span>
+                        <span className="text-[11px] text-slate-300/40 select-none">-</span>
                       )}
                     </div>
-                    <div className="w-13 text-right">
+                    <div className="w-20 text-right whitespace-nowrap">
                       <span className="text-slate-800 font-black">{item.beds}병상</span>
                     </div>
                   </div>
@@ -1472,32 +1547,155 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="mt-3 pt-3 border-t border-slate-200">
-               <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
+               <div className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
                  <AlertCircle size={12} className="text-slate-400" />
                  허가 외 병상
                </div>
-               <div className="flex flex-wrap items-center gap-2 text-[10.5px] font-medium text-slate-500 w-full justify-between pr-4">
-                  <span>응급 <span className="font-bold text-slate-600">20</span></span>
-                  <span className="text-slate-200">|</span>
-                  <span>내시경 <span className="font-bold text-slate-600">10</span></span>
-                  <span className="text-slate-200">|</span>
-                  <span>재활 <span className="font-bold text-slate-600">10</span></span>
-                  <span className="text-slate-200">|</span>
-                  <span>주사실 <span className="font-bold text-slate-600">8</span></span>
+               <div className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-slate-500 w-full pr-1">
+                  <div className="flex items-center justify-between">
+                    <span>응급 <span className="font-bold text-slate-800">21</span></span>
+                    <span className="text-slate-200">|</span>
+                    <span>감염 <span className="font-bold text-slate-800">2</span></span>
+                    <span className="text-slate-200">|</span>
+                    <span>신생아 <span className="font-bold text-slate-800">4</span></span>
+                    <span className="text-slate-200">|</span>
+                    <span>주사 <span className="font-bold text-slate-800">6</span></span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>내시경 <span className="font-bold text-slate-800">5</span></span>
+                    <span className="text-slate-200 font-normal">|</span>
+                    <span>인공신장 <span className="font-bold text-slate-800">23</span></span>
+                    <span className="text-slate-200 font-normal">|</span>
+                    <span>재활(온열치료) <span className="font-bold text-slate-800">16</span></span>
+                  </div>
                </div>
             </div>
 
           </div>
-        </motion.div>
+        </div>
       </div>
+      </PrintPageWrapper>
 
+      <PrintPageWrapper page={4} total={5}>
+      {/* Division Dept Shares */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex items-center gap-2 mb-2">
+          <Stethoscope size={18} className="text-indigo-500" />
+          <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
+        </div>
+        
+        <div className={cn("grid", isPdfExportMode ? "grid-cols-5 gap-3" : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6")}>
+           {divisionDeptShares.map((div, i) => (
+              <div key={i} className="flex flex-col p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all">
+                {/* Visual Header for Division Block */}
+                <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                  <span className="truncate">{div.divisionName}</span>
+                  <span 
+                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
+                    style={{ backgroundColor: `${div.color}18`, color: div.color }}
+                  >
+                    {div.data.length}개 부서
+                  </span>
+                </div>
+
+                <div className="w-full aspect-square grid mb-0 pb-1">
+                   <div className="col-start-1 row-start-1 w-full h-full text-center">
+                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                     <PieChart style={{ outline: 'none' }} tabIndex={-1}>
+                        <Pie
+                          data={div.data}
+                          innerRadius="52%" 
+                          outerRadius="82%"
+                          dataKey="value"
+                          isAnimationActive={false}
+                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
+                            if (percent < 0.07) return null;
+                            
+                            const RADIAN = Math.PI / 180;
+                            const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
+                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            
+                            return (
+                              <g style={{ pointerEvents: 'none' }}>
+                                <text 
+                                  x={x} 
+                                  y={y} 
+                                  fill="#ffffff" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="central" 
+                                  fontSize={11} 
+                                  fontWeight="900" 
+                                  style={{ 
+                                    filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.7))',
+                                    paintOrder: 'stroke',
+                                    stroke: 'rgba(0,0,0,0.15)',
+                                    strokeWidth: '1.5px'
+                                  }}
+                                >
+                                  {`${(percent * 100).toFixed(0)}%`}
+                                </text>
+                              </g>
+                            );
+                          }}
+                          labelLine={false}
+                        >
+                          {div.data.map((entry, idx) => (
+                            <Cell 
+                              key={`cell-${idx}`} 
+                              fill={div.color} 
+                              fillOpacity={Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
+                              stroke="#fff" 
+                              strokeWidth={1.5}
+                              style={{ outline: 'none' }}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          content={<CustomTooltip isPie pieTotal={div.data.reduce((acc, d) => acc + d.value, 0)} />} 
+                          cursor={false} 
+                          wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }} 
+                        />
+                     </PieChart>
+                   </ResponsiveContainer>
+                   </div>
+                   <div className="col-start-1 row-start-1 flex items-center justify-center pointer-events-none z-0">
+                      <div className="text-center mt-1">
+                        <div className="text-[8.5px] font-bold text-slate-400 capitalize tracking-tighter">부문면적</div>
+                        <div className="text-[18px] font-black text-slate-800 leading-none mt-0.5 tabular-nums">
+                          {f(div.data.reduce((acc, d) => acc + d.value, 0))}
+                        </div>
+                      </div>
+                   </div>
+                </div>
+                <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
+                   <div className="space-y-0 text-[12px]">
+                     {div.data.slice(0, 5).map((dept, idx) => (
+                        <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
+                           <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
+                             <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
+                             <span className="text-[12px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
+                           </div>
+                           <span className="text-[12px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
+                        </div>
+                     ))}
+                   </div>
+                   {div.data.length > 5 && <div className="text-center text-[12px] text-slate-400 mt-1 italic font-medium">...외 {div.data.length - 5}개 부서</div>}
+                </div>
+              </div>
+           ))}
+        </div>
+      </div>
+      </PrintPageWrapper>
+
+      <PrintPageWrapper page={5} total={5}>
       {/* Top Changes Grid - Grouped into Guideline and Intermediate Comparison Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-2" : "grid-cols-1 lg:grid-cols-2")}>
         {/* Card Main 1: 공모지침 대비 현재면적 */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid size={18} className="text-indigo-500" />
-            <h3 className="text-sm font-black text-slate-800">공모지침 대비 면적변화</h3>
+            <h3 className="text-sm font-black text-slate-800 tracking-tight">공모지침 대비 면적변화</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sub Card: 최대 증가 */}
@@ -1574,7 +1772,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <div className="flex items-center gap-2 mb-4">
             <Layers size={18} className="text-indigo-500" />
-            <h3 className="text-sm font-black text-slate-800">중간설계 대비 면적변화</h3>
+            <h3 className="text-sm font-black text-slate-800 tracking-tight">중간설계 대비 면적변화</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sub Card: 최대 증가 */}
@@ -1648,113 +1846,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Division Dept Shares */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-        <div className="flex items-center gap-2 mb-2">
-          <Stethoscope size={18} className="text-indigo-500" />
-          <h3 className="text-sm font-bold text-slate-800">부문 내 부서 구성비</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6">
-           {divisionDeptShares.map((div, i) => (
-              <div key={i} className="flex flex-col p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all">
-                {/* Visual Header for Division Block */}
-                <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
-                  <span className="truncate">{div.divisionName}</span>
-                  <span 
-                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
-                    style={{ backgroundColor: `${div.color}18`, color: div.color }}
-                  >
-                    {div.data.length}개 부서
-                  </span>
-                </div>
-
-                <div className="w-full aspect-square relative mb-0 pb-1">
-                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                     <PieChart style={{ outline: 'none' }} tabIndex={-1}>
-                        <Pie
-                          data={div.data}
-                          innerRadius="52%" 
-                          outerRadius="82%"
-                          dataKey="value"
-                          isAnimationActive={false}
-                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
-                            if (percent < 0.07) return null;
-                            
-                            const RADIAN = Math.PI / 180;
-                            const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
-                            const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                            
-                            return (
-                              <g style={{ pointerEvents: 'none' }}>
-                                <text 
-                                  x={x} 
-                                  y={y} 
-                                  fill="#ffffff" 
-                                  textAnchor="middle" 
-                                  dominantBaseline="central" 
-                                  fontSize={11} 
-                                  fontWeight="900" 
-                                  style={{ 
-                                    filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.7))',
-                                    paintOrder: 'stroke',
-                                    stroke: 'rgba(0,0,0,0.15)',
-                                    strokeWidth: '1.5px'
-                                  }}
-                                >
-                                  {`${(percent * 100).toFixed(0)}%`}
-                                </text>
-                              </g>
-                            );
-                          }}
-                          labelLine={false}
-                        >
-                          {div.data.map((entry, idx) => (
-                            <Cell 
-                              key={`cell-${idx}`} 
-                              fill={div.color} 
-                              fillOpacity={Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
-                              stroke="#fff" 
-                              strokeWidth={1.5}
-                              style={{ outline: 'none' }}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          content={<CustomTooltip isPie pieTotal={div.data.reduce((acc, d) => acc + d.value, 0)} />} 
-                          cursor={false} 
-                          wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }} 
-                        />
-                     </PieChart>
-                   </ResponsiveContainer>
-                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-                      <div className="text-center mt-1">
-                        <div className="text-[6.5px] font-bold text-slate-400 capitalize tracking-tighter">총 면적</div>
-                        <div className="text-[16px] font-black text-slate-800 leading-none mt-0.5 tabular-nums">
-                          {f(div.data.reduce((acc, d) => acc + d.value, 0))}
-                        </div>
-                      </div>
-                   </div>
-                </div>
-                <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
-                   <div className="space-y-0 text-[8px]">
-                     {div.data.slice(0, 5).map((dept, idx) => (
-                        <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
-                           <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
-                             <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
-                             <span className="text-[8px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
-                           </div>
-                           <span className="text-[8px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
-                        </div>
-                     ))}
-                   </div>
-                   {div.data.length > 5 && <div className="text-center text-[8px] text-slate-400 mt-1 italic font-medium">...외 {div.data.length - 5}개 부서</div>}
-                </div>
-              </div>
-           ))}
-        </div>
-      </div>
+            </PrintPageWrapper>
     </div>
   );
 };
