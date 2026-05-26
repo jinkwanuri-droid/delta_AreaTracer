@@ -331,9 +331,9 @@ export function computeSummaryPages(
     if (s.isTotalAreaOnly) {
       permitAreaVal = stageFloorAreas['_TOTAL_'] || 0;
     } else {
-      permitAreaVal = Object.entries(stageFloorAreas).reduce((sum, [key, val]) => {
+      permitAreaVal = Object.entries(stageFloorAreas).reduce((sum: number, [key, val]) => {
         if (key === '_TOTAL_') return sum;
-        return sum + val;
+        return sum + (val as number);
       }, 0);
     }
     
@@ -451,7 +451,7 @@ export function computeSummaryPages(
     }
 
     currentPageRows.push(row);
-    currentRowsCount += row.isSpacer ? 1.2 : 1;
+    currentRowsCount += row.isSpacer ? 1.05 : 1;
 
     if (currentRowsCount >= maxPageRows) {
       resultPages.push(currentPageRows);
@@ -648,14 +648,14 @@ export default function PrintableReport() {
           font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
-          font-size: 7.5pt !important;
+          font-size: 8pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 7.5pt !important;
+          font-size: 8pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           line-height: 1.15 !important;
@@ -663,26 +663,26 @@ export default function PrintableReport() {
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 7.5pt !important;
+          font-size: 8pt !important;
           color: #94a3b8 !important;
           font-family: 'Arial Narrow', sans-serif !important;
           letter-spacing: -0.25pt !important;
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table td.col-net {
-          font-size: 7.5pt !important;
+          font-size: 8pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-qty {
-          font-size: 7.5pt !important;
+          font-size: 8pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-total {
-          font-size: 7.5pt !important;
+          font-size: 8pt !important;
           font-weight: 700 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
