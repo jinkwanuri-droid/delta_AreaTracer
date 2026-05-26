@@ -93,14 +93,14 @@ export default function PrintableReport() {
           font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
-          font-size: 6.5pt !important;
+          font-size: 5pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           line-height: 1.15 !important;
@@ -108,26 +108,26 @@ export default function PrintableReport() {
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 6pt !important;
+          font-size: 3.5pt !important;
           color: #94a3b8 !important;
           font-family: 'Arial Narrow', sans-serif !important;
           letter-spacing: -0.25pt !important;
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table td.col-net {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-qty {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-total {
-          font-size: 6pt !important;
+          font-size: 4pt !important;
           font-weight: 700 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
@@ -148,7 +148,7 @@ export default function PrintableReport() {
 
         /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 극세사 세밀 정돈) */
         .print-page table td.col-note {
-          font-size: 5pt !important;
+          font-size: 3pt !important;
           color: #64748b !important; /* 회색 폰트 */
           line-height: 1.05 !important;
           letter-spacing: -0.04em !important; /* 한글 좁은 폭(narrow) 느낌을 위한 자간 압축 */
@@ -422,7 +422,11 @@ function FloorTable({ floor }: { floor: any }) {
                         <td className="border-b border-l border-slate-300 py-0.5 px-1 text-center text-slate-400"></td>
                         <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
                           <div style={{
+                            fontSize: `[${row.deptName} 소계]`.length > 8
+                              ? `${Math.max(2.4, Math.min(4, 4 - (`[${row.deptName} 소계]`.length - 8) * 0.12))}pt`
+                              : 'inherit',
                             whiteSpace: 'nowrap',
+                            letterSpacing: `[${row.deptName} 소계]`.length > 8 ? '-0.05em' : '-0.02em',
                             lineHeight: '1.1',
                           }}>
                             [{row.deptName} 소계]
@@ -459,7 +463,11 @@ function FloorTable({ floor }: { floor: any }) {
                       <td className="border-b border-l border-slate-300 py-0.5 px-0.5 text-center text-slate-400 font-mono col-no">{row.no}</td>
                       <td className="border-b border-l border-r border-slate-300 py-0.5 px-1 text-left font-medium text-slate-800" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
                         <div style={{
+                          fontSize: row.name && row.name.length > 8
+                            ? `${Math.max(2.4, Math.min(4, 4 - (row.name.length - 8) * 0.16))}pt`
+                            : 'inherit',
                           whiteSpace: 'nowrap',
+                          letterSpacing: row.name && row.name.length > 8 ? '-0.05em' : '-0.02em',
                           lineHeight: '1.1',
                         }}>
                           {row.name}
@@ -499,7 +507,11 @@ function FloorTable({ floor }: { floor: any }) {
                       </td>
                       <td className="border-b border-r border-slate-300 py-0.5 px-1 text-left col-note leading-tight" style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>
                         <div style={{
+                          fontSize: row.note && row.note.length > 10
+                            ? `${Math.max(2.0, Math.min(3.0, 3.0 - (row.note.length - 10) * 0.08))}pt`
+                            : 'inherit',
                           whiteSpace: 'nowrap',
+                          letterSpacing: row.note && row.note.length > 10 ? '-0.06em' : '-0.04em',
                           lineHeight: '1.1',
                         }}>
                           {row.note || ''}

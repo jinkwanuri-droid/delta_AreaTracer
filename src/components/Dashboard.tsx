@@ -656,7 +656,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className={cn(
       "flex-1 flex flex-col gap-6 select-none",
-      isPdfExportMode ? "bg-white text-slate-900 dashboard-print-container font-['Arial','Helvetica',sans-serif]" : "h-full min-h-0 overflow-y-auto p-6 bg-slate-50"
+      isPdfExportMode ? "bg-white text-slate-900 printable-container font-['Arial','Helvetica',sans-serif]" : "h-full min-h-0 overflow-y-auto p-6 bg-slate-50"
     )}>
       {isPdfExportMode && (
         <style>{`
@@ -673,7 +673,7 @@ const Dashboard: React.FC = () => {
               overflow: visible !important;
             }
           }
-          .dashboard-print-container { width: 1280px !important; min-width: 1280px !important; max-width: none; padding: 0; margin: 0; left: 0; }
+          .printable-container { width: 100%; max-width: none; padding: 0; margin: 0; }
           .print-page { page-break-after: always; page-break-inside: avoid; }
           .print-page:last-child { page-break-after: auto; }
           .recharts-tooltip-wrapper { display: none !important; }

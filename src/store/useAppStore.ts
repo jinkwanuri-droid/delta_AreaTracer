@@ -235,8 +235,6 @@ export const findRoomNote = (roomNotes: Record<string, string> | undefined | nul
   return "";
 };
 
-let activeFetchPromise: Promise<void> | null = null;
-
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -564,12 +562,6 @@ export const useAppStore = create<AppState>()(
           };
         }),
       fetchData: async (force = false) => {
-        if (activeFetchPromise) {
-          return activeFetchPromise;
-        }
-        let resolvePromise: () => void = () => {};
-        activeFetchPromise = new Promise<void>((r) => { resolvePromise = r; });
-
         set({ isLoading: true });
         const state = get();
         
@@ -825,8 +817,6 @@ export const useAppStore = create<AppState>()(
           throw e;
         } finally {
           set({ isLoading: false });
-          resolvePromise();
-          activeFetchPromise = null;
         }
       },
       fetchTableList: async () => {}, // No-op, removed
