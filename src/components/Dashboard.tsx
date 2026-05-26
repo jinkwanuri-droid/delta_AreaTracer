@@ -626,10 +626,11 @@ const Dashboard: React.FC = () => {
   }, [currentStage, divisions, medicalOnly, medicalDivisionIds, filteredValues, departments, rooms]);
 
   const PrintHeader = ({ page, total }: { page: number, total: number }) => (
-    <div className="flex items-end justify-between border-b-[1.7px] border-slate-900 pb-1 mb-2 shrink-0 select-none" style={{ height: '14mm' }}>
+    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5 shrink-0 select-none" style={{ height: '14mm' }}>
       <div>
         <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
           <span>대시보드</span>
+          <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page}/{total})</span>
         </h2>
       </div>
       <div className="flex flex-col items-end gap-1 text-right pb-0.5">
@@ -729,7 +730,7 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={1} total={2}>
         {/* Main Grid: Reorganized for flexible ordering on mobile */}
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[272px]" : "grid-cols-1 lg:grid-cols-5")}>
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[270px]" : "grid-cols-1 lg:grid-cols-5")}>
 
         
         {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
@@ -739,7 +740,7 @@ const Dashboard: React.FC = () => {
             
             {/* KPI 1: 전체 연면적 */}
             <motion.div 
-              initial={{ opacity: 0, y: 15 }}
+              initial={isInitialMount ? { opacity: 0, y: 15 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
               className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-indigo-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
@@ -770,7 +771,7 @@ const Dashboard: React.FC = () => {
 
             {/* KPI 2: 공용면적 */}
             <motion.div 
-              initial={{ opacity: 0, y: 15 }}
+              initial={isInitialMount ? { opacity: 0, y: 15 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
               className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-blue-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
@@ -795,7 +796,7 @@ const Dashboard: React.FC = () => {
 
             {/* KPI 3: G/N 비율 */}
             <motion.div 
-              initial={{ opacity: 0, y: 15 }}
+              initial={isInitialMount ? { opacity: 0, y: 15 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-emerald-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
@@ -828,7 +829,7 @@ const Dashboard: React.FC = () => {
 
             {/* KPI 4: 의료 외 면적 */}
             <motion.div 
-              initial={{ opacity: 0, y: 15 }}
+              initial={isInitialMount ? { opacity: 0, y: 15 } : false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
               className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-amber-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
@@ -1104,7 +1105,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[272px] mt-4" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[270px] mt-4" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
           {/* Row 2: Donut Chart and Detailed Trends */}
           <div className={cn(isPdfExportMode ? "col-span-2 order-1 h-[272px]" : "order-3 lg:order-3 lg:col-span-2")}>
           {/* Division share donut */}
@@ -1335,7 +1336,8 @@ const Dashboard: React.FC = () => {
                                         y={y + dy} 
                                         fill={isActive ? "#0f172a" : "#64748b"} 
                                         fontSize={10.5} 
-                                                                      >
+                                        fontWeight="bold"
+                                      >
                                         {value > 1000 ? `${(value/1000).toFixed(1)}천` : Math.round(value)}
                                       </text>
                                     </g>
@@ -1360,9 +1362,9 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={2} total={2}>
       {/* Floor & Ward Row */}
-      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[272px]" : "grid-cols-1 lg:grid-cols-10")}>
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[270px]" : "grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
-        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[272px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[270px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1515,7 +1517,7 @@ const Dashboard: React.FC = () => {
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
         <div 
-          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 p-4 h-[272px]" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
+          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 p-4 h-[270px]" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
           {/* Subtle gradient glow in bg */}
@@ -1587,7 +1589,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Division Dept Shares */}
-      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 mt-4", isPdfExportMode ? "p-4 h-[272px]" : "p-6 mt-6")}>
+      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 mt-4", isPdfExportMode ? "p-4 h-[270px]" : "p-6 mt-6")}>
         <div className="flex items-center gap-2 mb-2">
           <Stethoscope size={18} className="text-indigo-500" />
           <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
