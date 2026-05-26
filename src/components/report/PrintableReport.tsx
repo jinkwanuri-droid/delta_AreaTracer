@@ -93,14 +93,14 @@ export default function PrintableReport() {
           font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
-          font-size: 6.5pt !important;
+          font-size: 7pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 6pt !important;
+          font-size: 7pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           line-height: 1.15 !important;
@@ -108,26 +108,26 @@ export default function PrintableReport() {
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 6pt !important;
+          font-size: 7pt !important;
           color: #94a3b8 !important;
           font-family: 'Arial Narrow', sans-serif !important;
           letter-spacing: -0.25pt !important;
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table td.col-net {
-          font-size: 6pt !important;
+          font-size: 7pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-qty {
-          font-size: 6pt !important;
+          font-size: 7pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-total {
-          font-size: 6pt !important;
+          font-size: 7pt !important;
           font-weight: 700 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
@@ -148,7 +148,7 @@ export default function PrintableReport() {
 
         /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 극세사 세밀 정돈) */
         .print-page table td.col-note {
-          font-size: 5pt !important;
+          font-size: 6pt !important;
           color: #64748b !important; /* 회색 폰트 */
           line-height: 1.05 !important;
           letter-spacing: -0.04em !important; /* 한글 좁은 폭(narrow) 느낌을 위한 자간 압축 */
@@ -285,7 +285,7 @@ function FloorTable({ floor }: { floor: any }) {
     return result;
   }, [floorRooms, departments, divisions, stages, valsMap, baseId, targetId]);
 
-  const ROWS_PER_PAGE = 22; // Keep content safe from print layout overflows
+  const ROWS_PER_PAGE = 25; // Keep content safe from print layout overflows
 
   const pages = useMemo(() => {
     const p = [];
