@@ -644,7 +644,7 @@ const Dashboard: React.FC = () => {
   const PrintPageWrapper = ({ children, page, total }: { children: React.ReactNode, page: number, total: number }) => {
     if (isPdfExportMode) {
       return (
-        <div className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+        <div className="print-page w-full flex flex-col justify-start bg-white" style={{ minHeight: '162mm', maxHeight: '162mm', boxSizing: 'border-box', overflow: 'hidden' }}>
           <PrintHeader page={page} total={total} />
           {children}
         </div>
@@ -673,8 +673,22 @@ const Dashboard: React.FC = () => {
               overflow: visible !important;
             }
           }
-          .dashboard-print-container { width: 100% !important; max-width: 100% !important; min-width: auto !important; padding: 0 !important; margin: 0 !important; }
-          .print-page { page-break-after: always; page-break-inside: avoid; }
+          .dashboard-print-container {
+            width: 1040px !important;
+            max-width: 1040px !important;
+            min-width: 1040px !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+            background: white !important;
+          }
+          .print-page {
+            page-break-after: always;
+            page-break-inside: avoid;
+            margin-bottom: 0 !important;
+            overflow: hidden !important;
+            background: white !important;
+            box-sizing: border-box !important;
+          }
           .print-page:last-child { page-break-after: auto; }
           .recharts-tooltip-wrapper { display: none !important; }
         `}</style>
@@ -708,7 +722,7 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={1} total={5}>
         {/* Main Grid: Reorganized for flexible ordering on mobile */}
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5" : "grid-cols-1 lg:grid-cols-5")}>
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[345px]" : "grid-cols-1 lg:grid-cols-5")}>
 
         
         {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
@@ -721,7 +735,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-indigo-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-indigo-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">전체 연면적</span>
@@ -729,8 +743,8 @@ const Dashboard: React.FC = () => {
                   <LayoutGrid size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10 text-right">
-                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end">
+              <div className={cn("z-10 text-right", isPdfExportMode ? "mt-1" : "mt-4")}>
+                <h3 className={cn("font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end", isPdfExportMode ? "text-[21px]" : "text-[28px]")}>
                   <span>{formatNumberParts(currentStage?.gross || 0).integer}</span>
                   <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(currentStage?.gross || 0).decimal}</span>
                   <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
@@ -752,7 +766,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-blue-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-blue-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">공용면적</span>
@@ -760,8 +774,8 @@ const Dashboard: React.FC = () => {
                   <Trees size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10 text-right">
-                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end">
+              <div className={cn("z-10 text-right", isPdfExportMode ? "mt-1" : "mt-4")}>
+                <h3 className={cn("font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end", isPdfExportMode ? "text-[21px]" : "text-[28px]")}>
                   <span>{formatNumberParts(calculatedCommonArea).integer}</span>
                   <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedCommonArea).decimal}</span>
                   <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
@@ -777,7 +791,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-emerald-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-emerald-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">G/N 비율</span>
@@ -785,9 +799,9 @@ const Dashboard: React.FC = () => {
                   <Activity size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10 w-full text-right">
+              <div className={cn("z-10 w-full text-right", isPdfExportMode ? "mt-1" : "mt-4")}>
                 <div className="flex items-baseline justify-end gap-x-2">
-                  <span className="text-[32px] font-black text-slate-800 tracking-tight leading-none">{(currentStage?.gnRatio || 0).toFixed(2)}</span>
+                  <span className={cn("font-black text-slate-800 tracking-tight leading-none", isPdfExportMode ? "text-[24px]" : "text-[32px]")}>{(currentStage?.gnRatio || 0).toFixed(2)}</span>
                 </div>
                 {/* Embedded Progress Bar */}
                 <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-100 flex mt-3 shadow-inner">
@@ -810,7 +824,7 @@ const Dashboard: React.FC = () => {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="bg-white py-6 px-5 rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-amber-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default"
+              className={cn("bg-white rounded-2xl shadow-[0_3px_12px_-2px_rgba(0,0,0,0.03)] border border-slate-200/60 hover:border-amber-200 hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col justify-between relative overflow-hidden group cursor-default", isPdfExportMode ? "p-3.5" : "py-6 px-5")}
             >
               <div className="flex justify-between items-start z-10">
                 <span className="text-slate-400 text-[12px] font-black tracking-normal">의료 외 면적</span>
@@ -818,8 +832,8 @@ const Dashboard: React.FC = () => {
                   <Box size={13} strokeWidth={2.5} />
                 </div>
               </div>
-              <div className="mt-4 z-10 text-right">
-                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end">
+              <div className={cn("z-10 text-right", isPdfExportMode ? "mt-1" : "mt-4")}>
+                <h3 className={cn("font-black text-slate-800 tracking-tight leading-none flex items-baseline justify-end", isPdfExportMode ? "text-[21px]" : "text-[28px]")}>
                   <span>{formatNumberParts(calculatedNonMedicalArea).integer}</span>
                   <span className="text-[0.78em] font-bold text-slate-600">{formatNumberParts(calculatedNonMedicalArea).decimal}</span>
                   <span className="text-[11px] font-black text-slate-400 ml-0.5">㎡</span>
@@ -844,7 +858,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             
-            <div className="h-[235px] w-full mt-2">
+            <div className={cn("w-full mt-2", isPdfExportMode ? "h-[275px]" : "h-[235px]")}>
               <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <ComposedChart 
                   data={areaByStage} 
@@ -1085,11 +1099,11 @@ const Dashboard: React.FC = () => {
       </PrintPageWrapper>
       
       <PrintPageWrapper page={2} total={5}>
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[345px]" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
           {/* Row 2: Donut Chart and Detailed Trends */}
-          <div className={cn("order-3 lg:order-3", isPdfExportMode ? "col-span-2" : "lg:col-span-2")}>
+          <div className={cn(isPdfExportMode ? "col-span-2 order-1 h-[345px]" : "order-3 lg:order-3 lg:col-span-2")}>
           {/* Division share donut */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full flex flex-col justify-between" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+          <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "p-4 h-full" : "p-6 h-full")} style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -1098,7 +1112,7 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex flex-col items-center justify-center w-full h-full my-auto flex-1 min-h-[300px]">
+              <div className={cn("flex flex-col items-center justify-center w-full h-full my-auto flex-1", isPdfExportMode ? "min-h-0 h-[260px]" : "min-h-[300px]")}>
                 <div className="w-full h-full flex-1 mx-auto z-0 grid">
                   <div className="col-start-1 row-start-1 w-full h-full text-center">
                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
@@ -1110,8 +1124,8 @@ const Dashboard: React.FC = () => {
                     >
                       <Pie
                         data={divisionData}
-                        innerRadius="56%" 
-                        outerRadius="85%"
+                        innerRadius={isPdfExportMode ? "42%" : "56%"} 
+                        outerRadius={isPdfExportMode ? "68%" : "85%"}
                         startAngle={90}
                         endAngle={-270}
                         paddingAngle={4}
@@ -1144,12 +1158,12 @@ const Dashboard: React.FC = () => {
                               fill="#1e293b" 
                               textAnchor={x > cx ? 'start' : 'end'} 
                               dominantBaseline="central" 
-                              fontSize={11.5} 
+                              fontSize={isPdfExportMode ? 9.5 : 11.5} 
                               fontWeight="bold"
                               style={{ fontFamily: '"Pretendard Variable", sans-serif', opacity: opacityVal, transition: 'opacity 300ms ease' }}
                             >
                               <tspan x={x} dy="-0.6em">{name}</tspan>
-                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={11.5} fontWeight="normal">
+                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={isPdfExportMode ? 9.5 : 11.5} fontWeight="normal">
                                 {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
                               </tspan>
                             </text>
@@ -1193,9 +1207,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className={cn("group", isPdfExportMode ? "col-span-3" : "lg:col-span-3 order-4 lg:order-4")}>
+        <div className={cn("group", isPdfExportMode ? "col-span-3 order-2 h-[345px]" : "lg:col-span-3 order-4 lg:order-4")}>
           {/* 단계별 부문별 면적 추이 (Big Line/Area Chart) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between h-full" style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
+          <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex-1 flex flex-col justify-between h-full", isPdfExportMode ? "p-4" : "p-6")} style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
               <div className="flex-1 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-4">
@@ -1228,7 +1242,7 @@ const Dashboard: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <div className="flex-1 w-full min-h-[290px]">
+                <div className={cn("flex-1 w-full", isPdfExportMode ? "min-h-0 h-[260px]" : "min-h-[290px]")}>
                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
@@ -1316,15 +1330,7 @@ const Dashboard: React.FC = () => {
                                         y={y + dy} 
                                         fill={isActive ? "#0f172a" : "#64748b"} 
                                         fontSize={10.5} 
-                                        fontWeight="900" 
-                                        textAnchor="middle" 
-                                        dominantBaseline="central"
-                                        stroke="#ffffff" 
-                                        strokeWidth={4} 
-                                        paintOrder="stroke"
-                                        strokeLinejoin="round"
-                                        style={{ transition: 'all 300ms ease' }}
-                                      >
+                                                                      >
                                         {value > 1000 ? `${(value/1000).toFixed(1)}천` : Math.round(value)}
                                       </text>
                                     </g>
@@ -1349,9 +1355,9 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={3} total={5}>
       {/* Floor & Ward Row */}
-      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10" : "grid-cols-1 lg:grid-cols-10")}>
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[345px]" : "grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
-        <div className={cn("bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[400px] justify-between", isPdfExportMode ? "col-span-7" : "lg:col-span-7 col-span-1")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[345px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1386,7 +1392,7 @@ const Dashboard: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className="h-[310px] w-full relative">
+            <div className={cn("w-full relative", isPdfExportMode ? "h-[290px]" : "h-[310px]")}>
                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-floors-rc-${medicalOnly}-${activeTrendDivId || 'all'}`}>
                  <BarChart 
                    layout="vertical" 
@@ -1504,7 +1510,7 @@ const Dashboard: React.FC = () => {
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
         <div 
-          className={cn("bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden h-[400px]", isPdfExportMode ? "col-span-3" : "lg:col-span-3 col-span-1")}
+          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 p-4 h-[345px]" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
           {/* Subtle gradient glow in bg */}
@@ -1578,7 +1584,7 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={4} total={5}>
       {/* Division Dept Shares */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-6")}>
         <div className="flex items-center gap-2 mb-2">
           <Stethoscope size={18} className="text-indigo-500" />
           <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
@@ -1586,7 +1592,7 @@ const Dashboard: React.FC = () => {
         
         <div className={cn("grid", isPdfExportMode ? "grid-cols-5 gap-3" : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6")}>
            {divisionDeptShares.map((div, i) => (
-              <div key={i} className="flex flex-col p-4 bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all">
+              <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-2 h-[275px] justify-between" : "p-4")}>
                 {/* Visual Header for Division Block */}
                 <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
                   <span className="truncate">{div.divisionName}</span>
@@ -1598,18 +1604,18 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="w-full aspect-square grid mb-0 pb-1">
+                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[105px] mt-1" : "aspect-square")}>
                    <div className="col-start-1 row-start-1 w-full h-full text-center">
                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                      <PieChart style={{ outline: 'none' }} tabIndex={-1}>
                         <Pie
                           data={div.data}
-                          innerRadius="52%" 
-                          outerRadius="82%"
+                          innerRadius={isPdfExportMode ? "42%" : "52%"} 
+                          outerRadius={isPdfExportMode ? "72%" : "82%"}
                           dataKey="value"
                           isAnimationActive={false}
                           label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
-                            if (percent < 0.07) return null;
+                            if (percent < 0.07 || isPdfExportMode) return null;
                             
                             const RADIAN = Math.PI / 180;
                             const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
@@ -1662,7 +1668,7 @@ const Dashboard: React.FC = () => {
                    <div className="col-start-1 row-start-1 flex items-center justify-center pointer-events-none z-0">
                       <div className="text-center mt-1">
                         <div className="text-[8.5px] font-bold text-slate-400 capitalize tracking-tighter">부문면적</div>
-                        <div className="text-[18px] font-black text-slate-800 leading-none mt-0.5 tabular-nums">
+                        <div className={cn("font-black text-slate-800 leading-none mt-0.5 tabular-nums", isPdfExportMode ? "text-[14px]" : "text-[18px]")}>
                           {f(div.data.reduce((acc, d) => acc + d.value, 0))}
                         </div>
                       </div>
@@ -1670,7 +1676,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
                    <div className="space-y-0 text-[12px]">
-                     {div.data.slice(0, 5).map((dept, idx) => (
+                     {div.data.slice(0, isPdfExportMode ? 3 : 5).map((dept, idx) => (
                         <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
                            <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
                              <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
@@ -1680,7 +1686,7 @@ const Dashboard: React.FC = () => {
                         </div>
                      ))}
                    </div>
-                   {div.data.length > 5 && <div className="text-center text-[12px] text-slate-400 mt-1 italic font-medium">...외 {div.data.length - 5}개 부서</div>}
+                   {div.data.length > (isPdfExportMode ? 3 : 5) && <div className="text-center text-[10px] text-slate-400 mt-1 italic font-medium leading-none">...외 {div.data.length - (isPdfExportMode ? 3 : 5)}개 부서</div>}
                 </div>
               </div>
            ))}
@@ -1690,16 +1696,16 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={5} total={5}>
       {/* Top Changes Grid - Grouped into Guideline and Intermediate Comparison Cards */}
-      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-2" : "grid-cols-1 lg:grid-cols-2")}>
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-2 h-[345px]" : "grid-cols-1 lg:grid-cols-2")}>
         {/* Card Main 1: 공모지침 대비 현재면적 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-6")}>
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid size={18} className="text-indigo-500" />
             <h3 className="text-sm font-black text-slate-800 tracking-tight">공모지침 대비 면적변화</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={cn("grid grid-cols-1 md:grid-cols-2", isPdfExportMode ? "gap-3" : "gap-6")}>
             {/* Sub Card: 최대 증가 */}
-            <div className="bg-rose-50/20 p-4 rounded-xl border border-rose-100/50">
+            <div className={cn("bg-rose-50/20 rounded-xl border border-rose-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
                   <TrendingUp size={14} className="text-rose-500" />
@@ -1733,7 +1739,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Sub Card: 최대 감소 */}
-            <div className="bg-emerald-50/20 p-4 rounded-xl border border-emerald-100/50">
+            <div className={cn("bg-emerald-50/20 rounded-xl border border-emerald-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
                   <TrendingDown size={14} className="text-emerald-500" />
@@ -1769,14 +1775,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card Main 2: 중간설계 대비 현재면적 */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-6")}>
           <div className="flex items-center gap-2 mb-4">
             <Layers size={18} className="text-indigo-500" />
             <h3 className="text-sm font-black text-slate-800 tracking-tight">중간설계 대비 면적변화</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={cn("grid grid-cols-1 md:grid-cols-2", isPdfExportMode ? "gap-3" : "gap-6")}>
             {/* Sub Card: 최대 증가 */}
-            <div className="bg-indigo-50/20 p-4 rounded-xl border border-indigo-100/50">
+            <div className={cn("bg-indigo-50/20 rounded-xl border border-indigo-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
                   <TrendingUp size={14} className="text-indigo-600" />
@@ -1810,7 +1816,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Sub Card: 최대 감소 */}
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <div className={cn("bg-slate-50 rounded-xl border border-slate-100", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
                   <TrendingDown size={14} className="text-slate-600" />
