@@ -93,14 +93,14 @@ export default function PrintableReport() {
           font-family: 'Arial', sans-serif !important;
         }
         .print-page table th {
-          font-size: 7pt !important;
+          font-size: 7.5pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           font-weight: 700 !important;
           line-height: 1.15 !important;
         }
         .print-page table td {
-          font-size: 7pt !important;
+          font-size: 7.5pt !important;
           padding-top: 1.0mm !important;
           padding-bottom: 1.0mm !important;
           line-height: 1.15 !important;
@@ -108,26 +108,26 @@ export default function PrintableReport() {
         
         /* 실번호 열 세밀 축소 */
         .print-page table td.col-no {
-          font-size: 7pt !important;
+          font-size: 7.5pt !important;
           color: #94a3b8 !important;
           font-family: 'Arial Narrow', sans-serif !important;
           letter-spacing: -0.25pt !important;
         }
         /* Net, Qty, Total 데이터 열 */
         .print-page table td.col-net {
-          font-size: 7pt !important;
+          font-size: 7.5pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-qty {
-          font-size: 7pt !important;
+          font-size: 7.5pt !important;
           font-weight: 400 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
         }
         .print-page table td.col-total {
-          font-size: 7pt !important;
+          font-size: 7.5pt !important;
           font-weight: 700 !important;
           letter-spacing: -0.2pt !important;
           font-family: 'Arial Narrow', sans-serif !important;
@@ -146,15 +146,28 @@ export default function PrintableReport() {
           color: #6D28D9 !important; /* 중간 보라 (purple-700) */
         }
 
-        /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 극세사 세밀 정돈) */
+        /* 비고란 (실명과 동일한 폰트 패밀리 적용 및 조금 더 짙은 회색) */
         .print-page table td.col-note {
-          font-size: 6pt !important;
-          color: #64748b !important; /* 회색 폰트 */
+          font-size: 6.5pt !important;
+          color: #334155 !important; /* 더 짙은 회색 (slate-700) */
           line-height: 1.05 !important;
           letter-spacing: -0.04em !important; /* 한글 좁은 폭(narrow) 느낌을 위한 자간 압축 */
-          font-weight: 300 !important; /* 성명보다 얇은 두께 */
+          font-weight: 400 !important; /* 리더빌리티 상향 */
           font-family: 'Arial', 'Pretendard', 'Noto Sans KR', 'Malgun Gothic', 'Dotum', sans-serif !important; /* 성명(실명)과 일관된 폰트 패밀리 */
         }
+
+        /* 전반적으로 테이블의 셀 테두리를 지금의 70% 수준으로 얇게 조절 (0.7px) */
+        .print-page table th,
+        .print-page table td {
+          border-color: #cbd5e1 !important;
+          border-style: solid !important;
+        }
+        .print-page .border-y { border-top-width: 0.7px !important; border-bottom-width: 0.7px !important; }
+        .print-page .border-b { border-bottom-width: 0.7px !important; }
+        .print-page .border-t { border-top-width: 0.7px !important; }
+        .print-page .border-r { border-right-width: 0.7px !important; }
+        .print-page .border-l { border-left-width: 0.7px !important; }
+        .print-page .border { border-width: 0.7px !important; }
       `}</style>
       
       {showSummary && <SummaryPrintTable />}
@@ -285,7 +298,7 @@ function FloorTable({ floor }: { floor: any }) {
     return result;
   }, [floorRooms, departments, divisions, stages, valsMap, baseId, targetId]);
 
-  const ROWS_PER_PAGE = 25; // Keep content safe from print layout overflows
+  const ROWS_PER_PAGE = 27; // Keep content safe from print layout overflows
 
   const pages = useMemo(() => {
     const p = [];
@@ -333,9 +346,12 @@ function FloorTable({ floor }: { floor: any }) {
                   <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({pageIdx + 1}/{pages.length})</span>
                 </h2>
               </div>
-              <div className="text-right pb-1">
-                <span className="text-[9px] font-bold text-slate-600">
-                  경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">층별 세부 면적계획</span>
+              <div className="flex flex-col items-end gap-1 text-right pb-0.5">
+                <span className="text-[9px] font-bold text-slate-600 leading-none">
+                  경상남도 서부의료원 건립사업 실시설계
+                </span>
+                <span className="text-[8.5px] font-extrabold text-white bg-purple-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
+                  층별 세부 면적계획
                 </span>
               </div>
             </div>
@@ -407,7 +423,7 @@ function FloorTable({ floor }: { floor: any }) {
                   if (row.isHeader) {
                      return (
                        <tr key={`${row.id}-${i}`} className="bg-slate-100/30">
-                         <td colSpan={4 + stages.length * 3} className="border-b border-l border-r border-slate-300 py-0.5 px-2 font-bold text-slate-900">
+                         <td colSpan={4 + stages.length * 3} className="border-t border-b border-l border-r border-slate-300 py-0.5 px-2 font-bold text-slate-900">
                            <div className="flex items-center gap-1.5">
                              <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.deptColor }}></div>
                              {row.deptName}
@@ -513,8 +529,8 @@ function FloorTable({ floor }: { floor: any }) {
           </div>
 
           {/* Footer Component fixed at the bottom of the page */}
-          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
-            <div>경상남도청 | 해안건축</div>
+          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium font-sans">
+            <div className="text-[10px] font-semibold text-slate-600">경상남도청 | 해안건축</div>
             <div>{pageIdx + 1}</div>
           </div>
         </div>
@@ -882,7 +898,7 @@ function SummaryPrintTable() {
     if (row.isHeader) {
       return (
         <tr key={`${row.id}-${idx}`} className="bg-slate-100/30">
-          <td colSpan={4 + stages.length} className="border-b border-l border-r border-[#CBD5E1] py-[0.41mm] px-2 font-bold text-slate-900">
+          <td colSpan={4 + stages.length} className="border-t border-b border-l border-r border-[#CBD5E1] py-[0.41mm] px-2 font-bold text-slate-900">
             <div className="flex items-center gap-1.5">
               <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.color }}></div>
               {row.divisionName}
@@ -978,9 +994,12 @@ function SummaryPrintTable() {
                   <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page.pageIdx + 1}/{page.total})</span>
                 </h2>
               </div>
-              <div className="text-right pb-1">
-                <span className="text-[9px] font-bold text-slate-600">
-                  경상남도 서부의료원 건립사업 실시설계 | <span className="font-extrabold text-indigo-700">부서별 총괄 면적표</span>
+              <div className="flex flex-col items-end gap-1 text-right pb-0.5">
+                <span className="text-[9px] font-bold text-slate-600 leading-none">
+                  경상남도 서부의료원 건립사업 실시설계
+                </span>
+                <span className="text-[8.5px] font-extrabold text-white bg-purple-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
+                  부서별 총괄 면적표
                 </span>
               </div>
             </div>
@@ -1028,8 +1047,8 @@ function SummaryPrintTable() {
           </div>
 
           {/* Footer */}
-          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium">
-            <div>경상남도청 | 해안건축</div>
+          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium font-sans">
+            <div className="text-[10px] font-semibold text-slate-600">경상남도청 | 해안건축</div>
             <div>{page.pageIdx + 1}</div>
           </div>
         </div>
