@@ -149,6 +149,14 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
   
   const sortOrder = ['net', 'common', 'other'];
   validPayload.sort((a: any, b: any) => {
+    const valA = Number(a.value) || 0;
+    const valB = Number(b.value) || 0;
+    
+    // For division trends, sort by area size descending
+    if (a.dataKey && !['net', 'common', 'other'].includes(a.dataKey as string)) {
+      return valB - valA;
+    }
+    
     const keyA = a.dataKey || a.name;
     const keyB = b.dataKey || b.name;
     let idxA = sortOrder.indexOf(keyA);
@@ -297,16 +305,20 @@ const Dashboard: React.FC = () => {
   const floorWardOverrides = useAppStore(state => state.floorWardOverrides);
 
   const [activeTrendDivId, setActiveTrendDivId] = useState<string | null>(null);
-  const [isInitialMount, setIsInitialMount] = useState(true);
+  const [hoveredDeptId, setHoveredDeptId] = useState<string | null>(null);
+  const [isInitialMount, setIsInitialMount] = useState(false);
   const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
   const chartCxRef = useRef<Record<string, Record<number, number>>>({});
 
+  // Remove isInitialMount logic as it was causing excessive flashing
+  /*
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitialMount(false);
     }, 1200);
     return () => clearTimeout(timer);
   }, []);
+  */
 
   // Filter components based on medicalOnly (Division IDs 1-5 usually)
   const medicalDivisionIds = useMemo(() => {
@@ -1207,12 +1219,12 @@ const Dashboard: React.FC = () => {
                     </ResponsiveContainer>
                   </div>
                   {/* Center total text - Overlay method for reliability */}
-                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-10">
-                    <span className={cn("font-bold text-slate-400 tracking-wider", isPdfExportMode ? "text-[8px]" : "text-[10px]")}>총 전용면적</span>
-                    <span className={cn("font-black text-slate-800 tracking-tight leading-none font-sans", isPdfExportMode ? "text-[15px]" : "text-[22px]")}>
+                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-10 translate-y-[-4px]">
+                    <span className={cn("font-bold text-slate-400 tracking-wider", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>총 전용면적</span>
+                    <span className={cn("font-black text-slate-800 tracking-tight leading-none font-sans", isPdfExportMode ? "text-[16px] my-0.5" : "text-[22px]")}>
                       {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
-                    <span className={cn("font-bold text-slate-400 mt-0.5", isPdfExportMode ? "text-[8px]" : "text-[9px]")}>㎡</span>
+                    <span className={cn("font-bold text-slate-400", isPdfExportMode ? "text-[8.5px]" : "text-[9px]")}>㎡</span>
                   </div>
                 </div>
               </div>
@@ -1357,6 +1369,9 @@ const Dashboard: React.FC = () => {
                                         fontSize={10.5} 
                                         fontWeight="900"
                                         textAnchor="middle"
+                                        stroke="#ffffff"
+                                        strokeWidth={1.5}
+                                        paintOrder="stroke"
                                       >
                                         {value > 1000 ? `${(value/1000).toFixed(1)}천` : Math.round(value)}
                                       </text>
@@ -1382,9 +1397,9 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={2} total={2}>
       {/* Floor & Ward Row */}
-      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[270px]" : "grid-cols-1 lg:grid-cols-10")}>
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[460px]" : "grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
-        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[270px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[460px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1419,7 +1434,7 @@ const Dashboard: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className={cn("w-full relative", isPdfExportMode ? "h-[200px]" : "h-[310px]")}>
+            <div className={cn("w-full relative", isPdfExportMode ? "flex-1 min-h-0" : "h-[310px]")}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-floors-rc-${medicalOnly}-${activeTrendDivId || 'all'}`}>
                   <BarChart 
                     layout="vertical" 
@@ -1437,15 +1452,19 @@ const Dashboard: React.FC = () => {
                       axisLine={false} 
                       tickLine={false} 
                       width={40}
-                      tick={{ fontSize: isPdfExportMode ? 8.5 : 11, fill: '#64748b', fontWeight: 700 }}
+                      interval={0}
+                      tick={{ fontSize: isPdfExportMode ? 9.5 : 11, fill: '#64748b', fontWeight: 800 }}
                     />
                     <Legend 
                       verticalAlign="top" 
                       align="right" 
-                      wrapperStyle={isPdfExportMode ? { paddingTop: 0, paddingRight: 5, marginTop: -25 } : { paddingTop: 0, paddingRight: 5, marginTop: -15 }}
+                      wrapperStyle={isPdfExportMode ? { paddingTop: 0, paddingRight: 5, marginTop: -35 } : { paddingTop: 0, paddingRight: 5, marginTop: -15 }}
                       iconType="circle"
-                      iconSize={6}
-                      formatter={(value) => <span className={cn("font-bold text-slate-600", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>{value}</span>}
+                      iconSize={isPdfExportMode ? 5 : 6}
+                      formatter={(value) => {
+                        if (value === 'dummyTotal') return null;
+                        return <span className={cn("font-bold text-slate-600", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>{value}</span>;
+                      }}
                     />
                     {!isPdfExportMode && (
                      <Tooltip 
@@ -1632,7 +1651,7 @@ const Dashboard: React.FC = () => {
            {divisionDeptShares.map((div, i) => (
               <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-2 h-[215px] justify-between" : "p-4")}>
                 {/* Visual Header for Division Block */}
-                <div className="text-[12px] font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5">
+                <div className={cn("font-extrabold text-slate-800 mb-1.5 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5", isPdfExportMode ? "text-[12.5px]" : "text-[14px]")}>
                   <span className="truncate">{div.divisionName}</span>
                   <span 
                     className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
@@ -1642,48 +1661,28 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[145px] mt-2 translate-y-1" : "aspect-square")}>
+                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[165px] mt-1" : "aspect-square")}>
                    <div className="col-start-1 row-start-1 w-full h-full text-center">
                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                     <PieChart style={{ outline: 'none' }} tabIndex={-1}>
+                     <PieChart 
+                       style={{ outline: 'none' }} 
+                       tabIndex={-1}
+                       onMouseLeave={() => setHoveredDeptId(null)}
+                     >
                         <Pie
                           data={div.data}
-                          innerRadius={isPdfExportMode ? "38%" : "52%"} 
-                          outerRadius={isPdfExportMode ? "65%" : "82%"}
+                          innerRadius={isPdfExportMode ? "55%" : "68%"} 
+                          outerRadius={isPdfExportMode ? "85%" : "96%"}
                           dataKey="value"
                           isAnimationActive={false}
-                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, name }) => {
+                          stroke="#fff"
+                          strokeWidth={2}
+                          onMouseEnter={(_, index) => {
+                            setHoveredDeptId(div.data[index]?.id || null);
+                          }}
+                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, name, id }) => {
                             if (cx === undefined || cy === undefined || isNaN(cx) || isNaN(cy)) return null;
-
-                            if (isPdfExportMode) {
-                              const RADIAN = Math.PI / 180;
-                              const radius = Number(outerRadius || 0) + 12;
-                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                              
-                              if (isNaN(x) || isNaN(y)) return null;
-                              
-                              // Only label largest slices or max 3
-                              if (percent < 0.08) return null;
-
-                              return (
-                                <g style={{ pointerEvents: 'none' }}>
-                                  <text 
-                                    x={x} 
-                                    y={y} 
-                                    fill="#64748b" 
-                                    textAnchor={x > cx ? 'start' : 'end'} 
-                                    dominantBaseline="central" 
-                                    fontSize={8.5} 
-                                    fontWeight="bold"
-                                  >
-                                    {name}
-                                  </text>
-                                </g>
-                              );
-                            }
-
-                            if (percent < 0.07) return null;
+                            const isHovered = hoveredDeptId === id;
                             
                             const RADIAN = Math.PI / 180;
                             const radius = Number(innerRadius || 0) + (Number(outerRadius || 0) - Number(innerRadius || 0)) * 0.5;
@@ -1692,21 +1691,43 @@ const Dashboard: React.FC = () => {
 
                             if (isNaN(x) || isNaN(y)) return null;
 
+                            // For PDF mode, always show if percent > 5% or hovered
+                            if (percent < (isPdfExportMode ? 0.05 : 0.07) && !isHovered) return null;
+
                             return (
                               <g style={{ pointerEvents: 'none' }}>
                                 <text 
                                   x={x} 
-                                  y={y} 
+                                  y={y - (isPdfExportMode ? 1 : 2)} 
                                   fill="#ffffff" 
                                   textAnchor="middle" 
                                   dominantBaseline="central" 
-                                  fontSize={11} 
+                                  fontSize={isPdfExportMode ? 7.5 : (isHovered ? 12 : 10)} 
                                   fontWeight="900" 
                                   style={{ 
-                                    filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.7))',
+                                    filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.8))',
                                     paintOrder: 'stroke',
-                                    stroke: 'rgba(0,0,0,0.15)',
-                                    strokeWidth: '1.5px'
+                                    stroke: 'rgba(0,0,0,0.2)',
+                                    strokeWidth: '1px',
+                                    transition: 'all 200ms ease'
+                                  }}
+                                >
+                                  {name.split('(')[0]}
+                                </text>
+                                <text 
+                                  x={x} 
+                                  y={y + (isPdfExportMode ? 6 : 9)} 
+                                  fill="#ffffff" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="central" 
+                                  fontSize={isPdfExportMode ? 6.5 : (isHovered ? 10 : 9)} 
+                                  fontWeight="900" 
+                                  style={{ 
+                                    filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.8))',
+                                    paintOrder: 'stroke',
+                                    stroke: 'rgba(0,0,0,0.2)',
+                                    strokeWidth: '1px',
+                                    transition: 'all 200ms ease'
                                   }}
                                 >
                                   {`${(percent * 100).toFixed(0)}%`}
@@ -1714,18 +1735,23 @@ const Dashboard: React.FC = () => {
                               </g>
                             );
                           }}
-                          labelLine={isPdfExportMode}
+                          labelLine={false}
                         >
-                          {div.data.map((entry, idx) => (
-                            <Cell 
-                              key={`cell-${idx}`} 
-                              fill={div.color} 
-                              fillOpacity={Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
-                              stroke="#fff" 
-                              strokeWidth={1.5}
-                              style={{ outline: 'none' }}
-                            />
-                          ))}
+                          {div.data.map((entry, idx) => {
+                            const isHovered = hoveredDeptId === entry.id;
+                            const isAnyHovered = !!hoveredDeptId && div.data.some(d => d.id === hoveredDeptId);
+                            return (
+                              <Cell 
+                                key={`cell-${idx}`} 
+                                fill={div.color} 
+                                fillOpacity={isAnyHovered ? (isHovered ? 1 : 0.25) : (1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
+                                stroke="#fff" 
+                                strokeWidth={isHovered ? 2 : 1.5}
+                                className="transition-all duration-300"
+                                style={{ outline: 'none', transition: 'all 300ms ease' }}
+                              />
+                            );
+                          })}
                         </Pie>
                         <Tooltip 
                           content={<CustomTooltip isPie pieTotal={div.data.reduce((acc, d) => acc + d.value, 0)} />} 
@@ -1739,7 +1765,7 @@ const Dashboard: React.FC = () => {
                       <div className="text-center mt-1">
                         <div className={cn("font-bold text-slate-400 capitalize tracking-tighter", isPdfExportMode ? "text-[7.5px]" : "text-[8.5px]")}>부문면적</div>
                         <div className={cn("font-black text-slate-800 leading-none mt-0.5 tabular-nums", isPdfExportMode ? "text-[12px]" : "text-[18px]")}>
-                          {f(div.data.reduce((acc, d) => acc + d.value, 0))}
+                          {Math.round(div.data.reduce((acc, d) => acc + d.value, 0)).toLocaleString()}
                         </div>
                       </div>
                    </div>
@@ -1749,15 +1775,29 @@ const Dashboard: React.FC = () => {
                 {!isPdfExportMode && (
                   <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
                      <div className="space-y-0 text-[12px]">
-                       {div.data.slice(0, 5).map((dept, idx) => (
-                          <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
-                             <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
-                               <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
-                               <span className="text-[12px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
-                             </div>
-                             <span className="text-[12px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
-                          </div>
-                       ))}
+                       {div.data.slice(0, 5).map((dept, idx) => {
+                          const isHovered = hoveredDeptId === dept.id;
+                          const isAnyHovered = !!hoveredDeptId && div.data.some(d => d.id === hoveredDeptId);
+                          
+                          return (
+                            <div 
+                              key={idx} 
+                              onMouseEnter={() => setHoveredDeptId(dept.id)}
+                              onMouseLeave={() => setHoveredDeptId(null)}
+                              className={cn(
+                                "flex items-center justify-between py-0.5 px-1.5 rounded transition-all cursor-default",
+                                isHovered ? "bg-indigo-50/50 shadow-sm outline outline-1 outline-indigo-100/50" : "hover:bg-white border border-transparent hover:border-slate-100/50",
+                                isAnyHovered && !isHovered && "opacity-40"
+                              )}
+                            >
+                               <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
+                                 <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
+                                 <span className={cn("text-[12px] truncate leading-none", isHovered ? "text-indigo-600 font-extrabold" : "text-slate-600 font-bold")}>{dept.name}</span>
+                               </div>
+                               <span className={cn("text-[12px] flex-shrink-0 tabular-nums", isHovered ? "text-indigo-600 font-black" : "text-slate-500 font-extrabold")}>{f(dept.value)}</span>
+                            </div>
+                          );
+                       })}
                      </div>
                      {div.data.length > 5 && <div className="text-center text-[10px] text-slate-400 mt-1 italic font-medium leading-none">...외 {div.data.length - 5}개 부서</div>}
                   </div>
@@ -1799,11 +1839,11 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
                       <div className="w-4 h-4 rounded bg-rose-100 text-rose-600 flex-shrink-0 flex items-center justify-center font-bold text-[9px]">{i+1}</div>
-                      <div className="text-[10px] font-bold text-slate-700 truncate" title={c.name}>{c.name}</div>
+                      <div className={cn("font-bold text-slate-700 truncate", isPdfExportMode ? "text-[10px]" : "text-[12px]")} title={c.name}>{c.name}</div>
                     </div>
                     <div className="flex-shrink-0 ml-1">
-                      <div className="text-[10px] font-bold text-rose-600 whitespace-nowrap">
-                        {f(c.target)}㎡ <span className="opacity-70 text-[9px] font-medium">(+{f(c.diff)})</span>
+                      <div className={cn("font-black text-rose-600 whitespace-nowrap", isPdfExportMode ? "text-[10px]" : "text-[12px]")}>
+                        +{f(c.diff)}㎡ <span className="opacity-70 text-[0.8em] font-bold">(+{c.ratio.toFixed(1)}%)</span>
                       </div>
                     </div>
                   </div>
@@ -1833,11 +1873,11 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
                       <div className="w-4 h-4 rounded bg-emerald-100 text-emerald-600 flex-shrink-0 flex items-center justify-center font-bold text-[9px]">{i+1}</div>
-                      <div className="text-[10px] font-bold text-slate-700 truncate" title={c.name}>{c.name}</div>
+                      <div className={cn("font-bold text-slate-700 truncate", isPdfExportMode ? "text-[10px]" : "text-[12px]")} title={c.name}>{c.name}</div>
                     </div>
                     <div className="flex-shrink-0 ml-1">
-                      <div className="text-[10px] font-bold text-emerald-600 whitespace-nowrap">
-                        {f(c.target)}㎡ <span className="opacity-70 text-[9px] font-medium">({f(c.diff)})</span>
+                      <div className={cn("font-black text-emerald-600 whitespace-nowrap", isPdfExportMode ? "text-[10px]" : "text-[12px]")}>
+                        {f(c.diff)}㎡ <span className="opacity-70 text-[0.8em] font-bold">({c.ratio.toFixed(1)}%)</span>
                       </div>
                     </div>
                   </div>
@@ -1876,11 +1916,11 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
                       <div className="w-4 h-4 rounded bg-indigo-100 text-indigo-600 flex-shrink-0 flex items-center justify-center font-bold text-[9px]">{i+1}</div>
-                      <div className="text-[10px] font-bold text-slate-700 truncate" title={c.name}>{c.name}</div>
+                      <div className={cn("font-bold text-slate-700 truncate", isPdfExportMode ? "text-[10px]" : "text-[12px]")} title={c.name}>{c.name}</div>
                     </div>
                     <div className="flex-shrink-0 ml-1">
-                      <div className="text-[10px] font-bold text-indigo-600 whitespace-nowrap">
-                        {f(c.target)}㎡ <span className="opacity-70 text-[9px] font-medium">(+{f(c.diff)})</span>
+                      <div className={cn("font-black text-indigo-600 whitespace-nowrap", isPdfExportMode ? "text-[10px]" : "text-[12px]")}>
+                        +{f(c.diff)}㎡ <span className="opacity-70 text-[0.8em] font-bold">(+{c.ratio.toFixed(1)}%)</span>
                       </div>
                     </div>
                   </div>
@@ -1909,12 +1949,12 @@ const Dashboard: React.FC = () => {
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800/95"></div>
                     </div>
                     <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
-                      <div className="w-4 h-4 rounded bg-slate-100 text-slate-600 flex-shrink-0 flex items-center justify-center font-bold text-[9px]">{i+1}</div>
-                      <div className="text-[10px] font-bold text-slate-700 truncate" title={c.name}>{c.name}</div>
+                      <div className="w-4 h-4 rounded bg-slate-200 text-slate-600 flex-shrink-0 flex items-center justify-center font-bold text-[9px]">{i+1}</div>
+                      <div className={cn("font-bold text-slate-700 truncate", isPdfExportMode ? "text-[10px]" : "text-[12px]")} title={c.name}>{c.name}</div>
                     </div>
                     <div className="flex-shrink-0 ml-1">
-                      <div className="text-[10px] font-bold text-slate-600 whitespace-nowrap">
-                        {f(c.target)}㎡ <span className="opacity-70 text-[9px] font-medium">({f(c.diff)})</span>
+                      <div className={cn("font-black text-slate-600 whitespace-nowrap", isPdfExportMode ? "text-[10px]" : "text-[12px]")}>
+                        {f(c.diff)}㎡ <span className="opacity-70 text-[0.8em] font-bold">({c.ratio.toFixed(1)}%)</span>
                       </div>
                     </div>
                   </div>
