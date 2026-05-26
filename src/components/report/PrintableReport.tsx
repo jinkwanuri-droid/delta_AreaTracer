@@ -21,8 +21,469 @@ const formatQty = (qty: number | undefined | null) => {
   return qty.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 };
 
+// Helper to get ward count from floor and department
+const getWardCount = (floorId: string, deptId: string, floorWardOverrides: Record<string, number>, departments: any[], rooms: any[]) => {
+  const override = floorWardOverrides[`${floorId}|${deptId}`];
+  if (override !== undefined) return override;
+
+  const dept = departments.find(d => d.id === deptId);
+  if (dept && deptId === "101") {
+     const rangeMatch = dept.name.match(/(\d+)\s*[~-]\s*(\d+)/);
+     if (rangeMatch) {
+       const start = parseInt(rangeMatch[1]);
+       const end = parseInt(rangeMatch[2]);
+       if (!isNaN(start) && !isNaN(end) && end >= start) return end - start + 1;
+     }
+     
+     const roomsInDept = rooms.filter(r => r.departmentId === deptId && (floorId === "all" || r.floorId.toUpperCase().replace(/F$/i, '').trim() === floorId.toUpperCase().replace(/F$/i, '').trim()));
+     for (const r of roomsInDept) {
+       const match = r.note?.match(/(\d+)\s*개\s*병동/);
+       if (match) return parseInt(match[1]);
+     }
+  }
+  return 1;
+};
+
+// Pure function to calculate floor printable pages
+export function computeFloorPages(
+  floor: any,
+  rooms: any[],
+  departments: any[],
+  divisions: any[],
+  stages: any[],
+  valsMap: Map<string, any>,
+  baseId: string | null,
+  targetId: string | null,
+  rowsPerPage: number = 27
+) {
+  const floorRooms = rooms.filter(r => r.floorId === floor.id).filter(r => {
+    const dept = departments.find(d => d.id === r.departmentId);
+    if (!dept) return false;
+    return /^(0?[1-5]|[1-5])$/.test(dept.divisionId);
+  }).sort((a, b) => {
+    const dA = departments.find(d => d.id === a.departmentId)?.order || 999;
+    const dB = departments.find(d => d.id === b.departmentId)?.order || 999;
+    if (dA !== dB) return dA - dB;
+    return a.no.localeCompare(b.no, undefined, { numeric: true });
+  });
+
+  const result: any[] = [];
+  let currentDeptId: string | null = null;
+  let deptRooms: any[] = [];
+
+  const addSummary = (dId: string, roomsOfDept: any[]) => {
+    const dept = departments.find(d => d.id === dId);
+    const div = divisions.find(v => v.id === dept?.divisionId);
+    
+    const summary: any = {
+      id: `summary-${dId}`,
+      isSummary: true,
+      deptName: dept?.name || "기타",
+      deptColor: div?.color || "#64748b",
+      variant: 0
+    };
+
+    stages.forEach(s => {
+      let total = 0;
+      roomsOfDept.forEach(r => {
+        const v = valsMap.get(`${r.id}|${s.id}`);
+        if (v) total += (v.unitArea || 0) * (v.quantity || 0);
+      });
+      summary[`${s.id}_total`] = total;
+    });
+    
+    if (baseId && targetId) {
+      summary.variance = (summary[`${targetId}_total`] || 0) - (summary[`${baseId}_total`] || 0);
+    }
+
+    result.push(summary);
+  };
+
+  floorRooms.forEach(room => {
+    if (room.departmentId !== currentDeptId) {
+      if (currentDeptId !== null) {
+        addSummary(currentDeptId, deptRooms);
+        result.push({ id: `spacer-${currentDeptId}`, isSpacer: true });
+      }
+      currentDeptId = room.departmentId;
+      deptRooms = [];
+      
+      const dept = departments.find(d => d.id === currentDeptId);
+      const div = divisions.find(v => v.id === dept?.divisionId);
+      result.push({
+        id: `header-${currentDeptId}`,
+        isHeader: true,
+        deptName: dept?.name || "기타",
+        departmentId: currentDeptId,
+        deptColor: div?.color || "#6366f1"
+      });
+    }
+    deptRooms.push(room);
+    
+    const row: any = { ...room };
+    stages.forEach(s => {
+      const v = valsMap.get(`${room.id}|${s.id}`);
+      row[`${s.id}_unit`] = v?.unitArea || 0;
+      row[`${s.id}_qty`] = v?.quantity || 0;
+      row[`${s.id}_total`] = (v?.unitArea || 0) * (v?.quantity || 0);
+      row[`${s.id}_isEmpty`] = !v;
+    });
+
+    if (baseId && targetId) {
+      row.variance = (row[`${targetId}_total`] || 0) - (row[`${baseId}_total`] || 0);
+    }
+    
+    result.push(row);
+  });
+
+  if (currentDeptId !== null) {
+    addSummary(currentDeptId, deptRooms);
+  }
+
+  const p: any[][] = [];
+  let current: any[] = [];
+  let count = 0;
+  
+  result.forEach((row) => {
+    if (count === 0 && row.isSpacer) return;
+
+    if (row.isHeader && count > 0 && rowsPerPage - count < 3) {
+      p.push(current);
+      current = [];
+      count = 0;
+    }
+
+    if (count >= rowsPerPage) {
+      p.push(current);
+      current = [];
+      count = 0;
+    }
+    
+    current.push(row);
+    count += row.isSpacer ? 0.3 : 1;
+  });
+  
+  if (current.length > 0) {
+    p.push(current);
+  }
+  
+  return p;
+}
+
+// Pure function to calculate summary printable pages
+export function computeSummaryPages(
+  divisions: any[],
+  departments: any[],
+  rooms: any[],
+  values: any[],
+  stages: any[],
+  floorAreasByStage: any,
+  summaryNotes: any,
+  departmentNotes: any,
+  baseStageId: string | null,
+  targetStageId: string | null,
+  medicalOnly: boolean,
+  maxPageRows: number = 28
+) {
+  if (stages.length < 1) return [];
+
+  const deptMap = new Map();
+  departments.forEach(dept => {
+    const stageAreas: Record<string, number> = {};
+    stages.forEach(s => stageAreas[s.id] = 0);
+
+    deptMap.set(dept.id, {
+      deptId: dept.id,
+      divisionId: dept.divisionId,
+      code: dept.code || '',
+      department: dept.name,
+      stageAreas,
+      notes: dept.note || '',
+      order: dept.order
+    });
+  });
+
+  values.forEach(v => {
+    const room = rooms.find(r => r.id === v.roomId);
+    if (!room) return;
+    const deptData = deptMap.get(room.departmentId);
+    if (!deptData) return;
+
+    const area = v.unitArea * v.quantity;
+    if (deptData.stageAreas[v.stageId] !== undefined) {
+      deptData.stageAreas[v.stageId] += area;
+    }
+  });
+
+  const rows: any[] = [];
+  const isMedicalOnly = medicalOnly;
+
+  const sortedDivisions = [...divisions]
+    .filter(div => !isMedicalOnly || /^\d+$/.test(div.id))
+    .sort((a, b) => a.order - b.order);
+
+  const grandStageTotals: Record<string, number> = {};
+  stages.forEach(s => grandStageTotals[s.id] = 0);
+
+  sortedDivisions.forEach((div, index) => {
+    const divDepts = Array.from(deptMap.values())
+      .filter(d => d.divisionId === div.id)
+      .sort((a, b) => a.order - b.order);
+
+    if (divDepts.length === 0) return;
+
+    if (index > 0) {
+      rows.push({
+        id: `spacer-${div.id}`,
+        isSpacer: true
+      });
+    }
+
+    rows.push({
+       id: `header-${div.id}`,
+       isHeader: true,
+       divisionName: div.name,
+       color: div.color
+    });
+
+    const divStageTotals: Record<string, number> = {};
+    stages.forEach(s => divStageTotals[s.id] = 0);
+
+    divDepts.forEach((deptData) => {
+      const targetVal = deptData.stageAreas[targetStageId || ''] || 0;
+      const baseVal = deptData.stageAreas[baseStageId || ''] || 0;
+      const diff = targetVal - baseVal;
+
+      rows.push({
+        ...deptData,
+        id: deptData.deptId,
+        divisionName: div.name,
+        diff,
+        divColor: div.color
+      });
+
+      stages.forEach(s => {
+        divStageTotals[s.id] += deptData.stageAreas[s.id];
+        grandStageTotals[s.id] += deptData.stageAreas[s.id];
+      });
+    });
+
+    const targetDivVal = divStageTotals[targetStageId || ''] || 0;
+    const baseDivVal = divStageTotals[baseStageId || ''] || 0;
+    
+    rows.push({
+      id: `subtotal-${div.id}`,
+      isSubtotal: true,
+      divisionName: div.name,
+      department: `${div.name} 소계`,
+      stageAreas: divStageTotals,
+      diff: targetDivVal - baseDivVal,
+      divColor: div.color
+    });
+  });
+
+  const targetGrandVal = grandStageTotals[targetStageId || ''] || 0;
+  const baseGrandVal = grandStageTotals[baseStageId || ''] || 0;
+
+  rows.push({
+    id: 'spacer-before-grand-total',
+    isSpacer: true
+  });
+
+  rows.push({
+    id: 'grand-total',
+    isGrandTotal: true,
+    code: '가',
+    department: '의료시설 전용면적 합계',
+    stageAreas: grandStageTotals,
+    diff: targetGrandVal - baseGrandVal,
+  });
+
+  const commonAreaStageTotals: Record<string, number> = {};
+  const gnRatioStageTotals: Record<string, number> = {};
+  const medAreaSumStageTotals: Record<string, number> = {};
+  const garageAreaStageTotals: Record<string, number> = {};
+  const medTotalAreaStageTotals: Record<string, number> = {};
+  const outdoorAreaStageTotals: Record<string, number> = {};
+  const permitAreaStageTotals: Record<string, number> = {};
+
+  stages.forEach(s => {
+    let stageGarageArea = 0;
+    let stageOutdoorArea = 0;
+
+    values.forEach(v => {
+      if (v.stageId !== s.id) return;
+      const room = rooms.find(r => r.id === v.roomId);
+      if (!room) return;
+      
+      const area = v.unitArea * v.quantity;
+      if (room.no.startsWith('P')) {
+        stageGarageArea += area;
+      } else if (room.no.startsWith('O')) {
+        stageOutdoorArea += area;
+      }
+    });
+
+    const netAreaA = grandStageTotals[s.id] || 0;
+    const stageFloorAreas = floorAreasByStage[s.id] || {};
+    
+    let permitAreaVal = 0;
+    if (s.isTotalAreaOnly) {
+      permitAreaVal = stageFloorAreas['_TOTAL_'] || 0;
+    } else {
+      permitAreaVal = Object.entries(stageFloorAreas).reduce((sum, [key, val]) => {
+        if (key === '_TOTAL_') return sum;
+        return sum + val;
+      }, 0);
+    }
+    
+    const commonAreaB = permitAreaVal > 0 ? (permitAreaVal - netAreaA - stageGarageArea - stageOutdoorArea) : 0;
+    const gnRatio = netAreaA > 0 ? ((netAreaA + commonAreaB) / netAreaA) : 0;
+
+    commonAreaStageTotals[s.id] = commonAreaB;
+    gnRatioStageTotals[s.id] = gnRatio;
+    medAreaSumStageTotals[s.id] = netAreaA + commonAreaB;
+    garageAreaStageTotals[s.id] = stageGarageArea;
+    medTotalAreaStageTotals[s.id] = netAreaA + commonAreaB + stageGarageArea;
+    outdoorAreaStageTotals[s.id] = stageOutdoorArea;
+    permitAreaStageTotals[s.id] = permitAreaVal;
+  });
+
+  const targetSafeId = targetStageId || '';
+  const baseSafeId = baseStageId || '';
+
+  rows.push({
+    id: 'common-area-sum',
+    isSummaryRow: true,
+    code: '나',
+    department: '공용면적',
+    stageAreas: commonAreaStageTotals,
+    diff: commonAreaStageTotals[targetSafeId] - commonAreaStageTotals[baseSafeId],
+    notes: summaryNotes['common-area-sum'] ?? departmentNotes['common-area-sum'] ?? '[참고 1] 종합병원 적정 공용비/공용면적 검토',
+  });
+
+  rows.push({
+    id: 'gn-ratio',
+    isSummaryRow: true,
+    isRatio: true,
+    code: '(가+나)/가',
+    department: '공용비(G/N비)',
+    stageAreas: gnRatioStageTotals,
+    diff: gnRatioStageTotals[targetSafeId] - gnRatioStageTotals[baseSafeId],
+    notes: summaryNotes['gn-ratio'] ?? departmentNotes['gn-ratio'] ?? '종합병원 평균값 1.50~1.60 사잇값으로 제안',
+  });
+
+  rows.push({
+    id: 'med-area-sum',
+    isSummaryRow: true,
+    code: '가+나',
+    department: '의료시설 면적',
+    stageAreas: medAreaSumStageTotals,
+    diff: medAreaSumStageTotals[targetSafeId] - medAreaSumStageTotals[baseSafeId],
+    notes: summaryNotes['med-area-sum'] ?? departmentNotes['med-area-sum'] ?? '',
+  });
+
+  rows.push({
+    id: 'garage-area',
+    isSummaryRow: true,
+    code: '다',
+    department: '옥내 주차공간',
+    stageAreas: garageAreaStageTotals,
+    diff: garageAreaStageTotals[targetSafeId] - garageAreaStageTotals[baseSafeId],
+    notes: summaryNotes['garage-area'] ?? departmentNotes['garage-area'] ?? '주차대수 100대 내외 계획하여 면적 제안',
+  });
+
+  rows.push({
+    id: 'med-total-area',
+    isSummaryRow: true,
+    code: '가+나+다',
+    department: '의료시설 총면적',
+    stageAreas: medTotalAreaStageTotals,
+    diff: medTotalAreaStageTotals[targetSafeId] - medTotalAreaStageTotals[baseSafeId],
+    notes: summaryNotes['med-total-area'] ?? departmentNotes['med-total-area'] ?? '',
+  });
+
+  rows.push({
+    id: 'outdoor-area',
+    isSummaryRow: true,
+    code: '라',
+    department: '옥외 공용면적',
+    stageAreas: outdoorAreaStageTotals,
+    diff: outdoorAreaStageTotals[targetSafeId] - outdoorAreaStageTotals[baseSafeId],
+    notes: summaryNotes['outdoor-area'] ?? departmentNotes['outdoor-area'] ?? '-',
+  });
+
+  rows.push({
+    id: 'permit-area',
+    isSummaryRow: true,
+    code: '가~라',
+    department: '건축허가 면적',
+    stageAreas: permitAreaStageTotals,
+    diff: permitAreaStageTotals[targetSafeId] - permitAreaStageTotals[baseStageId],
+    notes: summaryNotes['permit-area'] ?? '',
+  });
+
+  const resultPages: any[][] = [];
+  let currentPageRows: any[] = [];
+  let currentRowsCount = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+
+    if (row.isHeader) {
+      let groupRowsCount = 1;
+      for (let j = i + 1; j < rows.length; j++) {
+        const nextRow = rows[j];
+        if (nextRow.isHeader || nextRow.isSpacer || nextRow.isGrandTotal || nextRow.isSummaryRow) {
+          break;
+        }
+        groupRowsCount++;
+      }
+
+      const remainingSpace = maxPageRows - currentRowsCount;
+      if (groupRowsCount > remainingSpace && remainingSpace < 6) {
+        if (currentPageRows.length > 0) {
+          resultPages.push(currentPageRows);
+          currentPageRows = [];
+          currentRowsCount = 0;
+        }
+      }
+    }
+
+    currentPageRows.push(row);
+    currentRowsCount += row.isSpacer ? 1.2 : 1;
+
+    if (currentRowsCount >= maxPageRows) {
+      resultPages.push(currentPageRows);
+      currentPageRows = [];
+      currentRowsCount = 0;
+    }
+  }
+
+  if (currentPageRows.length > 0) {
+    resultPages.push(currentPageRows);
+  }
+
+  return resultPages;
+}
+
 export default function PrintableReport() {
-  const { floors, pdfExportTargets } = useAppStore();
+  const { 
+    floors, 
+    pdfExportTargets,
+    divisions, 
+    departments, 
+    rooms, 
+    values, 
+    stages: rawStages, 
+    visibleStageIds, 
+    floorAreasByStage, 
+    summaryNotes, 
+    departmentNotes, 
+    comparison, 
+    medicalOnly,
+    floorWardOverrides
+  } = useAppStore();
 
   const showSummary = pdfExportTargets?.includes('summary') ?? true;
   const showDetail = pdfExportTargets?.includes('detail') ?? true;
@@ -47,6 +508,100 @@ export default function PrintableReport() {
       return getVal(a.name) - getVal(b.name);
     });
   }, [floors]);
+
+  const stages = useMemo(() => {
+    return rawStages.filter(s => visibleStageIds ? visibleStageIds.includes(s.id) : true).sort((a, b) => a.order - b.order);
+  }, [rawStages, visibleStageIds]);
+
+  const baseStageId = useMemo(() => {
+    if (comparison.baseId && stages.some(s => s.id === comparison.baseId)) {
+      return comparison.baseId;
+    }
+    return stages[0]?.id;
+  }, [comparison.baseId, stages]);
+
+  const targetStageId = useMemo(() => {
+    if (comparison.targetId && stages.some(s => s.id === comparison.targetId)) {
+      return comparison.targetId;
+    }
+    return stages[stages.length - 1]?.id;
+  }, [comparison.targetId, stages]);
+
+  const valsMap = useMemo(() => {
+    const map = new Map<string, any>();
+    values.forEach(v => map.set(`${v.roomId}|${v.stageId}`, v));
+    return map;
+  }, [values]);
+
+  const totalPagesInfo = useMemo(() => {
+    let currentGlobalPage = 0;
+    const info: {
+      summaryPages: number,
+      floorPageOffsets: Record<string, number>,
+      floorPageCounts: Record<string, number>,
+      totalPages: number
+    } = {
+      summaryPages: 0,
+      floorPageOffsets: {},
+      floorPageCounts: {},
+      totalPages: 0
+    };
+
+    if (showSummary) {
+      const summaryPages = computeSummaryPages(
+        divisions,
+        departments,
+        rooms,
+        values,
+        stages,
+        floorAreasByStage,
+        summaryNotes,
+        departmentNotes,
+        baseStageId,
+        targetStageId,
+        medicalOnly
+      );
+      info.summaryPages = summaryPages.length;
+      currentGlobalPage += summaryPages.length;
+    }
+
+    if (showDetail) {
+      targetFloors.forEach(floor => {
+        const floorPages = computeFloorPages(
+          floor,
+          rooms,
+          departments,
+          divisions,
+          stages,
+          valsMap,
+          baseStageId,
+          targetStageId
+        );
+        info.floorPageOffsets[floor.id] = currentGlobalPage;
+        info.floorPageCounts[floor.id] = floorPages.length;
+        currentGlobalPage += floorPages.length;
+      });
+    }
+
+    info.totalPages = currentGlobalPage;
+    return info;
+  }, [
+    showSummary,
+    showDetail,
+    targetFloors,
+    divisions,
+    departments,
+    rooms,
+    values,
+    stages,
+    floorAreasByStage,
+    summaryNotes,
+    departmentNotes,
+    baseStageId,
+    targetStageId,
+    medicalOnly,
+    valsMap
+  ]);
 
   if (targetFloors.length === 0 && !showSummary) return null;
 
@@ -170,16 +725,34 @@ export default function PrintableReport() {
         .print-page .border { border-width: 0.7px !important; }
       `}</style>
       
-      {showSummary && <SummaryPrintTable />}
+      {showSummary && (
+        <SummaryPrintTable 
+          pageOffset={0} 
+          globalTotalPages={totalPagesInfo.totalPages} 
+        />
+      )}
       {showDetail && targetFloors.map((floor) => (
-        <FloorTable key={floor.id} floor={floor} />
+        <FloorTable 
+          key={floor.id} 
+          floor={floor} 
+          pageOffset={totalPagesInfo.floorPageOffsets[floor.id] || 0}
+          globalTotalPages={totalPagesInfo.totalPages}
+        />
       ))}
     </div>
   );
 }
 
-function FloorTable({ floor }: { floor: any }) {
-  const { rooms, departments, stages: rawStages, visibleStageIds, values, comparison, divisions } = useAppStore();
+function FloorTable({ 
+  floor, 
+  pageOffset, 
+  globalTotalPages 
+}: { 
+  floor: any; 
+  pageOffset: number; 
+  globalTotalPages: number; 
+ }) {
+  const { rooms, departments, stages: rawStages, visibleStageIds, values, comparison, divisions, floorWardOverrides } = useAppStore();
 
   const stages = useMemo(() => {
     return rawStages.filter(s => visibleStageIds ? visibleStageIds.includes(s.id) : true).sort((a, b) => a.order - b.order);
@@ -199,138 +772,24 @@ function FloorTable({ floor }: { floor: any }) {
     return stages[stages.length - 1]?.id;
   }, [comparison.targetId, stages]);
 
-  // Filter rooms for this floor
-  const floorRooms = useMemo(() => {
-    return rooms.filter(r => r.floorId === floor.id).filter(r => {
-      const dept = departments.find(d => d.id === r.departmentId);
-      if (!dept) return false;
-      return /^(0?[1-5]|[1-5])$/.test(dept.divisionId); // Show only division 1~5
-    }).sort((a, b) => {
-      const dA = departments.find(d => d.id === a.departmentId)?.order || 999;
-      const dB = departments.find(d => d.id === b.departmentId)?.order || 999;
-      if (dA !== dB) return dA - dB;
-      return a.no.localeCompare(b.no, undefined, { numeric: true });
-    });
-  }, [rooms, floor.id, departments]);
-
-  // Map values for faster access
   const valsMap = useMemo(() => {
     const map = new Map<string, any>();
     values.forEach(v => map.set(`${v.roomId}|${v.stageId}`, v));
     return map;
   }, [values]);
 
-  // Group by department for summary rows
-  const groupedRows = useMemo(() => {
-    const result: any[] = [];
-    let currentDeptId: string | null = null;
-    let deptRooms: any[] = [];
-
-    const addSummary = (dId: string, roomsOfDept: any[]) => {
-      const dept = departments.find(d => d.id === dId);
-      const div = divisions.find(v => v.id === dept?.divisionId);
-      
-      const summary: any = {
-        id: `summary-${dId}`,
-        isSummary: true,
-        deptName: dept?.name || "기타",
-        deptColor: div?.color || "#64748b",
-        variant: 0
-      };
-
-      stages.forEach(s => {
-        let total = 0;
-        roomsOfDept.forEach(r => {
-          const v = valsMap.get(`${r.id}|${s.id}`);
-          if (v) total += (v.unitArea || 0) * (v.quantity || 0);
-        });
-        summary[`${s.id}_total`] = total;
-      });
-      
-      if (baseId && targetId) {
-        summary.variance = (summary[`${targetId}_total`] || 0) - (summary[`${baseId}_total`] || 0);
-      }
-
-      result.push(summary);
-    };
-
-    floorRooms.forEach(room => {
-      if (room.departmentId !== currentDeptId) {
-        if (currentDeptId !== null) {
-          addSummary(currentDeptId, deptRooms);
-          result.push({ id: `spacer-${currentDeptId}`, isSpacer: true });
-        }
-        currentDeptId = room.departmentId;
-        deptRooms = [];
-        
-        // Add Department Header
-        const dept = departments.find(d => d.id === currentDeptId);
-        const div = divisions.find(v => v.id === dept?.divisionId);
-        result.push({
-          id: `header-${currentDeptId}`,
-          isHeader: true,
-          deptName: dept?.name || "기타",
-          deptColor: div?.color || "#6366f1"
-        });
-      }
-      deptRooms.push(room);
-      
-      const row: any = { ...room };
-      stages.forEach(s => {
-        const v = valsMap.get(`${room.id}|${s.id}`);
-        row[`${s.id}_unit`] = v?.unitArea || 0;
-        row[`${s.id}_qty`] = v?.quantity || 0;
-        row[`${s.id}_total`] = (v?.unitArea || 0) * (v?.quantity || 0);
-        row[`${s.id}_isEmpty`] = !v;
-      });
-
-      if (baseId && targetId) {
-        row.variance = (row[`${targetId}_total`] || 0) - (row[`${baseId}_total`] || 0);
-      }
-      
-      result.push(row);
-    });
-
-    if (currentDeptId !== null) {
-      addSummary(currentDeptId, deptRooms);
-    }
-
-    return result;
-  }, [floorRooms, departments, divisions, stages, valsMap, baseId, targetId]);
-
-  const ROWS_PER_PAGE = 27; // Keep content safe from print layout overflows
-
   const pages = useMemo(() => {
-    const p = [];
-    let current = [];
-    let count = 0;
-    
-    groupedRows.forEach((row) => {
-      if (count === 0 && row.isSpacer) return;
-
-      // Automatically break page if header is near page end (less than 3 rows left)
-      if (row.isHeader && count > 0 && ROWS_PER_PAGE - count < 3) {
-        p.push(current);
-        current = [];
-        count = 0;
-      }
-
-      if (count >= ROWS_PER_PAGE) {
-        p.push(current);
-        current = [];
-        count = 0;
-      }
-      
-      current.push(row);
-      count += row.isSpacer ? 0.3 : 1;
-    });
-    
-    if (current.length > 0) {
-      p.push(current);
-    }
-    
-    return p;
-  }, [groupedRows]);
+    return computeFloorPages(
+      floor,
+      rooms,
+      departments,
+      divisions,
+      stages,
+      valsMap,
+      baseId,
+      targetId
+    );
+  }, [floor, rooms, departments, divisions, stages, valsMap, baseId, targetId]);
 
   const floorTitle = floor.name.startsWith('B') ? `지하 ${floor.name.substring(1)}층` : `지상 ${floor.name.replace('F', '')}층`;
 
@@ -421,12 +880,21 @@ function FloorTable({ floor }: { floor: any }) {
                     );
                   }
                   if (row.isHeader) {
+                     const wardCount = row.departmentId === "101" ? getWardCount(floor.id, "101", floorWardOverrides, departments, rooms) : 1;
                      return (
                        <tr key={`${row.id}-${i}`} className="bg-slate-100/30">
-                         <td colSpan={4 + stages.length * 3} className="border-t border-b border-l border-r border-slate-300 py-0.5 px-2 font-bold text-slate-900">
+                         <td 
+                           colSpan={4 + stages.length * 3} 
+                           className="border-t-[1.4px] border-t-slate-500 border-b border-l border-r border-[#CBD5E1] py-0.5 px-2 font-bold text-slate-900"
+                         >
                            <div className="flex items-center gap-1.5">
                              <div className="w-[3px] h-[10px] rounded-full" style={{ backgroundColor: row.deptColor }}></div>
-                             {row.deptName}
+                             <span>{row.deptName}</span>
+                             {row.departmentId === "101" && (
+                               <span className="text-[9px] text-indigo-700 font-extrabold italic tracking-tight ml-2">
+                                 ({wardCount}개 병동으로 구성)
+                               </span>
+                             )}
                            </div>
                          </td>
                        </tr>
@@ -449,7 +917,7 @@ function FloorTable({ floor }: { floor: any }) {
                           return (
                             <React.Fragment key={s.id}>
                               <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-right text-slate-400 col-net", isCurrent && "print-current-bg-light")}></td>
-                              <td className={clsx("border-b border-r border-slate-300 py-0.5 px-0.5 text-center text-slate-400 col-qty", isCurrent && "print-current-bg-light")}></td>
+                              <td className={clsx("border-b border-r border-slate-300 py-[0.5mm] px-0.5 text-center text-slate-400 col-qty", isCurrent && "print-current-bg-light")}></td>
                               <td className={clsx(
                                 "border-b border-r border-slate-300 py-0.5 px-0.5 text-right font-inter font-bold col-total",
                                 isCurrent ? "print-current-bg-medium print-current-text-dark" : "bg-indigo-50/50 text-[#312E81]"
@@ -529,9 +997,9 @@ function FloorTable({ floor }: { floor: any }) {
           </div>
 
           {/* Footer Component fixed at the bottom of the page */}
-          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium font-sans">
+          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-slate-500 font-medium font-sans">
             <div className="text-[10px] font-semibold text-slate-600">경상남도청 | 해안건축</div>
-            <div>{pageIdx + 1}</div>
+            <div className="text-[10px] font-semibold text-slate-600">{pageOffset + pageIdx + 1} / {globalTotalPages}</div>
           </div>
         </div>
       ))}
@@ -539,7 +1007,13 @@ function FloorTable({ floor }: { floor: any }) {
   );
 }
 
-function SummaryPrintTable() {
+function SummaryPrintTable({
+  pageOffset,
+  globalTotalPages
+}: {
+  pageOffset: number;
+  globalTotalPages: number;
+}) {
   const { divisions, departments, rooms, values, stages: rawStages, visibleStageIds, floorAreasByStage, summaryNotes, departmentNotes, comparison, medicalOnly } = useAppStore();
 
   const stages = useMemo(() => {
@@ -581,310 +1055,26 @@ function SummaryPrintTable() {
     return val.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const summaryData = useMemo(() => {
-    if (stages.length < 1) return [];
-
-    const deptMap = new Map();
-    departments.forEach(dept => {
-      const stageAreas: Record<string, number> = {};
-      stages.forEach(s => stageAreas[s.id] = 0);
-
-      deptMap.set(dept.id, {
-        deptId: dept.id,
-        divisionId: dept.divisionId,
-        code: dept.code || '',
-        department: dept.name,
-        stageAreas,
-        notes: dept.note || '',
-        order: dept.order
-      });
-    });
-
-    values.forEach(v => {
-      const room = rooms.find(r => r.id === v.roomId);
-      if (!room) return;
-      const deptData = deptMap.get(room.departmentId);
-      if (!deptData) return;
-
-      const area = v.unitArea * v.quantity;
-      if (deptData.stageAreas[v.stageId] !== undefined) {
-        deptData.stageAreas[v.stageId] += area;
-      }
-    });
-
-    const rows: any[] = [];
-    const isMedicalOnly = medicalOnly;
-
-    const sortedDivisions = [...divisions]
-      .filter(div => !isMedicalOnly || /^\d+$/.test(div.id))
-      .sort((a, b) => a.order - b.order);
-
-    const grandStageTotals: Record<string, number> = {};
-    stages.forEach(s => grandStageTotals[s.id] = 0);
-
-    sortedDivisions.forEach((div, index) => {
-      const divDepts = Array.from(deptMap.values())
-        .filter(d => d.divisionId === div.id)
-        .sort((a, b) => a.order - b.order);
-
-      if (divDepts.length === 0) return;
-
-      // Group Header (Division Name)
-      if (index > 0) {
-        rows.push({
-          id: `spacer-${div.id}`,
-          isSpacer: true
-        });
-      }
-
-      rows.push({
-         id: `header-${div.id}`,
-         isHeader: true,
-         divisionName: div.name,
-         color: div.color
-      });
-
-      const divStageTotals: Record<string, number> = {};
-      stages.forEach(s => divStageTotals[s.id] = 0);
-
-      divDepts.forEach((deptData) => {
-        const targetVal = deptData.stageAreas[targetStageId] || 0;
-        const baseVal = deptData.stageAreas[baseStageId] || 0;
-        const diff = targetVal - baseVal;
-
-        rows.push({
-          ...deptData,
-          id: deptData.deptId,
-          divisionName: div.name,
-          diff,
-          divColor: div.color
-        });
-
-        stages.forEach(s => {
-          divStageTotals[s.id] += deptData.stageAreas[s.id];
-          grandStageTotals[s.id] += deptData.stageAreas[s.id];
-        });
-      });
-
-      // Subtotal
-      const targetDivVal = divStageTotals[targetStageId] || 0;
-      const baseDivVal = divStageTotals[baseStageId] || 0;
-      
-      rows.push({
-        id: `subtotal-${div.id}`,
-        isSubtotal: true,
-        divisionName: div.name,
-        department: `${div.name} 소계`,
-        stageAreas: divStageTotals,
-        diff: targetDivVal - baseDivVal,
-        divColor: div.color
-      });
-    });
-
-    const targetGrandVal = grandStageTotals[targetStageId] || 0;
-    const baseGrandVal = grandStageTotals[baseStageId] || 0;
-
-    // Spacer row before grand total
-    rows.push({
-      id: 'spacer-before-grand-total',
-      isSpacer: true
-    });
-
-    rows.push({
-      id: 'grand-total',
-      isGrandTotal: true,
-      code: '가',
-      department: '의료시설 전용면적 합계',
-      stageAreas: grandStageTotals,
-      diff: targetGrandVal - baseGrandVal,
-    });
-
-    // Per-stage Summary Calculations
-    const commonAreaStageTotals: Record<string, number> = {};
-    const gnRatioStageTotals: Record<string, number> = {};
-    const medAreaSumStageTotals: Record<string, number> = {};
-    const garageAreaStageTotals: Record<string, number> = {};
-    const medTotalAreaStageTotals: Record<string, number> = {};
-    const outdoorAreaStageTotals: Record<string, number> = {};
-    const permitAreaStageTotals: Record<string, number> = {};
-
-    stages.forEach(s => {
-      let stageGarageArea = 0;
-      let stageOutdoorArea = 0;
-
-      values.forEach(v => {
-        if (v.stageId !== s.id) return;
-        const room = rooms.find(r => r.id === v.roomId);
-        if (!room) return;
-        
-        const area = v.unitArea * v.quantity;
-        if (room.no.startsWith('P')) {
-          stageGarageArea += area;
-        } else if (room.no.startsWith('O')) {
-          stageOutdoorArea += area;
-        }
-      });
-
-      const netAreaA = grandStageTotals[s.id] || 0;
-      const stageFloorAreas = floorAreasByStage[s.id] || {};
-      
-      let permitAreaVal = 0;
-      if (s.isTotalAreaOnly) {
-        permitAreaVal = stageFloorAreas['_TOTAL_'] || 0;
-      } else {
-        permitAreaVal = Object.entries(stageFloorAreas).reduce((sum, [key, val]) => {
-          if (key === '_TOTAL_') return sum;
-          return sum + val;
-        }, 0);
-      }
-      
-      const commonAreaB = permitAreaVal > 0 ? (permitAreaVal - netAreaA - stageGarageArea - stageOutdoorArea) : 0;
-      const gnRatio = netAreaA > 0 ? ((netAreaA + commonAreaB) / netAreaA) : 0;
-
-      commonAreaStageTotals[s.id] = commonAreaB;
-      gnRatioStageTotals[s.id] = gnRatio;
-      medAreaSumStageTotals[s.id] = netAreaA + commonAreaB;
-      garageAreaStageTotals[s.id] = stageGarageArea;
-      medTotalAreaStageTotals[s.id] = netAreaA + commonAreaB + stageGarageArea;
-      outdoorAreaStageTotals[s.id] = stageOutdoorArea;
-      permitAreaStageTotals[s.id] = permitAreaVal;
-    });
-
-    // Summary Rows
-    rows.push({
-      id: 'common-area-sum',
-      isSummaryRow: true,
-      code: '나',
-      department: '공용면적',
-      stageAreas: commonAreaStageTotals,
-      diff: commonAreaStageTotals[targetStageId] - commonAreaStageTotals[baseStageId],
-      notes: summaryNotes['common-area-sum'] ?? departmentNotes['common-area-sum'] ?? '[참고 1] 종합병원 적정 공용비/공용면적 검토',
-    });
-
-    rows.push({
-      id: 'gn-ratio',
-      isSummaryRow: true,
-      isRatio: true,
-      code: '(가+나)/가',
-      department: '공용비(G/N비)',
-      stageAreas: gnRatioStageTotals,
-      diff: gnRatioStageTotals[targetStageId] - gnRatioStageTotals[baseStageId],
-      notes: summaryNotes['gn-ratio'] ?? departmentNotes['gn-ratio'] ?? '종합병원 평균값 1.50~1.60 사잇값으로 제안',
-    });
-
-    rows.push({
-      id: 'med-area-sum',
-      isSummaryRow: true,
-      code: '가+나',
-      department: '의료시설 면적',
-      stageAreas: medAreaSumStageTotals,
-      diff: medAreaSumStageTotals[targetStageId] - medAreaSumStageTotals[baseStageId],
-      notes: summaryNotes['med-area-sum'] ?? departmentNotes['med-area-sum'] ?? '',
-    });
-
-    rows.push({
-      id: 'garage-area',
-      isSummaryRow: true,
-      code: '다',
-      department: '옥내 주차공간',
-      stageAreas: garageAreaStageTotals,
-      diff: garageAreaStageTotals[targetStageId] - garageAreaStageTotals[baseStageId],
-      notes: summaryNotes['garage-area'] ?? departmentNotes['garage-area'] ?? '주차대수 100대 내외 계획하여 면적 제안',
-    });
-
-    rows.push({
-      id: 'med-total-area',
-      isSummaryRow: true,
-      code: '가+나+다',
-      department: '의료시설 총면적',
-      stageAreas: medTotalAreaStageTotals,
-      diff: medTotalAreaStageTotals[targetStageId] - medTotalAreaStageTotals[baseStageId],
-      notes: summaryNotes['med-total-area'] ?? departmentNotes['med-total-area'] ?? '',
-    });
-
-    rows.push({
-      id: 'outdoor-area',
-      isSummaryRow: true,
-      code: '라',
-      department: '옥외 공용면적',
-      stageAreas: outdoorAreaStageTotals,
-      diff: outdoorAreaStageTotals[targetStageId] - outdoorAreaStageTotals[baseStageId],
-      notes: summaryNotes['outdoor-area'] ?? departmentNotes['outdoor-area'] ?? '-',
-    });
-
-    rows.push({
-      id: 'permit-area',
-      isSummaryRow: true,
-      code: '가~라',
-      department: '건축허가 면적',
-      stageAreas: permitAreaStageTotals,
-      diff: permitAreaStageTotals[targetStageId] - permitAreaStageTotals[baseStageId],
-      notes: summaryNotes['permit-area'] ?? '',
-    });
-
-    return rows;
-  }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, comparison, medicalOnly, departmentNotes]);
-
   const pages = useMemo(() => {
-    const resultPages: any[][] = [];
-    let currentPageRows: any[] = [];
-    
-    // 전체 행의 가중 높이(Weight)를 계산하여 페이지를 분할합니다.
-    // py-[0.41mm]를 기준으로 1페이지당 여유있게 Footer가 표기되기 위해 최대 단위는 28이 이상적입니다.
-    let currentRowsCount = 0;
-    const maxPageRows = 28; 
-
-    for (let i = 0; i < summaryData.length; i++) {
-      const row = summaryData[i];
-
-      // 만약 세부 부문 그룹헤더를 맞닥뜨렸다면 뒤따르는 부서 수와 결합하여 체크합니다.
-      if (row.isHeader) {
-        // 이 헤더 아래에 있는 소속 대분류 항목들의 행 개수 (헤더 포함 다음 헤더, 스페이서 또는 총계 전단까지)
-        let groupRowsCount = 1;
-        for (let j = i + 1; j < summaryData.length; j++) {
-          const nextRow = summaryData[j];
-          if (nextRow.isHeader || nextRow.isSpacer || nextRow.isGrandTotal || nextRow.isSummaryRow) {
-            break;
-          }
-          groupRowsCount++;
-        }
-
-        // 현재 페이지에 남은 빈 공간(remainingSpace) 계산
-        const remainingSpace = maxPageRows - currentRowsCount;
-
-        // 그룹 전체를 이번 페이지에 담지 못하면서, 이번 페이지에 헤더와 부서가 5줄 미만(즉, 부서가 4개 이하)으로만 간신히 보이고 다음 페이지로 가 버리는 상황이라면
-        // 혹은 헤더를 다 넣기에 잔여 빈공간이 너무 부족한 경우(헤더+부서 5개 이하)
-        // 이 그룹헤더부터 다음 페이지의 시작으로 넘어가게 합니다.
-        if (groupRowsCount > remainingSpace && remainingSpace < 6) {
-          if (currentPageRows.length > 0) {
-            resultPages.push(currentPageRows);
-            currentPageRows = [];
-            currentRowsCount = 0;
-          }
-        }
-      }
-
-      currentPageRows.push(row);
-      currentRowsCount += row.isSpacer ? 1.2 : 1;
-
-      // 최대 허용 행 수에 도달하면 페이지 자름
-      if (currentRowsCount >= maxPageRows) {
-        resultPages.push(currentPageRows);
-        currentPageRows = [];
-        currentRowsCount = 0;
-      }
-    }
-
-    if (currentPageRows.length > 0) {
-      resultPages.push(currentPageRows);
-    }
-
-    return resultPages.map((rows, idx, arr) => ({
+    const rawPages = computeSummaryPages(
+      divisions,
+      departments,
+      rooms,
+      values,
+      stages,
+      floorAreasByStage,
+      summaryNotes,
+      departmentNotes,
+      baseStageId,
+      targetStageId,
+      medicalOnly
+    );
+    return rawPages.map((rows, idx, arr) => ({
       pageIdx: idx,
       total: arr.length,
       rows
     }));
-  }, [summaryData]);
+  }, [divisions, departments, rooms, values, stages, floorAreasByStage, summaryNotes, departmentNotes, baseStageId, targetStageId, medicalOnly]);
 
   const renderRow = (row: any, idx: number) => {
     if (row.isSpacer) {
@@ -1047,9 +1237,9 @@ function SummaryPrintTable() {
           </div>
 
           {/* Footer */}
-          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-[8px] text-slate-500 font-medium font-sans">
+          <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-slate-500 font-medium font-sans">
             <div className="text-[10px] font-semibold text-slate-600">경상남도청 | 해안건축</div>
-            <div>{page.pageIdx + 1}</div>
+            <div className="text-[10px] font-semibold text-slate-600">{pageOffset + page.pageIdx + 1} / {globalTotalPages}</div>
           </div>
         </div>
       ))}
