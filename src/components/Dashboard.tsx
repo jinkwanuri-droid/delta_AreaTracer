@@ -16,6 +16,7 @@ import {
   AreaChart,
   Area,
   ComposedChart,
+  Label as RechartsLabel,
   LabelList
 } from 'recharts';
 import { motion } from 'motion/react';
@@ -80,6 +81,7 @@ interface CustomTooltipProps {
 
 const TrendBarLabel = (props: any) => {
   const { x, y, width, height, value } = props;
+  if (x === undefined || y === undefined || height === undefined || isNaN(y) || isNaN(height)) return null;
   if (!value || value <= 0) return null;
   const isSmall = value < 1000;
   
@@ -626,14 +628,19 @@ const Dashboard: React.FC = () => {
   }, [currentStage, divisions, medicalOnly, medicalDivisionIds, filteredValues, departments, rooms]);
 
   const PrintHeader = ({ page, total }: { page: number, total: number }) => (
-    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5 shrink-0 select-none" style={{ height: '14mm' }}>
-      <div>
+    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1.5 mb-3 shrink-0 select-none" style={{ height: '14mm' }}>
+      <div className="flex items-end gap-3">
         <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
-          <span>대시보드</span>
-          <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page}/{total})</span>
+          <span>차트로 보는 서부의료원 면적 계획</span>
         </h2>
+        <span className="text-[12px] font-bold text-slate-400 mb-[2px]">({page}/{total})</span>
       </div>
-      <div className="flex flex-col items-end gap-1 text-right pb-0.5">
+      <div className="flex flex-col items-end gap-1.5 text-right pb-0.5">
+        <div className="flex items-center gap-2">
+          <div className="px-3 py-1 bg-slate-900 rounded-full">
+            <span className="text-[11px] font-black text-white leading-none tracking-tight">대시보드</span>
+          </div>
+        </div>
         <span className="text-[9px] font-bold text-slate-600 leading-none">
           경상남도 서부의료원 건립사업 실시설계
         </span>
@@ -1197,15 +1204,15 @@ const Dashboard: React.FC = () => {
                         wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
                       />
                     </PieChart>
-                  </ResponsiveContainer>
+                    </ResponsiveContainer>
                   </div>
-                  {/* Center total text */}
-                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-0">
-                    <span className="text-[10px] font-bold text-slate-400 tracking-wider">총 전용면적</span>
-                    <span className="text-xl font-black text-slate-800 tracking-tight leading-none mt-1.5 font-sans">
+                  {/* Center total text - Overlay method for reliability */}
+                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-10">
+                    <span className={cn("font-bold text-slate-400 tracking-wider", isPdfExportMode ? "text-[8px]" : "text-[10px]")}>총 전용면적</span>
+                    <span className={cn("font-black text-slate-800 tracking-tight leading-none font-sans", isPdfExportMode ? "text-[15px]" : "text-[22px]")}>
                       {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
-                    <span className="text-[9px] font-bold text-slate-400 mt-1">㎡</span>
+                    <span className={cn("font-bold text-slate-400 mt-0.5", isPdfExportMode ? "text-[8px]" : "text-[9px]")}>㎡</span>
                   </div>
                 </div>
               </div>
@@ -1242,7 +1249,7 @@ const Dashboard: React.FC = () => {
                           )}
                         >
                           <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
-                          <span className="text-[8.5px] font-bold whitespace-nowrap">{d.name}</span>
+                          <span className="text-[9.5px] font-bold whitespace-nowrap">{d.name}</span>
                         </motion.button>
                       );
                     })}
@@ -1253,7 +1260,7 @@ const Dashboard: React.FC = () => {
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
                       data={stageDivisionData} 
-                      margin={{ top: 10, right: 35, left: 0, bottom: 25 }}
+                      margin={{ top: isPdfExportMode ? 25 : 10, right: 35, left: 0, bottom: 25 }}
                       style={{ outline: 'none' }}
                       tabIndex={-1}
                     >
@@ -1275,7 +1282,7 @@ const Dashboard: React.FC = () => {
                         padding={{ left: 20, right: 20 }}
                       />
                       <YAxis 
-                        domain={[1000, 7000]}
+                        domain={[1500, 6500]}
                         axisLine={{ stroke: '#e2e8f0', strokeWidth: 1 }} 
                         tickLine={false} 
                         tick={{ fontSize: 10.5, fill: '#94a3b8', fontWeight: 500 }}
@@ -1283,11 +1290,23 @@ const Dashboard: React.FC = () => {
                         width={45}
                         padding={{ top: 20, bottom: 0 }}
                       />
-                      <Tooltip 
-                        content={<CustomTooltip />} 
-                        cursor={{ stroke: '#cbd5e1', strokeWidth: 2, strokeDasharray: '4 4' }} 
-                        wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
-                      />
+                      {isPdfExportMode && (
+                        <Legend 
+                          verticalAlign="top" 
+                          align="right" 
+                          wrapperStyle={{ paddingTop: 0, paddingRight: 5, marginTop: -25 }}
+                          iconType="circle"
+                          iconSize={7}
+                          formatter={(value) => <span className="text-[9.5px] font-bold text-slate-600">{value}</span>}
+                        />
+                      )}
+                      {!isPdfExportMode && (
+                        <Tooltip 
+                          content={<CustomTooltip />} 
+                          cursor={{ stroke: '#cbd5e1', strokeWidth: 2, strokeDasharray: '4 4' }} 
+                          wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
+                        />
+                      )}
                       {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div, i) => {
                         const isAnyActive = activeTrendDivId !== null;
                         const isActive = activeTrendDivId === div.id;
@@ -1334,9 +1353,10 @@ const Dashboard: React.FC = () => {
                                       <text 
                                         x={x} 
                                         y={y + dy} 
-                                        fill={isActive ? "#0f172a" : "#64748b"} 
+                                        fill={div.color || "#64748b"} 
                                         fontSize={10.5} 
-                                        fontWeight="bold"
+                                        fontWeight="900"
+                                        textAnchor="middle"
                                       >
                                         {value > 1000 ? `${(value/1000).toFixed(1)}천` : Math.round(value)}
                                       </text>
@@ -1393,47 +1413,57 @@ const Dashboard: React.FC = () => {
                       )}
                     >
                       <div className={cn("w-2 h-2 rounded-full", isActive ? "bg-white" : "")} style={{ backgroundColor: isActive ? undefined : d.color }} />
-                      <span className="text-[8.5px] font-bold whitespace-nowrap">{d.name}</span>
+                      <span className="text-[9.5px] font-bold whitespace-nowrap">{d.name}</span>
                     </motion.button>
                   );
                 })}
               </div>
             </div>
-            <div className={cn("w-full relative", isPdfExportMode ? "h-[290px]" : "h-[310px]")}>
-               <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-floors-rc-${medicalOnly}-${activeTrendDivId || 'all'}`}>
-                 <BarChart 
-                   layout="vertical" 
-                   data={floorDivisionData} 
-                   margin={{ top: 10, right: 55, left: -5, bottom: 10 }}
-                   className="outline-none"
-                   style={{ outline: 'none' }}
-                   tabIndex={-1}
-                   barCategoryGap={12}
-                  >
+            <div className={cn("w-full relative", isPdfExportMode ? "h-[200px]" : "h-[310px]")}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-floors-rc-${medicalOnly}-${activeTrendDivId || 'all'}`}>
+                  <BarChart 
+                    layout="vertical" 
+                    data={floorDivisionData} 
+                    margin={{ top: isPdfExportMode ? 25 : 10, right: 55, left: -5, bottom: 10 }}
+                    className="outline-none"
+                    style={{ outline: 'none' }}
+                    tabIndex={-1}
+                    barCategoryGap={12}
+                   >
                     <XAxis type="number" hide domain={[0, (dataMax: number) => dataMax * 1.15]} />
                     <YAxis 
-                       dataKey="name" 
-                       type="category" 
-                       axisLine={false} 
-                       tickLine={false} 
-                       width={40}
-                       tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }}
+                      dataKey="name" 
+                      type="category" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      width={40}
+                      tick={{ fontSize: isPdfExportMode ? 8.5 : 11, fill: '#64748b', fontWeight: 700 }}
                     />
-                    <Tooltip 
-                      cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }}
-                      content={
-                        <CustomTooltip 
-                          highlightedDivId={activeTrendDivId} 
-                          departments={departments}
-                          rooms={rooms}
-                          values={values}
-                          activeStageId={currentStage?.id}
-                          floors={floors}
-                        />
-                      } 
-                      wrapperStyle={{ pointerEvents: 'none', zIndex: 1000 }}
-                      allowEscapeViewBox={{ x: true, y: true }}
+                    <Legend 
+                      verticalAlign="top" 
+                      align="right" 
+                      wrapperStyle={isPdfExportMode ? { paddingTop: 0, paddingRight: 5, marginTop: -25 } : { paddingTop: 0, paddingRight: 5, marginTop: -15 }}
+                      iconType="circle"
+                      iconSize={6}
+                      formatter={(value) => <span className={cn("font-bold text-slate-600", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>{value}</span>}
                     />
+                    {!isPdfExportMode && (
+                     <Tooltip 
+                       cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }}
+                       content={
+                         <CustomTooltip 
+                           highlightedDivId={activeTrendDivId} 
+                           departments={departments}
+                           rooms={rooms}
+                           values={values}
+                           activeStageId={currentStage?.id}
+                           floors={floors}
+                         />
+                       } 
+                       wrapperStyle={{ pointerEvents: 'none', zIndex: 1000 }}
+                       allowEscapeViewBox={{ x: true, y: true }}
+                     />
+                   )}
                     {divisions.filter(d => !medicalOnly || medicalDivisionIds.includes(d.id)).map((div, i, arr) => {
                       const isAnyActive = activeTrendDivId !== null;
                       const isActive = activeTrendDivId === div.id;
@@ -1460,6 +1490,7 @@ const Dashboard: React.FC = () => {
                           }}
                           label={(props: any) => {
                             const { x, y, width, height, value } = props;
+                            if (x === undefined || y === undefined || height === undefined || isNaN(y) || isNaN(height)) return null;
                             if (!value || width <= 35) return null;
                             
                             return (
@@ -1484,6 +1515,7 @@ const Dashboard: React.FC = () => {
                       isAnimationActive={false}
                       label={(props: any) => {
                         const { x, y, width, height, index } = props;
+                        if (x === undefined || y === undefined || height === undefined || isNaN(y) || isNaN(height)) return null;
                         const rowData = floorDivisionData[index];
                         if (!rowData) return null;
                         const total = rowData.totalArea;
@@ -1503,7 +1535,8 @@ const Dashboard: React.FC = () => {
                             opacity={opacity}
                             style={{ pointerEvents: 'none', transition: 'opacity 400ms ease' }}
                           >
-                            {`${total.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ㎡`}
+                            <tspan fontWeight="900">{total.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</tspan>
+                            <tspan fontWeight="300" dx={4} fontSize={10.5}>㎡</tspan>
                           </text>
                         );
                       }}
@@ -1539,11 +1572,11 @@ const Dashboard: React.FC = () => {
           
           <div className="z-10 flex flex-col flex-1 justify-between mt-auto">
             
-            <div className="space-y-1 flex-1 flex flex-col justify-end">
+            <div className="space-y-0.5 flex-1 flex flex-col justify-end">
               {wardBedsData.list.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[12px] border-b border-slate-100/60 pb-1 last:border-0 last:pb-0">
+                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-0.5 last:border-0 last:pb-0", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
                   <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
-                  <div className="flex items-center text-right text-[12px] gap-2">
+                  <div className={cn("flex items-center text-right gap-2", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
                     <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
@@ -1559,12 +1592,12 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-200">
-               <div className="text-[13px] font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
+            <div className="mt-2 pt-2 border-t border-slate-200">
+               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1", isPdfExportMode ? "text-[11px]" : "text-[13px]")}>
                  <AlertCircle size={12} className="text-slate-400" />
                  허가 외 병상
                </div>
-               <div className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-slate-500 w-full pr-1">
+               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[10px] gap-1" : "text-[12.5px] gap-1.5", "flex flex-col")}>
                   <div className="flex items-center justify-between">
                     <span>응급 <span className="font-bold text-slate-800">21</span></span>
                     <span className="text-slate-200">|</span>
@@ -1579,7 +1612,7 @@ const Dashboard: React.FC = () => {
                     <span className="text-slate-200 font-normal">|</span>
                     <span>인공신장 <span className="font-bold text-slate-800">23</span></span>
                     <span className="text-slate-200 font-normal">|</span>
-                    <span>재활(온열치료) <span className="font-bold text-slate-800">16</span></span>
+                    <span>재활 <span className="font-bold text-slate-800">16</span></span>
                   </div>
                </div>
             </div>
@@ -1609,24 +1642,56 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[105px] mt-1" : "aspect-square")}>
+                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[145px] mt-2 translate-y-1" : "aspect-square")}>
                    <div className="col-start-1 row-start-1 w-full h-full text-center">
                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                      <PieChart style={{ outline: 'none' }} tabIndex={-1}>
                         <Pie
                           data={div.data}
-                          innerRadius={isPdfExportMode ? "42%" : "52%"} 
-                          outerRadius={isPdfExportMode ? "72%" : "82%"}
+                          innerRadius={isPdfExportMode ? "38%" : "52%"} 
+                          outerRadius={isPdfExportMode ? "65%" : "82%"}
                           dataKey="value"
                           isAnimationActive={false}
-                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }) => {
-                            if (percent < 0.07 || isPdfExportMode) return null;
+                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, name }) => {
+                            if (cx === undefined || cy === undefined || isNaN(cx) || isNaN(cy)) return null;
+
+                            if (isPdfExportMode) {
+                              const RADIAN = Math.PI / 180;
+                              const radius = Number(outerRadius || 0) + 12;
+                              const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                              const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                              
+                              if (isNaN(x) || isNaN(y)) return null;
+                              
+                              // Only label largest slices or max 3
+                              if (percent < 0.08) return null;
+
+                              return (
+                                <g style={{ pointerEvents: 'none' }}>
+                                  <text 
+                                    x={x} 
+                                    y={y} 
+                                    fill="#64748b" 
+                                    textAnchor={x > cx ? 'start' : 'end'} 
+                                    dominantBaseline="central" 
+                                    fontSize={8.5} 
+                                    fontWeight="bold"
+                                  >
+                                    {name}
+                                  </text>
+                                </g>
+                              );
+                            }
+
+                            if (percent < 0.07) return null;
                             
                             const RADIAN = Math.PI / 180;
-                            const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
+                            const radius = Number(innerRadius || 0) + (Number(outerRadius || 0) - Number(innerRadius || 0)) * 0.5;
                             const x = cx + radius * Math.cos(-midAngle * RADIAN);
                             const y = cy + radius * Math.sin(-midAngle * RADIAN);
-                            
+
+                            if (isNaN(x) || isNaN(y)) return null;
+
                             return (
                               <g style={{ pointerEvents: 'none' }}>
                                 <text 
@@ -1649,7 +1714,7 @@ const Dashboard: React.FC = () => {
                               </g>
                             );
                           }}
-                          labelLine={false}
+                          labelLine={isPdfExportMode}
                         >
                           {div.data.map((entry, idx) => (
                             <Cell 
@@ -1672,27 +1737,31 @@ const Dashboard: React.FC = () => {
                    </div>
                    <div className="col-start-1 row-start-1 flex items-center justify-center pointer-events-none z-0">
                       <div className="text-center mt-1">
-                        <div className="text-[8.5px] font-bold text-slate-400 capitalize tracking-tighter">부문면적</div>
-                        <div className={cn("font-black text-slate-800 leading-none mt-0.5 tabular-nums", isPdfExportMode ? "text-[14px]" : "text-[18px]")}>
+                        <div className={cn("font-bold text-slate-400 capitalize tracking-tighter", isPdfExportMode ? "text-[7.5px]" : "text-[8.5px]")}>부문면적</div>
+                        <div className={cn("font-black text-slate-800 leading-none mt-0.5 tabular-nums", isPdfExportMode ? "text-[12px]" : "text-[18px]")}>
                           {f(div.data.reduce((acc, d) => acc + d.value, 0))}
                         </div>
                       </div>
                    </div>
                 </div>
-                <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
-                   <div className="space-y-0 text-[12px]">
-                     {div.data.slice(0, isPdfExportMode ? 3 : 5).map((dept, idx) => (
-                        <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
-                           <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
-                             <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
-                             <span className="text-[12px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
-                           </div>
-                           <span className="text-[12px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
-                        </div>
-                     ))}
-                   </div>
-                   {div.data.length > (isPdfExportMode ? 3 : 5) && <div className="text-center text-[10px] text-slate-400 mt-1 italic font-medium leading-none">...외 {div.data.length - (isPdfExportMode ? 3 : 5)}개 부서</div>}
-                </div>
+
+                {/* Dept List Breakdown - Hidden in PDF to leave more room for chart labels */}
+                {!isPdfExportMode && (
+                  <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
+                     <div className="space-y-0 text-[12px]">
+                       {div.data.slice(0, 5).map((dept, idx) => (
+                          <div key={idx} className="flex items-center justify-between py-0.5 px-1.5 rounded hover:bg-white border border-transparent hover:border-slate-100/50 transition-all cursor-default">
+                             <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
+                               <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
+                               <span className="text-[12px] text-slate-600 font-bold truncate leading-none">{dept.name}</span>
+                             </div>
+                             <span className="text-[12px] font-extrabold text-slate-500 flex-shrink-0 tabular-nums">{f(dept.value)}</span>
+                          </div>
+                       ))}
+                     </div>
+                     {div.data.length > 5 && <div className="text-center text-[10px] text-slate-400 mt-1 italic font-medium leading-none">...외 {div.data.length - 5}개 부서</div>}
+                  </div>
+                )}
               </div>
            ))}
         </div>
