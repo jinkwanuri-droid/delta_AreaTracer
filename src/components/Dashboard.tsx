@@ -1605,42 +1605,77 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            <div className={cn("border-t border-slate-200", isPdfExportMode ? "mt-1 pt-1.5" : "mt-2 pt-2")}>
-               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5", isPdfExportMode ? "text-[9.5px] mb-1" : "text-[13px] mb-1.5")}>
-                 <AlertCircle size={10} className="text-slate-400" />
-                 허가 외 병상
-               </div>
-               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[8.5px]" : "text-[12.5px]")}>
-                  <div className={cn("flex flex-wrap items-center justify-start gap-y-1", isPdfExportMode ? "gap-x-1" : "gap-x-2")}>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>응급 <span className="font-extrabold text-slate-800">21</span></span>
-                      <span className="text-slate-200 select-none font-light text-[8.5px]/none">|</span>
-                    </div>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>감염 <span className="font-extrabold text-slate-800">2</span></span>
-                      <span className="text-slate-200 select-none font-light text-[8.5px]/none">|</span>
-                    </div>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>신생아 <span className="font-extrabold text-slate-800">4</span></span>
-                      <span className="text-slate-200 select-none font-light text-[8.5px]/none">|</span>
-                    </div>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>주사 <span className="font-extrabold text-slate-800">6</span></span>
-                      <span className="text-slate-200 select-none font-light text-[8.5px]/none">|</span>
-                    </div>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>내시경 <span className="font-extrabold text-slate-800">5</span></span>
-                      <span className="text-slate-200 select-none font-light text-[8.5px]/none">|</span>
-                    </div>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>인공신장 <span className="font-extrabold text-slate-800">23</span></span>
-                      <span className="text-slate-200 select-none font-light text-[8.5px]/none">|</span>
-                    </div>
-                    <div className={cn("flex items-center text-slate-600", isPdfExportMode ? "gap-1" : "gap-1.5")}>
-                      <span>재활 <span className="font-extrabold text-slate-800">16</span></span>
-                    </div>
-                  </div>
-               </div>
+            <div className={cn("border-t border-slate-200", isPdfExportMode ? "mt-1.5 pt-1.5" : "mt-2 pt-2")}>
+               {isPdfExportMode ? (
+                 <div className="grid grid-cols-10 gap-2 items-start py-0.5">
+                   {/* Left side: title */}
+                   <div className="col-span-3 flex flex-col justify-start">
+                     <div className="font-extrabold text-slate-700 flex items-center gap-1 text-[10.5px] leading-tight">
+                       <AlertCircle size={10} className="text-slate-400 flex-shrink-0" />
+                       <span className="whitespace-nowrap">허가 외<br />병상</span>
+                     </div>
+                   </div>
+                   {/* Right side: content in 2 rows */}
+                   <div className="col-span-7 font-bold text-slate-500 text-[8.5px] leading-relaxed pl-1.5 border-l border-slate-100 flex flex-col justify-center h-full">
+                     {/* Row 1 */}
+                     <div className="flex items-center gap-1 text-slate-600 mb-0.5 whitespace-nowrap">
+                       <span>응급 <strong className="font-extrabold text-slate-800">21</strong></span>
+                       <span className="text-slate-200 select-none font-light text-[8px] mx-0.5">|</span>
+                       <span>감염 <strong className="font-extrabold text-slate-800">2</strong></span>
+                       <span className="text-slate-200 select-none font-light text-[8px] mx-0.5">|</span>
+                       <span>신생아 <strong className="font-extrabold text-slate-800">4</strong></span>
+                       <span className="text-slate-200 select-none font-light text-[8px] mx-0.5">|</span>
+                       <span>주사 <strong className="font-extrabold text-slate-800">6</strong></span>
+                     </div>
+                     {/* Row 2 */}
+                     <div className="flex items-center gap-1 text-slate-600 whitespace-nowrap">
+                       <span>내시경 <strong className="font-extrabold text-slate-800">5</strong></span>
+                       <span className="text-slate-200 select-none font-light text-[8px] mx-0.5">|</span>
+                       <span>인공신장 <strong className="font-extrabold text-slate-800">23</strong></span>
+                       <span className="text-slate-200 select-none font-light text-[8px] mx-0.5">|</span>
+                       <span>재활 <strong className="font-extrabold text-slate-800">16</strong></span>
+                     </div>
+                   </div>
+                 </div>
+               ) : (
+                 <>
+                   <div className="font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
+                     <AlertCircle size={10} className="text-slate-400" />
+                     허가 외 병상
+                   </div>
+                   <div className="font-semibold text-slate-500 w-full pr-1 text-[12.5px]">
+                      <div className="flex flex-wrap items-center justify-start gap-x-2 gap-y-1">
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>응급 <span className="font-extrabold text-slate-800">21</span></span>
+                          <span className="text-slate-200 select-none font-light text-[10px]/none">|</span>
+                        </div>
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>감염 <span className="font-extrabold text-slate-800">2</span></span>
+                          <span className="text-slate-200 select-none font-light text-[10px]/none">|</span>
+                        </div>
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>신생아 <span className="font-extrabold text-slate-800">4</span></span>
+                          <span className="text-slate-200 select-none font-light text-[10px]/none">|</span>
+                        </div>
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>주사 <span className="font-extrabold text-slate-800">6</span></span>
+                          <span className="text-slate-200 select-none font-light text-[10px]/none">|</span>
+                        </div>
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>내시경 <span className="font-extrabold text-slate-800">5</span></span>
+                          <span className="text-slate-200 select-none font-light text-[10px]/none">|</span>
+                        </div>
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>인공신장 <span className="font-extrabold text-slate-800">23</span></span>
+                          <span className="text-slate-200 select-none font-light text-[10px]/none">|</span>
+                        </div>
+                        <div className="flex items-center text-slate-600 gap-1.5">
+                          <span>재활 <span className="font-extrabold text-slate-800">16</span></span>
+                        </div>
+                      </div>
+                   </div>
+                 </>
+               )}
             </div>
 
           </div>
@@ -1648,7 +1683,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Division Dept Shares */}
-      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-3 h-[275px] mt-4" : "p-6 mt-6")}>
+      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-3.5 h-[295px] mt-4" : "p-6 mt-6")}>
         <div className={cn("flex items-center gap-2", isPdfExportMode ? "mb-1" : "mb-2")}>
           <Stethoscope size={18} className="text-indigo-500" />
           <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
@@ -1656,19 +1691,19 @@ const Dashboard: React.FC = () => {
         
         <div className={cn("grid", isPdfExportMode ? "grid-cols-5 gap-3" : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6")}>
            {divisionDeptShares.map((div, i) => (
-              <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-1.5 h-[250px] justify-start" : "p-4")}>
+              <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-1.5 h-[235px] justify-start" : "p-4")}>
                 {/* Visual Header for Division Block */}
                 <div className={cn("font-extrabold text-slate-800 mb-0 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5", isPdfExportMode ? "text-[11.5px] pt-0.5" : "text-[14px] mb-1.5")}>
-                  <span className="truncate">{div.divisionName}</span>
-                  <span 
-                    className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
-                    style={{ backgroundColor: `${div.color}18`, color: div.color }}
-                  >
-                    {div.data.length}개 부서
-                  </span>
+                   <span className="truncate">{div.divisionName}</span>
+                    <span 
+                      className={cn("font-extrabold px-1.5 py-0.5 rounded-full select-none", isPdfExportMode ? "text-[9px]" : "text-[8px]")}
+                      style={{ backgroundColor: `${div.color}18`, color: div.color }}
+                    >
+                      {div.data.length}개 부서
+                    </span>
                 </div>
 
-                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[205px] -mt-1" : "aspect-square mt-1")}>
+                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[190px] -mt-1" : "aspect-square mt-1")}>
                    <div className="col-start-1 row-start-1 w-full h-full text-center">
                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                      <PieChart 
@@ -1677,7 +1712,7 @@ const Dashboard: React.FC = () => {
                      >
                         <Pie
                           data={div.data}
-                          innerRadius={isPdfExportMode ? "55%" : "68%"} 
+                          innerRadius={isPdfExportMode ? "45%" : "58%"} 
                           outerRadius={isPdfExportMode ? "85%" : "96%"}
                           dataKey="value"
                           isAnimationActive={false}
@@ -1761,8 +1796,8 @@ const Dashboard: React.FC = () => {
                    </div>
                    <div className="col-start-1 row-start-1 flex items-center justify-center pointer-events-none z-0">
                       <div className="text-center mt-1">
-                        <div className={cn("font-bold text-slate-400 capitalize tracking-tighter", isPdfExportMode ? "text-[7.5px]" : "text-[8.5px]")}>부문면적</div>
-                        <div className={cn("font-black text-slate-800 leading-none mt-0.5 tabular-nums", isPdfExportMode ? "text-[12px]" : "text-[18px]")}>
+                        <div className={cn("font-bold text-slate-400 capitalize tracking-tighter", isPdfExportMode ? "text-[9.5px]" : "text-[10.5px]")}>부문면적</div>
+                        <div className={cn("font-black text-slate-800 leading-none mt-0.5 tabular-nums", isPdfExportMode ? "text-[14px]" : "text-[20px]")}>
                           {Math.round(div.data.reduce((acc, d) => acc + d.value, 0)).toLocaleString()}
                         </div>
                       </div>
@@ -1808,7 +1843,7 @@ const Dashboard: React.FC = () => {
             {/* Sub Card: 최대 증가 */}
             <div className={cn("bg-rose-50/20 rounded-xl border border-rose-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
+                <h3 className={cn("font-black text-slate-700 flex items-center gap-1.5 leading-none", isPdfExportMode ? "text-[14px]" : "text-[11.5px]")}>
                   <TrendingUp size={14} className="text-rose-500" />
                   최대 증가
                 </h3>
@@ -1842,7 +1877,7 @@ const Dashboard: React.FC = () => {
             {/* Sub Card: 최대 감소 */}
             <div className={cn("bg-emerald-50/20 rounded-xl border border-emerald-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
+                <h3 className={cn("font-black text-slate-700 flex items-center gap-1.5 leading-none", isPdfExportMode ? "text-[14px]" : "text-[11.5px]")}>
                   <TrendingDown size={14} className="text-emerald-500" />
                   최대 감소
                 </h3>
@@ -1885,7 +1920,7 @@ const Dashboard: React.FC = () => {
             {/* Sub Card: 최대 증가 */}
             <div className={cn("bg-indigo-50/20 rounded-xl border border-indigo-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
+                <h3 className={cn("font-black text-slate-700 flex items-center gap-1.5 leading-none", isPdfExportMode ? "text-[14px]" : "text-[11.5px]")}>
                   <TrendingUp size={14} className="text-indigo-600" />
                   최대 증가
                 </h3>
@@ -1919,7 +1954,7 @@ const Dashboard: React.FC = () => {
             {/* Sub Card: 최대 감소 */}
             <div className={cn("bg-slate-50 rounded-xl border border-slate-100", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-[11.5px] font-black text-slate-700 flex items-center gap-1.5 leading-none">
+                <h3 className={cn("font-black text-slate-700 flex items-center gap-1.5 leading-none", isPdfExportMode ? "text-[14px]" : "text-[11.5px]")}>
                   <TrendingDown size={14} className="text-slate-600" />
                   최대 감소
                 </h3>
