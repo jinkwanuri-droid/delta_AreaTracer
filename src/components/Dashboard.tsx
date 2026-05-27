@@ -1549,7 +1549,7 @@ const Dashboard: React.FC = () => {
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
         <div 
-          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 p-3" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
+          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 pt-3 px-4 pb-4" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
           {/* Subtle gradient glow in bg */}
@@ -1558,7 +1558,7 @@ const Dashboard: React.FC = () => {
           <div className={cn("flex items-center justify-between", isPdfExportMode ? "mb-2" : "mb-4")}>
             <div className="flex items-center gap-2">
               <Hospital size={18} className="text-amber-500" />
-              <h3 className="text-base font-black text-slate-800 tracking-tight">허가병상 구성</h3>
+              <h3 className="text-sm font-black text-slate-800 tracking-tight">허가병상 구성</h3>
             </div>
             <div className="text-right items-baseline flex gap-1">
               <span className="text-[13px] font-bold text-slate-400 mt-1">총</span>
@@ -1573,9 +1573,9 @@ const Dashboard: React.FC = () => {
             
             <div className="space-y-0.5 flex-1 flex flex-col justify-between py-1">
               {wardBedsData.list.map((item, idx) => (
-                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1 last:border-0 last:pb-0", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
+                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1 last:border-0 last:pb-0", isPdfExportMode ? "text-[9.5px]" : "text-[12px]")}>
                   <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
-                  <div className={cn("flex items-center text-right gap-1.5", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
+                  <div className={cn("flex items-center text-right gap-1.5", isPdfExportMode ? "text-[9.5px]" : "text-[12px]")}>
                     <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
@@ -1592,11 +1592,11 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="mt-2 pt-2 border-t border-slate-200">
-               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1", isPdfExportMode ? "text-[10px]" : "text-[13px]")}>
+               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1", isPdfExportMode ? "text-[11px]" : "text-[13px]")}>
                  <AlertCircle size={10} className="text-slate-400" />
                  허가 외 병상
                </div>
-               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[9px] gap-1" : "text-[12.5px] gap-1.5", "flex flex-col")}>
+               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[10px] gap-1" : "text-[12.5px] gap-1.5", "flex flex-col")}>
                   <div className="flex items-center justify-between">
                     <span>응급 <span className="font-bold text-slate-800">21</span></span>
                     <span className="text-slate-200">|</span>
