@@ -1683,15 +1683,15 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Division Dept Shares */}
-      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-3.5 h-[295px] mt-4" : "p-6 mt-6")}>
+      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-2.5 h-[265px] mt-4" : "p-6 mt-6")}>
         <div className={cn("flex items-center gap-2", isPdfExportMode ? "mb-1" : "mb-2")}>
           <Stethoscope size={18} className="text-indigo-500" />
           <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
         </div>
         
-        <div className={cn("grid", isPdfExportMode ? "grid-cols-5 gap-3" : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6")}>
+        <div className={cn("grid", isPdfExportMode ? "grid-cols-5 gap-2" : "grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-x-7 gap-y-6")}>
            {divisionDeptShares.map((div, i) => (
-              <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-1.5 h-[235px] justify-start" : "p-4")}>
+              <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-1.5 h-[210px] justify-start" : "p-4")}>
                 {/* Visual Header for Division Block */}
                 <div className={cn("font-extrabold text-slate-800 mb-0 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5", isPdfExportMode ? "text-[11.5px] pt-0.5" : "text-[14px] mb-1.5")}>
                    <span className="truncate">{div.divisionName}</span>
@@ -1703,7 +1703,7 @@ const Dashboard: React.FC = () => {
                     </span>
                 </div>
 
-                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[190px] -mt-1" : "aspect-square mt-1")}>
+                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[175px] -mt-1" : "aspect-square mt-1")}>
                    <div className="col-start-1 row-start-1 w-full h-full text-center">
                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                      <PieChart 
