@@ -1135,9 +1135,9 @@ const Dashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className={cn("flex flex-col items-center justify-center w-full h-[100%] my-auto flex-1 relative", isPdfExportMode ? "min-h-[200px]" : "min-h-[300px]")}>
-                <div className="w-full h-full flex-1 mx-auto z-0 relative text-center">
-                  <div className="absolute inset-0 w-full h-full">
+              <div className={cn("w-full relative flex-1 flex flex-col justify-center", isPdfExportMode ? "h-[210px]" : "min-h-[300px]")}>
+                <div className="w-full h-full grid">
+                  <div className="col-start-1 row-start-1 w-full h-full text-center">
                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                       <PieChart 
                         key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
@@ -1145,81 +1145,81 @@ const Dashboard: React.FC = () => {
                         style={{ outline: 'none' }}
                         tabIndex={-1}
                       >
-                      <Pie
-                        data={divisionData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={isPdfExportMode ? "42%" : "56%"} 
-                        outerRadius={isPdfExportMode ? "68%" : "85%"}
-                        startAngle={90}
-                        endAngle={-270}
-                        paddingAngle={4}
-                        cornerRadius={7}
-                        dataKey="value"
-                        isAnimationActive={!isPdfExportMode}
-                        animationBegin={0}
-                        animationDuration={400}
-                        animationEasing="ease-out"
-                        onClick={(data) => {
-                          if (data && data.payload) {
-                            const clickedId = data.payload.id;
-                            if (activeTrendDivId === clickedId) {
-                               setActiveTrendDivId(null);
-                            } else {
-                               setActiveTrendDivId(clickedId);
+                        <Pie
+                          data={divisionData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={isPdfExportMode ? "42%" : "56%"} 
+                          outerRadius={isPdfExportMode ? "68%" : "85%"}
+                          startAngle={90}
+                          endAngle={-270}
+                          paddingAngle={4}
+                          cornerRadius={7}
+                          dataKey="value"
+                          isAnimationActive={!isPdfExportMode}
+                          animationBegin={0}
+                          animationDuration={400}
+                          animationEasing="ease-out"
+                          onClick={(data) => {
+                            if (data && data.payload) {
+                              const clickedId = data.payload.id;
+                              if (activeTrendDivId === clickedId) {
+                                 setActiveTrendDivId(null);
+                              } else {
+                                 setActiveTrendDivId(clickedId);
+                              }
                             }
-                          }
-                        }}
-                        cursor="pointer"
-                        labelLine={false}
-                        label={({ x, y, cx, cy, name, percent, value, payload }) => {
-                          const isAnyActive = activeTrendDivId !== null;
-                          const isActive = activeTrendDivId === payload.id;
-                          const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.35) : 1.0;
-                          return (
-                            <text 
-                              x={x} 
-                              y={y} 
-                              fill="#1e293b" 
-                              textAnchor={x > cx ? 'start' : 'end'} 
-                              dominantBaseline="central" 
-                              fontSize={isPdfExportMode ? 9.5 : 11.5} 
-                              fontWeight="bold"
-                              style={{ fontFamily: '"Pretendard Variable", sans-serif', opacity: opacityVal, transition: 'opacity 300ms ease' }}
-                            >
-                              <tspan x={x} dy="-0.6em">{name}</tspan>
-                              <tspan x={x} dy="1.3em" fill="#64748b" fontSize={isPdfExportMode ? 9.5 : 11.5} fontWeight="normal">
-                                {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
-                              </tspan>
-                            </text>
-                          );
-                        }}
-                      >
-                        {divisionData.map((entry, index) => {
-                          const isAnyActive = activeTrendDivId !== null;
-                          const isActive = activeTrendDivId === entry.id;
-                          const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.15) : 1.0;
-                          return (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.color} 
-                              stroke="#ffffff" 
-                              strokeWidth={1.5} 
-                              style={{ opacity: opacityVal, transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none', cursor: 'pointer' }}
-                            />
-                          );
-                        })}
-                      </Pie>
-                      <Tooltip 
-                        content={<CustomTooltip isPie pieTotal={divisionData.reduce((acc, d) => acc + d.value, 0)} />} 
-                        cursor={false} 
-                        wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
-                      />
-                    </PieChart>
+                          }}
+                          cursor="pointer"
+                          labelLine={false}
+                          label={({ x, y, cx, cy, name, percent, value, payload }) => {
+                            const isAnyActive = activeTrendDivId !== null;
+                            const isActive = activeTrendDivId === payload.id;
+                            const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.35) : 1.0;
+                            return (
+                              <text 
+                                x={x} 
+                                y={y} 
+                                fill="#1e293b" 
+                                textAnchor={x > cx ? 'start' : 'end'} 
+                                dominantBaseline="central" 
+                                fontSize={isPdfExportMode ? 9.5 : 11.5} 
+                                fontWeight="bold"
+                                style={{ fontFamily: '"Pretendard Variable", sans-serif', opacity: opacityVal, transition: 'opacity 300ms ease' }}
+                              >
+                                <tspan x={x} dy="-0.6em">{name}</tspan>
+                                <tspan x={x} dy="1.3em" fill="#64748b" fontSize={isPdfExportMode ? 9.5 : 11.5} fontWeight="normal">
+                                  {value.toLocaleString(undefined, { maximumFractionDigits: 0 })}㎡ ({(percent * 100).toFixed(1)}%)
+                                </tspan>
+                              </text>
+                            );
+                          }}
+                        >
+                          {divisionData.map((entry, index) => {
+                            const isAnyActive = activeTrendDivId !== null;
+                            const isActive = activeTrendDivId === entry.id;
+                            const opacityVal = isAnyActive ? (isActive ? 1.0 : 0.15) : 1.0;
+                            return (
+                              <Cell 
+                                key={`cell-${index}`} 
+                                fill={entry.color} 
+                                stroke="#ffffff" 
+                                strokeWidth={1.5} 
+                                style={{ opacity: opacityVal, transition: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)', outline: 'none', cursor: 'pointer' }}
+                              />
+                            );
+                          })}
+                        </Pie>
+                        <Tooltip 
+                          content={<CustomTooltip isPie pieTotal={divisionData.reduce((acc, d) => acc + d.value, 0)} />} 
+                          cursor={false} 
+                          wrapperStyle={{ zIndex: 10000, pointerEvents: 'none' }}
+                        />
+                      </PieChart>
                     </ResponsiveContainer>
                   </div>
                   {/* Center total text - Overlay method for reliability */}
-                  <div className={cn("absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10", isPdfExportMode ? "translate-y-[0px]" : "translate-y-[-4px]")}>
+                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-10 self-center justify-self-center">
                     <span className={cn("font-bold text-slate-400 tracking-wider", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>총 전용면적</span>
                     <span className={cn("font-black text-slate-800 tracking-tight leading-none font-sans", isPdfExportMode ? "text-[17px] my-0.5" : "text-[22px]")}>
                       {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
@@ -1476,7 +1476,7 @@ const Dashboard: React.FC = () => {
                           stroke="#ffffff"
                           strokeWidth={1.5}
                           radius={[4, 4, 4, 4]} 
-                          barSize={20} 
+                          barSize={isPdfExportMode ? 18 : 28} 
                           isAnimationActive={!isPdfExportMode}
                           animationDuration={400}
                           style={{ fillOpacity: barOpacity, cursor: 'pointer', transition: 'fill-opacity 400ms ease', outline: 'none' }}
@@ -1549,7 +1549,7 @@ const Dashboard: React.FC = () => {
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
         <div 
-          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 pt-3 px-4 pb-4" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
+          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 pt-3.5 px-5 pb-5" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
           {/* Subtle gradient glow in bg */}
@@ -1569,13 +1569,13 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="z-10 flex flex-col flex-1 mt-2">
+          <div className="z-10 flex flex-col flex-1 mt-2 justify-between">
             
             <div className="space-y-0.5 flex-1 flex flex-col justify-between py-1">
               {wardBedsData.list.map((item, idx) => (
-                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1 last:border-0 last:pb-0", isPdfExportMode ? "text-[9.5px]" : "text-[12px]")}>
+                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1 last:border-0 last:pb-0", isPdfExportMode ? "text-[11px]" : "text-[12px]")}>
                   <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
-                  <div className={cn("flex items-center text-right gap-1.5", isPdfExportMode ? "text-[9.5px]" : "text-[12px]")}>
+                  <div className={cn("flex items-center text-right gap-1.5", isPdfExportMode ? "text-[11px]" : "text-[12px]")}>
                     <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
@@ -1591,27 +1591,40 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            <div className="mt-2 pt-2 border-t border-slate-200">
-               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1", isPdfExportMode ? "text-[11px]" : "text-[13px]")}>
+            <div className="mt-2.5 pt-2.5 border-t border-slate-200">
+               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-2.5", isPdfExportMode ? "text-[12px]" : "text-[13px]")}>
                  <AlertCircle size={10} className="text-slate-400" />
                  허가 외 병상
                </div>
-               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[10px] gap-1" : "text-[12.5px] gap-1.5", "flex flex-col")}>
-                  <div className="flex items-center justify-between">
-                    <span>응급 <span className="font-bold text-slate-800">21</span></span>
-                    <span className="text-slate-200">|</span>
-                    <span>감염 <span className="font-bold text-slate-800">2</span></span>
-                    <span className="text-slate-200">|</span>
-                    <span>신생아 <span className="font-bold text-slate-800">4</span></span>
-                    <span className="text-slate-200">|</span>
-                    <span>주사 <span className="font-bold text-slate-800">6</span></span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>내시경 <span className="font-bold text-slate-800">5</span></span>
-                    <span className="text-slate-200 font-normal">|</span>
-                    <span>인공신장 <span className="font-bold text-slate-800">23</span></span>
-                    <span className="text-slate-200 font-normal">|</span>
-                    <span>재활 <span className="font-bold text-slate-800">16</span></span>
+               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[11px]" : "text-[12.5px]")}>
+                  <div className="flex flex-wrap items-center justify-start gap-x-2 gap-y-1">
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>응급 <span className="font-extrabold text-slate-800">21</span></span>
+                      <span className="text-slate-200 text-[10px]/none select-none font-light">|</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>감염 <span className="font-extrabold text-slate-800">2</span></span>
+                      <span className="text-slate-200 text-[10px]/none select-none font-light">|</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>신생아 <span className="font-extrabold text-slate-800">4</span></span>
+                      <span className="text-slate-200 text-[10px]/none select-none font-light">|</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>주사 <span className="font-extrabold text-slate-800">6</span></span>
+                      <span className="text-slate-200 text-[10px]/none select-none font-light">|</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>내시경 <span className="font-extrabold text-slate-800">5</span></span>
+                      <span className="text-slate-200 text-[10px]/none select-none font-light">|</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>인공신장 <span className="font-extrabold text-slate-800">23</span></span>
+                      <span className="text-slate-200 text-[10px]/none select-none font-light">|</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <span>재활 <span className="font-extrabold text-slate-800">16</span></span>
+                    </div>
                   </div>
                </div>
             </div>
