@@ -640,7 +640,7 @@ const Dashboard: React.FC = () => {
   }, [currentStage, divisions, medicalOnly, medicalDivisionIds, filteredValues, departments, rooms]);
 
   const PrintHeader = ({ page, total }: { page: number, total: number }) => (
-    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5 select-none" style={{ height: '14mm' }}>
+    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2 select-none" style={{ height: '15mm' }}>
       <div>
         <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
           <span>차트로 보는 서부의료원 면적 계획</span>
@@ -1147,6 +1147,8 @@ const Dashboard: React.FC = () => {
                     >
                       <Pie
                         data={divisionData}
+                        cx="50%"
+                        cy="50%"
                         innerRadius={isPdfExportMode ? "42%" : "56%"} 
                         outerRadius={isPdfExportMode ? "68%" : "85%"}
                         startAngle={90}
@@ -1265,7 +1267,7 @@ const Dashboard: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <div className={cn("flex-1 w-full", isPdfExportMode ? "min-h-0 h-[195px]" : "min-h-[290px]")}>
+                <div className={cn("flex-1 min-h-0 w-full relative -mx-2 px-2", isPdfExportMode ? "h-[195px]" : "h-[290px]")}>
                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
@@ -1300,16 +1302,6 @@ const Dashboard: React.FC = () => {
                         width={45}
                         padding={{ top: 20, bottom: 0 }}
                       />
-                      {isPdfExportMode && (
-                        <Legend 
-                          verticalAlign="top" 
-                          align="right" 
-                          wrapperStyle={{ paddingTop: 0, paddingRight: 5, marginTop: -25 }}
-                          iconType="circle"
-                          iconSize={7}
-                          formatter={(value) => <span className="text-[9.5px] font-bold text-slate-600">{value}</span>}
-                        />
-                      )}
                       {!isPdfExportMode && (
                         <Tooltip 
                           content={<CustomTooltip />} 
@@ -1399,8 +1391,8 @@ const Dashboard: React.FC = () => {
       <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[660px]" : "grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
         <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[660px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
-          <div>
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex-1 flex flex-col h-full w-full">
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Layers size={18} className="text-orange-500" />
                 <h3 className="text-sm font-black text-slate-800 tracking-tight">층별 면적 분포</h3>
@@ -1579,11 +1571,11 @@ const Dashboard: React.FC = () => {
           
           <div className="z-10 flex flex-col flex-1 mt-2">
             
-            <div className="space-y-1 flex-1 flex flex-col">
+            <div className="space-y-1 flex-1 flex flex-col justify-between py-2">
               {wardBedsData.list.map((item, idx) => (
-                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-0.5 last:border-0 last:pb-0", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
+                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1.5 last:border-0 last:pb-0", isPdfExportMode ? "text-[13px]" : "text-[12px]")}>
                   <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
-                  <div className={cn("flex items-center text-right gap-2", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
+                  <div className={cn("flex items-center text-right gap-2", isPdfExportMode ? "text-[13px]" : "text-[12px]")}>
                     <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
@@ -1599,12 +1591,12 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            <div className="mt-2 pt-2 border-t border-slate-200">
-               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1", isPdfExportMode ? "text-[11px]" : "text-[13px]")}>
-                 <AlertCircle size={12} className="text-slate-400" />
+            <div className="mt-4 pt-4 border-t border-slate-200">
+               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-2", isPdfExportMode ? "text-[14px]" : "text-[13px]")}>
+                 <AlertCircle size={14} className="text-slate-400" />
                  허가 외 병상
                </div>
-               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[10px] gap-1" : "text-[12.5px] gap-1.5", "flex flex-col")}>
+               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[13px] gap-2" : "text-[12.5px] gap-1.5", "flex flex-col")}>
                   <div className="flex items-center justify-between">
                     <span>응급 <span className="font-bold text-slate-800">21</span></span>
                     <span className="text-slate-200">|</span>
