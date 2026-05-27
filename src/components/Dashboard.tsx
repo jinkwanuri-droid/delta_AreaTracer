@@ -640,21 +640,19 @@ const Dashboard: React.FC = () => {
   }, [currentStage, divisions, medicalOnly, medicalDivisionIds, filteredValues, departments, rooms]);
 
   const PrintHeader = ({ page, total }: { page: number, total: number }) => (
-    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1.5 mb-3 shrink-0 select-none" style={{ height: '14mm' }}>
-      <div className="flex items-end gap-3">
+    <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5 select-none" style={{ height: '14mm' }}>
+      <div>
         <h2 className="text-[28px] leading-none font-bold tracking-tight text-slate-950 flex items-end gap-2">
           <span>차트로 보는 서부의료원 면적 계획</span>
+          <span className="text-[14px] font-normal text-slate-500 mb-[2px]">({page}/{total})</span>
         </h2>
-        <span className="text-[12px] font-bold text-slate-400 mb-[2px]">({page}/{total})</span>
       </div>
-      <div className="flex flex-col items-end gap-1.5 text-right pb-0.5">
-        <div className="flex items-center gap-2">
-          <div className="px-3 py-1 bg-slate-900 rounded-full">
-            <span className="text-[11px] font-black text-white leading-none tracking-tight">대시보드</span>
-          </div>
-        </div>
+      <div className="flex flex-col items-end gap-1 text-right pb-0.5">
         <span className="text-[9px] font-bold text-slate-600 leading-none">
           경상남도 서부의료원 건립사업 실시설계
+        </span>
+        <span className="text-[8.5px] font-extrabold text-white bg-purple-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
+          대시보드
         </span>
       </div>
     </div>
@@ -1219,9 +1217,9 @@ const Dashboard: React.FC = () => {
                     </ResponsiveContainer>
                   </div>
                   {/* Center total text - Overlay method for reliability */}
-                  <div className="col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-10 translate-y-[-4px]">
+                  <div className={cn("col-start-1 row-start-1 flex flex-col items-center justify-center pointer-events-none z-10", isPdfExportMode ? "translate-y-[-1px]" : "translate-y-[-4px]")}>
                     <span className={cn("font-bold text-slate-400 tracking-wider", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>총 전용면적</span>
-                    <span className={cn("font-black text-slate-800 tracking-tight leading-none font-sans", isPdfExportMode ? "text-[16px] my-0.5" : "text-[22px]")}>
+                    <span className={cn("font-black text-slate-800 tracking-tight leading-none font-sans", isPdfExportMode ? "text-[17px] my-0.5" : "text-[22px]")}>
                       {(currentStage?.net || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                     <span className={cn("font-bold text-slate-400", isPdfExportMode ? "text-[8.5px]" : "text-[9px]")}>㎡</span>
@@ -1372,6 +1370,7 @@ const Dashboard: React.FC = () => {
                                         stroke="#ffffff"
                                         strokeWidth={1.5}
                                         paintOrder="stroke"
+                                        style={{ filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.1))' }}
                                       >
                                         {value > 1000 ? `${(value/1000).toFixed(1)}천` : Math.round(value)}
                                       </text>
@@ -1397,9 +1396,9 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={2} total={2}>
       {/* Floor & Ward Row */}
-      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[460px]" : "grid-cols-1 lg:grid-cols-10")}>
+      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-10 h-[660px]" : "grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
-        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[460px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-4 h-[660px]" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -1454,17 +1453,6 @@ const Dashboard: React.FC = () => {
                       width={40}
                       interval={0}
                       tick={{ fontSize: isPdfExportMode ? 9.5 : 11, fill: '#64748b', fontWeight: 800 }}
-                    />
-                    <Legend 
-                      verticalAlign="top" 
-                      align="right" 
-                      wrapperStyle={isPdfExportMode ? { paddingTop: 0, paddingRight: 5, marginTop: -35 } : { paddingTop: 0, paddingRight: 5, marginTop: -15 }}
-                      iconType="circle"
-                      iconSize={isPdfExportMode ? 5 : 6}
-                      formatter={(value) => {
-                        if (value === 'dummyTotal') return null;
-                        return <span className={cn("font-bold text-slate-600", isPdfExportMode ? "text-[8.5px]" : "text-[10px]")}>{value}</span>;
-                      }}
                     />
                     {!isPdfExportMode && (
                      <Tooltip 
@@ -1569,7 +1557,7 @@ const Dashboard: React.FC = () => {
 
         {/* 병상 구성 (List Layout) - Placed on the right of floor distribution (3/10 width) */}
         <div 
-          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 p-4 h-[270px]" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
+          className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between relative overflow-hidden", isPdfExportMode ? "col-span-3 p-4 h-[660px]" : "p-6 h-[400px] lg:col-span-3 col-span-1")}
           style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}
         >
           {/* Subtle gradient glow in bg */}
@@ -1589,9 +1577,9 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
           
-          <div className="z-10 flex flex-col flex-1 justify-between mt-auto">
+          <div className="z-10 flex flex-col flex-1 mt-2">
             
-            <div className="space-y-0.5 flex-1 flex flex-col justify-end">
+            <div className="space-y-1 flex-1 flex flex-col">
               {wardBedsData.list.map((item, idx) => (
                 <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-0.5 last:border-0 last:pb-0", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
                   <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
@@ -1667,7 +1655,6 @@ const Dashboard: React.FC = () => {
                      <PieChart 
                        style={{ outline: 'none' }} 
                        tabIndex={-1}
-                       onMouseLeave={() => setHoveredDeptId(null)}
                      >
                         <Pie
                           data={div.data}
@@ -1677,12 +1664,8 @@ const Dashboard: React.FC = () => {
                           isAnimationActive={false}
                           stroke="#fff"
                           strokeWidth={2}
-                          onMouseEnter={(_, index) => {
-                            setHoveredDeptId(div.data[index]?.id || null);
-                          }}
-                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, name, id }) => {
+                          label={({ percent, cx, cy, midAngle, innerRadius, outerRadius, name }) => {
                             if (cx === undefined || cy === undefined || isNaN(cx) || isNaN(cy)) return null;
-                            const isHovered = hoveredDeptId === id;
                             
                             const RADIAN = Math.PI / 180;
                             const radius = Number(innerRadius || 0) + (Number(outerRadius || 0) - Number(innerRadius || 0)) * 0.5;
@@ -1691,43 +1674,41 @@ const Dashboard: React.FC = () => {
 
                             if (isNaN(x) || isNaN(y)) return null;
 
-                            // For PDF mode, always show if percent > 5% or hovered
-                            if (percent < (isPdfExportMode ? 0.05 : 0.07) && !isHovered) return null;
+                            // For PDF mode, always show if percent > 5%
+                            if (percent < (isPdfExportMode ? 0.05 : 0.07)) return null;
 
                             return (
                               <g style={{ pointerEvents: 'none' }}>
                                 <text 
                                   x={x} 
-                                  y={y - (isPdfExportMode ? 1 : 2)} 
+                                  y={y - (isPdfExportMode ? 1.5 : 2.5)} 
                                   fill="#ffffff" 
                                   textAnchor="middle" 
                                   dominantBaseline="central" 
-                                  fontSize={isPdfExportMode ? 7.5 : (isHovered ? 12 : 10)} 
-                                  fontWeight="900" 
+                                  fontSize={isPdfExportMode ? 8 : 11} 
+                                  fontWeight="800"
                                   style={{ 
-                                    filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.8))',
+                                    filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.85))',
                                     paintOrder: 'stroke',
-                                    stroke: 'rgba(0,0,0,0.2)',
-                                    strokeWidth: '1px',
-                                    transition: 'all 200ms ease'
+                                    stroke: 'rgba(0,0,0,0.3)',
+                                    strokeWidth: '1px'
                                   }}
                                 >
                                   {name.split('(')[0]}
                                 </text>
                                 <text 
                                   x={x} 
-                                  y={y + (isPdfExportMode ? 6 : 9)} 
+                                  y={y + (isPdfExportMode ? 6.5 : 10)} 
                                   fill="#ffffff" 
                                   textAnchor="middle" 
                                   dominantBaseline="central" 
-                                  fontSize={isPdfExportMode ? 6.5 : (isHovered ? 10 : 9)} 
-                                  fontWeight="900" 
+                                  fontSize={isPdfExportMode ? 7 : 10} 
+                                  fontWeight="800"
                                   style={{ 
-                                    filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.8))',
+                                    filter: 'drop-shadow(0px 1px 1.5px rgba(0,0,0,0.85))',
                                     paintOrder: 'stroke',
-                                    stroke: 'rgba(0,0,0,0.2)',
-                                    strokeWidth: '1px',
-                                    transition: 'all 200ms ease'
+                                    stroke: 'rgba(0,0,0,0.3)',
+                                    strokeWidth: '1px'
                                   }}
                                 >
                                   {`${(percent * 100).toFixed(0)}%`}
@@ -1738,17 +1719,15 @@ const Dashboard: React.FC = () => {
                           labelLine={false}
                         >
                           {div.data.map((entry, idx) => {
-                            const isHovered = hoveredDeptId === entry.id;
-                            const isAnyHovered = !!hoveredDeptId && div.data.some(d => d.id === hoveredDeptId);
+                            const opacity = Math.max(0.2, 1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)));
                             return (
                               <Cell 
                                 key={`cell-${idx}`} 
                                 fill={div.color} 
-                                fillOpacity={isAnyHovered ? (isHovered ? 1 : 0.25) : (1 - (idx * (div.data.length >= 10 ? 0.08 : 0.15)))} 
+                                fillOpacity={opacity} 
                                 stroke="#fff" 
-                                strokeWidth={isHovered ? 2 : 1.5}
-                                className="transition-all duration-300"
-                                style={{ outline: 'none', transition: 'all 300ms ease' }}
+                                strokeWidth={1.5}
+                                style={{ outline: 'none' }}
                               />
                             );
                           })}
@@ -1775,29 +1754,18 @@ const Dashboard: React.FC = () => {
                 {!isPdfExportMode && (
                   <div className="w-full relative z-10 px-0.5 mt-2 pt-1 border-t border-dashed border-slate-200/80">
                      <div className="space-y-0 text-[12px]">
-                       {div.data.slice(0, 5).map((dept, idx) => {
-                          const isHovered = hoveredDeptId === dept.id;
-                          const isAnyHovered = !!hoveredDeptId && div.data.some(d => d.id === hoveredDeptId);
-                          
-                          return (
-                            <div 
-                              key={idx} 
-                              onMouseEnter={() => setHoveredDeptId(dept.id)}
-                              onMouseLeave={() => setHoveredDeptId(null)}
-                              className={cn(
-                                "flex items-center justify-between py-0.5 px-1.5 rounded transition-all cursor-default",
-                                isHovered ? "bg-indigo-50/50 shadow-sm outline outline-1 outline-indigo-100/50" : "hover:bg-white border border-transparent hover:border-slate-100/50",
-                                isAnyHovered && !isHovered && "opacity-40"
-                              )}
-                            >
-                               <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
-                                 <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
-                                 <span className={cn("text-[12px] truncate leading-none", isHovered ? "text-indigo-600 font-extrabold" : "text-slate-600 font-bold")}>{dept.name}</span>
-                               </div>
-                               <span className={cn("text-[12px] flex-shrink-0 tabular-nums", isHovered ? "text-indigo-600 font-black" : "text-slate-500 font-extrabold")}>{f(dept.value)}</span>
+                       {div.data.slice(0, 5).map((dept, idx) => (
+                         <div 
+                           key={idx} 
+                           className="flex items-center justify-between py-0.5 px-1.5 rounded transition-all cursor-default hover:bg-white border border-transparent hover:border-slate-100/50"
+                         >
+                            <div className="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1.5">
+                              <div className="w-1.5 h-1.5 flex-shrink-0 rounded-full" style={{ backgroundColor: div.color, opacity: 1 - (idx * 0.15) }} />
+                              <span className="text-[12px] truncate leading-none text-slate-600 font-bold">{dept.name}</span>
                             </div>
-                          );
-                       })}
+                            <span className="text-[12px] flex-shrink-0 tabular-nums text-slate-500 font-extrabold">{f(dept.value)}</span>
+                         </div>
+                       ))}
                      </div>
                      {div.data.length > 5 && <div className="text-center text-[10px] text-slate-400 mt-1 italic font-medium leading-none">...외 {div.data.length - 5}개 부서</div>}
                   </div>
