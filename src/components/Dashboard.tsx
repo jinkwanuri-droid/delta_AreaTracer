@@ -1122,29 +1122,29 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[280px] mt-4" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
+        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[310px] mt-4" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
           {/* Row 2: Donut Chart and Detailed Trends */}
           <div className={cn(isPdfExportMode ? "col-span-2 order-1 h-full" : "order-3 lg:order-3 lg:col-span-2")}>
           {/* Division share donut */}
           <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-full", isPdfExportMode ? "p-4" : "p-6")} style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>
             <div className="flex flex-col h-full justify-between">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <PieChartIcon size={17} className="text-indigo-500" />
                   <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 면적 구성비</h3>
                 </div>
               </div>
               
-              <div className={cn("flex flex-col items-center justify-center w-full h-full my-auto flex-1 relative", isPdfExportMode ? "min-h-0" : "min-h-[300px]")}>
-                <div className="w-full h-full flex-1 mx-auto z-0 relative">
-                  <div className="absolute inset-0 w-full h-full text-center">
+              <div className={cn("flex flex-col items-center justify-center w-full h-[100%] my-auto flex-1 relative", isPdfExportMode ? "min-h-[200px]" : "min-h-[300px]")}>
+                <div className="w-full h-full flex-1 mx-auto z-0 relative text-center">
+                  <div className="absolute inset-0 w-full h-full">
                     <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-                    <PieChart 
-                      key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
-                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                      style={{ outline: 'none' }}
-                      tabIndex={-1}
-                    >
+                      <PieChart 
+                        key={`main-donut-chart-${currentStage?.id || 'default'}-${activeTrendDivId || 'all'}`}
+                        margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                        style={{ outline: 'none' }}
+                        tabIndex={-1}
+                      >
                       <Pie
                         data={divisionData}
                         cx="50%"
@@ -1267,7 +1267,7 @@ const Dashboard: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <div className={cn("flex-1 min-h-0 w-full relative -mx-2 px-2")}>
+                <div className={cn("flex-1 w-full relative -mx-2 px-2", isPdfExportMode ? "min-h-[220px]" : "min-h-0")}>
                   <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`area-trends-rc-${activeTrendDivId || 'all'}`}>
                     <AreaChart 
                       key={`area-trends-${activeTrendDivId || 'all'}`}
@@ -1388,7 +1388,7 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={2} total={2}>
       {/* Floor & Ward Row */}
-      <div className={cn("grid gap-4 w-full", isPdfExportMode ? "grid-cols-10 h-[310px]" : "gap-6 grid-cols-1 lg:grid-cols-10")}>
+      <div className={cn("grid gap-4 w-full", isPdfExportMode ? "grid-cols-10 h-[280px]" : "gap-6 grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
         <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-3" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
           <div className="flex-1 flex flex-col h-full w-full">
@@ -1425,12 +1425,12 @@ const Dashboard: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className={cn("w-full relative", isPdfExportMode ? "flex-1 min-h-[230px]" : "h-[310px]")}>
+            <div className={cn("w-full relative", isPdfExportMode ? "flex-1 min-h-[190px] -mt-1" : "h-[310px]")}>
                 <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-floors-rc-${medicalOnly}-${activeTrendDivId || 'all'}`}>
                   <BarChart 
                     layout="vertical" 
                     data={floorDivisionData} 
-                    margin={{ top: isPdfExportMode ? 10 : 10, right: 55, left: -5, bottom: 5 }}
+                    margin={{ top: isPdfExportMode ? 5 : 10, right: 55, left: -5, bottom: 5 }}
                     className="outline-none"
                     style={{ outline: 'none' }}
                     tabIndex={-1}
@@ -1571,11 +1571,11 @@ const Dashboard: React.FC = () => {
           
           <div className="z-10 flex flex-col flex-1 mt-2">
             
-            <div className="space-y-1 flex-1 flex flex-col justify-between py-2">
+            <div className="space-y-0.5 flex-1 flex flex-col justify-between py-1">
               {wardBedsData.list.map((item, idx) => (
-                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1.5 last:border-0 last:pb-0", isPdfExportMode ? "text-[10px]" : "text-[12px]")}>
+                <div key={idx} className={cn("flex justify-between items-center border-b border-slate-100/60 pb-1 last:border-0 last:pb-0", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
                   <span className="text-slate-500 font-bold whitespace-nowrap">{item.label}</span>
-                  <div className={cn("flex items-center text-right gap-2", isPdfExportMode ? "text-[10px]" : "text-[12px]")}>
+                  <div className={cn("flex items-center text-right gap-1.5", isPdfExportMode ? "text-[8.5px]" : "text-[12px]")}>
                     <div className="w-14 text-right whitespace-nowrap">
                       {item.rooms !== null ? (
                         <span className="text-slate-400 font-semibold">{item.rooms}실</span>
@@ -1591,12 +1591,12 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-200">
-               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1.5", isPdfExportMode ? "text-[11px]" : "text-[13px]")}>
-                 <AlertCircle size={12} className="text-slate-400" />
+            <div className="mt-2 pt-2 border-t border-slate-200">
+               <div className={cn("font-bold text-slate-700 flex items-center gap-1.5 mb-1", isPdfExportMode ? "text-[10px]" : "text-[13px]")}>
+                 <AlertCircle size={10} className="text-slate-400" />
                  허가 외 병상
                </div>
-               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[10px] gap-1.5" : "text-[12.5px] gap-1.5", "flex flex-col")}>
+               <div className={cn("font-semibold text-slate-500 w-full pr-1", isPdfExportMode ? "text-[9px] gap-1" : "text-[12.5px] gap-1.5", "flex flex-col")}>
                   <div className="flex items-center justify-between">
                     <span>응급 <span className="font-bold text-slate-800">21</span></span>
                     <span className="text-slate-200">|</span>
@@ -1621,7 +1621,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Division Dept Shares */}
-      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-3 h-[255px] mt-2" : "p-6 mt-6")}>
+      <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-3 h-[245px] mt-1" : "p-6 mt-6")}>
         <div className={cn("flex items-center gap-2", isPdfExportMode ? "mb-1" : "mb-2")}>
           <Stethoscope size={18} className="text-indigo-500" />
           <h3 className="text-sm font-black text-slate-800 tracking-tight">부문 내 부서 구성비</h3>
@@ -1631,7 +1631,7 @@ const Dashboard: React.FC = () => {
            {divisionDeptShares.map((div, i) => (
               <div key={i} className={cn("flex flex-col bg-slate-50/70 rounded-xl border border-slate-200/80 hover:border-slate-300 hover:shadow-xs hover:bg-slate-50/90 transition-all", isPdfExportMode ? "p-1.5 h-[225px] justify-start" : "p-4")}>
                 {/* Visual Header for Division Block */}
-                <div className={cn("font-extrabold text-slate-800 mb-0 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5", isPdfExportMode ? "text-[12px] pt-1" : "text-[14px] mb-1.5")}>
+                <div className={cn("font-extrabold text-slate-800 mb-0 flex items-center justify-center gap-1.5 border-b border-slate-200/50 pb-1.5", isPdfExportMode ? "text-[11.5px] pt-0.5" : "text-[14px] mb-1.5")}>
                   <span className="truncate">{div.divisionName}</span>
                   <span 
                     className="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none"
@@ -1641,7 +1641,7 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[185px] mt-0" : "aspect-square mt-1")}>
+                <div className={cn("w-full grid mb-0 pb-1", isPdfExportMode ? "h-[185px] -mt-1.5" : "aspect-square mt-1")}>
                    <div className="col-start-1 row-start-1 w-full h-full text-center">
                      <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                      <PieChart 
