@@ -1724,7 +1724,11 @@ const Dashboard: React.FC = () => {
                             const RADIAN = Math.PI / 180;
                             const radius = Number(innerRadius || 0) + (Number(outerRadius || 0) - Number(innerRadius || 0)) * 0.5;
                             const x = cx + radius * Math.cos(-midAngle * RADIAN);
-                            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                            const yBase = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                            // 특정 부서(외래진료센터A)가 PDF모드에서 겹침 현상이 있어 Y축을 아래로 조정
+                            const isTargetDept = name === '외래진료센터A';
+                            const y = yBase + (isPdfExportMode && isTargetDept ? 10 : 0);
 
                             if (isNaN(x) || isNaN(y)) return null;
 
