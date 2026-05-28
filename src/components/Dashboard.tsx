@@ -662,7 +662,7 @@ const Dashboard: React.FC = () => {
     if (isPdfExportMode) {
       if (isHidden) return null;
       return (
-        <div className="print-page w-full flex flex-col justify-start bg-white" style={{ minHeight: '178mm', maxHeight: '178mm', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div className="print-page w-full flex flex-col justify-start bg-white" style={{ minHeight: '185mm', maxHeight: '185mm', boxSizing: 'border-box', overflow: 'hidden' }}>
           <PrintHeader page={page} total={total} />
           <div className="flex-1 min-h-0 flex flex-col">
             {children}

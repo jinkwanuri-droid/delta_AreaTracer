@@ -796,7 +796,7 @@ function FloorTable({
   return (
     <>
       {pages.map((pageRows, pageIdx) => (
-        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+        <div key={`${floor.id}-p${pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '185mm', maxHeight: '185mm', overflow: 'hidden', boxSizing: 'border-box' }}>
           <div className="flex-1">
             <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2" style={{ height: '15mm' }}>
               <div>
@@ -1174,7 +1174,7 @@ function SummaryPrintTable({
   return (
     <>
       {pages.map((page) => (
-        <div key={`summary-page-${page.pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '178mm', boxSizing: 'border-box' }}>
+        <div key={`summary-page-${page.pageIdx}`} className="print-page w-full flex flex-col" style={{ minHeight: '185mm', maxHeight: '185mm', overflow: 'hidden', boxSizing: 'border-box' }}>
           <div className="flex-1">
             {/* Header */}
             <div className="flex items-end justify-between border-b-2 border-slate-950 pb-1 mb-2.5" style={{ height: '14mm' }}>
