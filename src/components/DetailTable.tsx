@@ -10,7 +10,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import React, { useRef, useState } from "react";
 import { clsx } from "clsx";
-import { ChevronDown, RotateCcw, Filter, Users, Edit3, Check, X } from "lucide-react";
+import { ChevronDown, RotateCcw, Filter, Users, Edit3, Check, X, Layers } from "lucide-react";
 import DisplaySettings from "./DisplaySettings";
 import SelectorPopover from "./SelectorPopover";
 
@@ -795,8 +795,8 @@ export default function DetailTable() {
 
   return (
     <div className="flex flex-col h-full bg-transparent overflow-hidden">
-      {/* Tab Navigator & Filters */}
-      <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between shrink-0 mb-6 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      {/* Desktop View: Tab Navigator & Filters */}
+      <div className="hidden md:flex bg-white border-b border-slate-200 px-8 py-3 items-center justify-between gap-2 shrink-0 mb-6 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="flex items-center gap-1 bg-lv2 p-1 rounded-lg">
           <button
             onClick={() => setActiveFloorId("all")}
@@ -825,7 +825,8 @@ export default function DetailTable() {
             </button>
           ))}
         </div>
-        <div className="flex items-center space-x-3 shrink-0">
+
+        <div className="flex items-center space-x-3 shrink-0 justify-end">
           <div className="flex items-center gap-2 shrink-0">
             <SelectorPopover
               placeholder="부문 전체"
@@ -882,7 +883,78 @@ export default function DetailTable() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden px-6 pb-6">
+      {/* Mobile View: 4 Buttons inline + DisplaySettings (층 높이에 맞춰 1열 배치) */}
+      <div className="flex md:hidden bg-white border-b border-slate-200 px-3 py-2 items-center justify-between gap-1 shrink-0 mb-4 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-1 flex-1 min-w-0 mr-1">
+          {/* 층 전체 선택 */}
+          <SelectorPopover
+            placeholder="층 전체"
+            options={[{ id: "all", name: "층 전체" }, ...sortedFloors]}
+            value={activeFloorId || "all"}
+            onChange={(val) => setActiveFloorId(val || "all")}
+            icon={<Layers size={13} />}
+            className="bg-indigo-50/50 border-indigo-100 text-indigo-700 w-[78px] xs:w-[84px] h-[30px] px-1.5 py-0 rounded-lg text-[9.5px] xs:text-[10px] shrink-0 font-extrabold"
+          />
+
+          {/* 부문 전체 선택 */}
+          <SelectorPopover
+            placeholder="부문 전체"
+            options={[{ id: "", name: "부문 전체" }, ...filteredDivisions]}
+            value={filters.divisionIds[0] || ""}
+            onChange={(val) => {
+              useAppStore.setState((state) => ({
+                filters: {
+                  ...state.filters,
+                  divisionIds: val ? [val] : [],
+                  departmentIds: [],
+                },
+              }));
+            }}
+            icon={<Filter size={13} />}
+            className="bg-white border border-slate-200 w-[78px] xs:w-[84px] h-[30px] px-1.5 py-0 rounded-lg text-[9.5px] xs:text-[10px] shrink-0"
+          />
+
+          {/* 부서 전체 선택 */}
+          <SelectorPopover
+            placeholder="부서 전체"
+            options={[
+              { id: "", name: "부서 전체" },
+              ...filteredDepartmentsBySelection,
+            ]}
+            value={filters.departmentIds[0] || ""}
+            onChange={(val) => {
+              useAppStore.setState((state) => ({
+                filters: {
+                  ...state.filters,
+                  departmentIds: val ? [val] : [],
+                },
+              }));
+            }}
+            icon={<Users size={13} />}
+            className="bg-white border border-slate-200 w-[82px] xs:w-[88px] h-[30px] px-1.5 py-0 rounded-lg text-[9.5px] xs:text-[10px] shrink-0"
+          />
+
+          {/* 필터 초기화 */}
+          <button
+            onClick={() =>
+              useAppStore.setState({
+                filters: { divisionIds: [], departmentIds: [] },
+                activeFloorId: "all",
+              })
+            }
+            className="flex items-center justify-center h-[30px] w-[30px] bg-white border border-slate-200 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-indigo-600 transition-all shadow-sm active:scale-[0.96] outline-none shrink-0"
+            title="필터 초기화"
+          >
+            <RotateCcw size={13} />
+          </button>
+        </div>
+
+        <div className="flex items-center pl-1 border-l border-slate-100 shrink-0">
+          <DisplaySettings />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-hidden px-3 pb-3 md:px-6 md:pb-6">
         <div className="h-full bg-white border border-slate-300 rounded shadow-sm flex flex-col relative overflow-hidden">
           <div ref={tableContainerRef} className="flex-1 overflow-auto">
             <div
@@ -1188,27 +1260,6 @@ export default function DetailTable() {
                   )}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          {/* Bottom Sticky Footer */}
-          <div className="shrink-0 h-9 bg-lv2 text-lv5 flex items-center px-6 border-t border-lv4 rounded-b-lg select-none">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold tracking-tight text-slate-500">
-                © 2026 Haeahn Architecture
-              </span>
-              <div className="w-px h-2.5 bg-lv4 mx-1"></div>
-              <span className="text-[10px] font-medium italic text-slate-400">
-                Medical Facility Planning Tool v1.2
-              </span>
-            </div>
-            <div className="ml-auto flex items-center gap-4">
-              <span className="text-[9px] font-extrabold opacity-60 uppercase tracking-widest text-slate-500">
-                Internal Use Only
-              </span>
-              <div className="text-[10px] font-medium opacity-60 text-slate-400">
-                Data is automatically synchronized
-              </div>
             </div>
           </div>
         </div>

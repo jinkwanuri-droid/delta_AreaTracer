@@ -37,22 +37,22 @@ export default function SelectorPopover({
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button className={clsx(
-          "group flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 outline-none focus:ring-2 focus:ring-indigo-500/20",
+          "group flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[10.5px] md:text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm active:scale-95 outline-none focus:ring-2 focus:ring-indigo-500/20 h-7.5 md:h-9",
           className
         )}>
           {icon && <span className="text-slate-400 group-hover:text-indigo-500 transition-colors shrink-0">{icon}</span>}
-          <div className="flex-1 flex items-center gap-1.5 leading-none text-[11px] font-bold text-left overflow-hidden">
+          <div className="flex-1 flex items-center gap-1 leading-none text-[10.5px] md:text-[11px] font-bold text-left overflow-hidden">
             {label && (
               <>
-                <span className={clsx("text-[10px] font-extrabold uppercase tracking-tighter shrink-0", labelClassName || "text-slate-400")}>{label}</span>
-                <span className="text-slate-300 shrink-0">|</span>
+                <span className={clsx("hidden xs:inline-block text-[9.5px] md:text-[10px] font-extrabold uppercase tracking-tighter shrink-0", labelClassName || "text-slate-400")}>{label}</span>
+                <span className="hidden xs:inline-block text-slate-300 shrink-0">|</span>
               </>
             )}
             <span className="truncate text-slate-700 flex-1">
               {selectedOption ? selectedOption.name : placeholder}
             </span>
           </div>
-          <ChevronDown size={12} className="text-slate-300 group-hover:text-indigo-400 transition-colors ml-1 shrink-0" />
+          <ChevronDown size={12} className="text-slate-300 group-hover:text-indigo-400 transition-colors ml-0.5 shrink-0" />
         </button>
       </Popover.Trigger>
 

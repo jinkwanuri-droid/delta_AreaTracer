@@ -59,7 +59,7 @@ export default function DisplaySettings() {
         >
           <div className="space-y-4">
             {/* Added Global Filter: Medical ONLY */}
-            <div>
+            <div className="hidden md:block">
               <label className="flex items-center gap-2 p-2.5 bg-emerald-50 rounded-lg border border-emerald-100 cursor-pointer group/label hover:bg-emerald-100/50 transition-colors">
                 <input
                   type="checkbox"

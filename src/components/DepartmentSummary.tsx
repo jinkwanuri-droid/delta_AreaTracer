@@ -583,16 +583,16 @@ export default function DepartmentSummary() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-      <div className="flex items-center justify-between px-8 py-4 shrink-0 bg-white border-b border-slate-200">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-3 py-2 md:px-8 md:py-4 shrink-0 bg-white border-b border-slate-200">
+        <div className="hidden md:flex items-center gap-4">
           <h1 className="text-xl font-black text-slate-900 tracking-tight">부서별 총괄 면적표</h1>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 ml-auto">
           <DisplaySettings />
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden p-6">
+      <div className="flex-1 overflow-hidden p-3 md:p-6">
         <div className="h-full bg-white border border-slate-300 rounded shadow-sm overflow-hidden flex flex-col">
           <div className="flex-1 overflow-auto">
             <table className="w-full border-separate border-spacing-0 table-fixed text-[11px]">

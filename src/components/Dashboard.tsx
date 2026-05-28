@@ -45,6 +45,7 @@ import {
   Trees
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { computeSummaryPages, computeFloorPages } from './report/PrintableReport';
 
 // Helper to format numbers with commas
 const f = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 1 });
@@ -297,8 +298,7 @@ const Dashboard: React.FC = () => {
   const rooms = useAppStore(state => state.rooms);
   const values = useAppStore(state => state.values);
   const floorAreasByStage = useAppStore(state => state.floorAreasByStage);
-  const medicalOnly = useAppStore(state => state.medicalOnly);
-  const toggleMedicalOnly = useAppStore(state => state.toggleMedicalOnly);
+  const medicalOnly = true;
   const setActiveTab = useAppStore(state => state.setActiveTab);
   const toggleDivisionFilter = useAppStore(state => state.toggleDivisionFilter);
   const toggleDepartmentFilter = useAppStore(state => state.toggleDepartmentFilter);
@@ -308,6 +308,106 @@ const Dashboard: React.FC = () => {
   const [hoveredDeptId, setHoveredDeptId] = useState<string | null>(null);
   const [isInitialMount, setIsInitialMount] = useState(false);
   const isPdfExportMode = useAppStore(state => state.isPdfExportMode);
+  const pdfExportTargets = useAppStore(state => state.pdfExportTargets);
+  const visibleStageIds = useAppStore(state => state.visibleStageIds);
+  const summaryNotes = useAppStore(state => state.summaryNotes);
+  const departmentNotes = useAppStore(state => state.departmentNotes);
+  const comparison = useAppStore(state => state.comparison);
+
+  const globalTotalPages = useMemo(() => {
+    if (!isPdfExportMode) return 2;
+
+    const showDashboard = pdfExportTargets?.includes('dashboard') ?? true;
+    const showSummary = pdfExportTargets?.includes('summary') ?? true;
+    const showDetail = pdfExportTargets?.includes('detail') ?? true;
+
+    // Filter targetFloors: B1 and 1F~7F
+    const targetFloors = floors.filter(f => {
+      const name = f.name.toUpperCase().trim();
+      if (name === 'B1') return true;
+      const numMatch = name.match(/^(\d+)F$/);
+      if (numMatch) {
+         const num = parseInt(numMatch[1]);
+         return num >= 1 && num <= 7;
+      }
+      return false;
+    }).sort((a, b) => {
+      const getVal = (n: string) => {
+        if (n.startsWith('B')) return -parseInt(n.substring(1));
+        return parseInt(n.replace('F', ''));
+      };
+      return getVal(a.name) - getVal(b.name);
+    });
+
+    const activeStages = stages.filter(s => visibleStageIds ? visibleStageIds.includes(s.id) : true).sort((a, b) => a.order - b.order);
+
+    const baseStageId = (comparison.baseId && activeStages.some(s => s.id === comparison.baseId))
+      ? comparison.baseId
+      : activeStages[0]?.id;
+
+    const targetStageId = (comparison.targetId && activeStages.some(s => s.id === comparison.targetId))
+      ? comparison.targetId
+      : activeStages[activeStages.length - 1]?.id;
+
+    let currentGlobalPage = 0;
+    if (showDashboard) {
+      currentGlobalPage += 2;
+    }
+
+    if (showSummary) {
+      const sPages = computeSummaryPages(
+        divisions,
+        departments,
+        rooms,
+        values,
+        activeStages,
+        floorAreasByStage,
+        summaryNotes,
+        departmentNotes,
+        baseStageId,
+        targetStageId,
+        medicalOnly
+      );
+      currentGlobalPage += sPages.length;
+    }
+
+    if (showDetail) {
+      const valsMap = new Map<string, any>();
+      values.forEach(v => valsMap.set(`${v.roomId}|${v.stageId}`, v));
+
+      targetFloors.forEach(floor => {
+        const fPages = computeFloorPages(
+          floor,
+          rooms,
+          departments,
+          divisions,
+          activeStages,
+          valsMap,
+          baseStageId,
+          targetStageId
+        );
+        currentGlobalPage += fPages.length;
+      });
+    }
+
+    return currentGlobalPage;
+  }, [
+    isPdfExportMode,
+    pdfExportTargets,
+    floors,
+    stages,
+    visibleStageIds,
+    divisions,
+    departments,
+    rooms,
+    values,
+    floorAreasByStage,
+    summaryNotes,
+    departmentNotes,
+    comparison,
+    medicalOnly
+  ]);
+
   const chartCxRef = useRef<Record<string, Record<number, number>>>({});
 
   // Remove isInitialMount logic as it was causing excessive flashing
@@ -651,7 +751,7 @@ const Dashboard: React.FC = () => {
         <span className="text-[9px] font-bold text-slate-600 leading-none">
           경상남도 서부의료원 건립사업 실시설계
         </span>
-        <span className="text-[8.5px] font-extrabold text-white bg-purple-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
+        <span className="text-[8.5px] font-extrabold text-white bg-orange-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
           대시보드
         </span>
       </div>
@@ -670,7 +770,7 @@ const Dashboard: React.FC = () => {
           {/* Footer Component fixed at the bottom of the page */}
           <div className="mt-auto flex-none border-t border-slate-400 pt-1.5 flex justify-between items-start text-slate-500 font-medium font-sans">
             <div className="text-[10px] font-semibold text-slate-600">경상남도청 | 해안건축</div>
-            <div className="text-[10px] font-semibold text-slate-600">{page} / {total}</div>
+            <div className="text-[10px] font-semibold text-slate-600">{page} / {globalTotalPages}</div>
           </div>
         </div>
       );
@@ -681,7 +781,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className={cn(
       "flex-1 flex flex-col gap-6 select-none",
-      isPdfExportMode ? "bg-white text-slate-900 dashboard-print-container font-['Arial','Helvetica',sans-serif] p-0" : "h-full min-h-0 overflow-y-auto p-6 bg-slate-50"
+      isPdfExportMode ? "bg-white text-slate-900 dashboard-print-container font-['Arial','Helvetica',sans-serif] p-0" : "h-full min-h-0 overflow-y-auto p-3 md:p-6 bg-slate-50"
     )}>
       {isPdfExportMode && (
         <style>{`
@@ -721,33 +821,18 @@ const Dashboard: React.FC = () => {
 
       {/* Dashboard Toolbar - Hide when printing */}
       {!isPdfExportMode && (
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-2 mt-1">
           <div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+            <h2 className="text-[16px] xs:text-[18px] md:text-[22px] font-black text-slate-800 tracking-tight flex items-center gap-2">
               차트로 보는 경상남도 서부의료원 면적 계획
             </h2>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => toggleMedicalOnly(!medicalOnly)}
-              className={cn(
-                "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border transition-all text-[11px] font-bold",
-                medicalOnly 
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-sm" 
-                  : "bg-white text-slate-500 border-slate-200 hover:border-indigo-400"
-              )}
-            >
-              <Stethoscope size={14} />
-              의료시설 전용면적
-            </button>
           </div>
         </div>
       )}
 
       <PrintPageWrapper page={1} total={2}>
         {/* Main Grid: Reorganized for flexible ordering on mobile */}
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[270px]" : "grid-cols-1 lg:grid-cols-5")}>
+        <div className={cn("grid gap-3 md:gap-6", isPdfExportMode ? "grid-cols-5 h-[270px]" : "grid-cols-1 lg:grid-cols-5")}>
 
         
         {/* Row 1: KPIs (Left 40%) and Step Trend (Right 60%) */}
@@ -1122,7 +1207,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
       
-        <div className={cn("grid gap-6", isPdfExportMode ? "grid-cols-5 h-[265px] mt-4" : "grid-cols-1 lg:grid-cols-5 mt-6")}>
+        <div className={cn("grid gap-3 md:gap-6", isPdfExportMode ? "grid-cols-5 h-[265px] mt-4" : "grid-cols-1 lg:grid-cols-5 mt-4 md:mt-6")}>
           {/* Row 2: Donut Chart and Detailed Trends */}
           <div className={cn(isPdfExportMode ? "col-span-2 order-1 h-full" : "order-3 lg:order-3 lg:col-span-2")}>
           {/* Division share donut */}
@@ -1396,9 +1481,9 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={2} total={2}>
       {/* Floor & Ward Row */}
-      <div className={cn("grid gap-4 w-full", isPdfExportMode ? "grid-cols-10 h-[280px]" : "gap-6 grid-cols-1 lg:grid-cols-10")}>
+      <div className={cn("grid gap-4 w-full", isPdfExportMode ? "grid-cols-10 h-[280px]" : "gap-4 md:gap-6 grid-cols-1 lg:grid-cols-10")}>
         {/* Floor Distribution - Scaled cleanly to 7/10 width */}
-        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-3" : "p-6 h-[400px] lg:col-span-7 col-span-1")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between", isPdfExportMode ? "col-span-7 p-3" : "p-4 md:p-6 h-[400px] lg:col-span-7 col-span-1")}>
           <div className="flex-1 flex flex-col h-full w-full">
             <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <div className="flex items-center gap-2">
@@ -1836,14 +1921,14 @@ const Dashboard: React.FC = () => {
 
       <PrintPageWrapper page={3} total={2} isHidden={true}>
       {/* Top Changes Grid - Grouped into Guideline and Intermediate Comparison Cards */}
-      <div className={cn("grid gap-6 w-full", isPdfExportMode ? "grid-cols-2 h-[345px]" : "grid-cols-1 lg:grid-cols-2")}>
+      <div className={cn("grid gap-4 md:gap-6 w-full", isPdfExportMode ? "grid-cols-2 h-[345px]" : "grid-cols-1 lg:grid-cols-2")}>
         {/* Card Main 1: 공모지침 대비 현재면적 */}
-        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-6")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-4 md:p-6")}>
           <div className="flex items-center gap-2 mb-4">
             <LayoutGrid size={18} className="text-indigo-500" />
             <h3 className="text-sm font-black text-slate-800 tracking-tight">공모지침 대비 면적변화</h3>
           </div>
-          <div className={cn("grid grid-cols-1 md:grid-cols-2", isPdfExportMode ? "gap-3" : "gap-6")}>
+          <div className={cn("grid grid-cols-1 md:grid-cols-2", isPdfExportMode ? "gap-3" : "gap-4 md:gap-6")}>
             {/* Sub Card: 최대 증가 */}
             <div className={cn("bg-rose-50/20 rounded-xl border border-rose-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">
@@ -1915,12 +2000,12 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Card Main 2: 중간설계 대비 현재면적 */}
-        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-6")}>
+        <div className={cn("bg-white rounded-2xl shadow-sm border border-slate-100", isPdfExportMode ? "p-4 h-[345px]" : "p-4 md:p-6")}>
           <div className="flex items-center gap-2 mb-4">
             <Layers size={18} className="text-indigo-500" />
             <h3 className="text-sm font-black text-slate-800 tracking-tight">중간설계 대비 면적변화</h3>
           </div>
-          <div className={cn("grid grid-cols-1 md:grid-cols-2", isPdfExportMode ? "gap-3" : "gap-6")}>
+          <div className={cn("grid grid-cols-1 md:grid-cols-2", isPdfExportMode ? "gap-3" : "gap-4 md:gap-6")}>
             {/* Sub Card: 최대 증가 */}
             <div className={cn("bg-indigo-50/20 rounded-xl border border-indigo-100/50", isPdfExportMode ? "p-2 h-[255px]" : "p-4")}>
               <div className="flex items-center justify-between mb-3">

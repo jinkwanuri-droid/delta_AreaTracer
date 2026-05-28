@@ -59,7 +59,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="w-20 flex flex-col items-center py-8 bg-white border-r border-slate-200 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-[60] shrink-0">
+      <aside className="hidden md:flex w-20 flex-col items-center py-8 bg-white border-r border-slate-200 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-[60] shrink-0">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex flex-col items-center justify-center mb-12 shadow-lg shadow-indigo-100 ring-4 ring-indigo-50">
           <span className="text-white font-black text-xl tracking-tighter">D</span>
         </div>
@@ -81,6 +81,34 @@ export default function Sidebar() {
            />
         </div>
       </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[calc(4rem+env(safe-area-inset-bottom))] bg-white border-t border-slate-200 z-[60] flex justify-around items-center px-1 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_24px_rgba(0,0,0,0.02)]">
+        {menu.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={clsx(
+                "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors",
+                isActive ? "text-indigo-600" : "text-slate-400 hover:text-indigo-500"
+              )}
+            >
+              <item.icon className={clsx("w-5 h-5", isActive ? "stroke-[2]" : "stroke-2")} />
+              <span className={clsx("text-[11px] font-medium", isActive ? "font-semibold" : "text-slate-400")}>{item.label}</span>
+            </button>
+          );
+        })}
+        <button
+          onClick={() => setShowSettings(true)}
+          className="flex flex-col items-center justify-center w-full h-full gap-1 transition-colors text-slate-400 hover:text-indigo-500"
+        >
+          <Settings className="w-5 h-5 stroke-2" />
+          <span className="text-[11px] font-medium text-slate-400">설정</span>
+        </button>
+      </nav>
+
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </>
   );

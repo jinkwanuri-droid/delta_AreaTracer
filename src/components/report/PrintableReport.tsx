@@ -471,6 +471,7 @@ export default function PrintableReport() {
   const { 
     floors, 
     pdfExportTargets,
+    isPdfExportMode,
     divisions, 
     departments, 
     rooms, 
@@ -485,6 +486,7 @@ export default function PrintableReport() {
     floorWardOverrides
   } = useAppStore();
 
+  const showDashboard = isPdfExportMode && (pdfExportTargets?.includes('dashboard') ?? true);
   const showSummary = pdfExportTargets?.includes('summary') ?? true;
   const showDetail = pdfExportTargets?.includes('detail') ?? true;
 
@@ -534,13 +536,15 @@ export default function PrintableReport() {
   }, [values]);
 
   const totalPagesInfo = useMemo(() => {
-    let currentGlobalPage = 0;
+    let currentGlobalPage = showDashboard ? 2 : 0;
     const info: {
+      dashboardPages: number,
       summaryPages: number,
       floorPageOffsets: Record<string, number>,
       floorPageCounts: Record<string, number>,
       totalPages: number
     } = {
+      dashboardPages: showDashboard ? 2 : 0,
       summaryPages: 0,
       floorPageOffsets: {},
       floorPageCounts: {},
@@ -586,6 +590,7 @@ export default function PrintableReport() {
     info.totalPages = currentGlobalPage;
     return info;
   }, [
+    showDashboard,
     showSummary,
     showDetail,
     targetFloors,
@@ -727,7 +732,7 @@ export default function PrintableReport() {
       
       {showSummary && (
         <SummaryPrintTable 
-          pageOffset={0} 
+          pageOffset={totalPagesInfo.dashboardPages || 0} 
           globalTotalPages={totalPagesInfo.totalPages} 
         />
       )}
@@ -1188,7 +1193,7 @@ function SummaryPrintTable({
                 <span className="text-[9px] font-bold text-slate-600 leading-none">
                   경상남도 서부의료원 건립사업 실시설계
                 </span>
-                <span className="text-[8.5px] font-extrabold text-white bg-purple-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
+                <span className="text-[8.5px] font-extrabold text-white bg-emerald-600 px-2.5 py-1 rounded-full inline-block leading-none tracking-tight">
                   부서별 총괄 면적표
                 </span>
               </div>

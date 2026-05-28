@@ -72,12 +72,13 @@ export default function Layout({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 z-10 w-full relative">
-          <div className="flex items-center gap-6">
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight">
-              {project?.name || 'Loading...'} 
-              <span className="text-slate-400 font-normal mx-2">|</span> 
-              <span className="text-indigo-600">
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 md:px-8 shrink-0 z-10 w-full relative">
+          {/* Desktop Left Area */}
+          <div className="hidden md:flex items-center gap-6 min-w-0 flex-1 mr-2">
+            <h1 className="text-lg font-black text-slate-800 tracking-tight flex items-center min-w-0 select-none">
+              <span className="truncate">{project?.name || 'Loading...'}</span> 
+              <span className="text-slate-400 font-normal mx-2 shrink-0">|</span> 
+              <span className="text-indigo-600 shrink-0">
                 {activeTab === 'detail' ? '세부 면적계획' : 
                  activeTab === 'summary' ? '부서별 총괄' : '대시보드'}
               </span>
@@ -88,30 +89,51 @@ export default function Layout({ children }: { children: ReactNode }) {
               options={stages}
               value={comparison.targetId || ""}
               onChange={(val) => setComparisonStages(comparison.baseId, val)}
-              icon={<Layers size={14} />}
+              icon={<Layers size={13} />}
               className="bg-indigo-50/50 border-indigo-100 shadow-indigo-100/20 w-[190px] shrink-0"
             />
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Mobile Left Area */}
+          <div className="flex md:hidden flex-col justify-center min-w-0 flex-1 select-none pr-1.5 py-1">
+            <span className="text-[20px] sm:text-[21px] font-[900] text-indigo-600 leading-none tracking-tight animate-fade-in">
+              {activeTab === 'detail' ? '세부 면적계획' : 
+               activeTab === 'summary' ? '부서별 총괄' : '대시보드'}
+            </span>
+          </div>
+
+          {/* Right Controls Area */}
+          <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+             {/* Mobile Current Stage Selector */}
+             <div className="block md:hidden">
+               <SelectorPopover
+                 options={stages}
+                 value={comparison.targetId || ""}
+                 onChange={(val) => setComparisonStages(comparison.baseId, val)}
+                 icon={<Layers size={13} />}
+                 className="bg-indigo-50/50 border-indigo-100 w-[78px] xs:w-[92px] h-[30px] px-1.5 py-0 rounded-lg text-[9.5px] xs:text-[10px] shrink-0"
+               />
+             </div>
+
              <button
                 onClick={() => fetchData(true)}
                 disabled={isLoading}
                 className={clsx(
-                   "p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all flex items-center justify-center shrink-0 border border-slate-200 hover:border-indigo-200 shadow-sm bg-white",
+                   "p-1.5 md:p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all flex items-center justify-center shrink-0 border border-slate-200 hover:border-indigo-200 shadow-sm bg-white h-[30px] md:h-9",
                    isLoading && "opacity-50 cursor-not-allowed"
                 )}
                 title="데이터 새로고침 (DB 데이터 다시 읽기)"
               >
                 {isLoading ? (
-                   <Loader2 size={16} className="animate-spin text-indigo-400" />
+                   <Loader2 size={14} className="animate-spin text-indigo-400" />
                 ) : (
-                   <RefreshCw size={16} />
+                   <RefreshCw size={14} />
                 )}
               </button>
 
               <button
                 onClick={handlePrintClick}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all ml-2"
+                className="hidden md:flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-[0.98] transition-all ml-2"
                 title="PDF 인쇄 메뉴 열기 (A4 가로 권장)"
               >
                 <Download size={16} strokeWidth={2.5} />
@@ -121,7 +143,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </main>
       </div>
