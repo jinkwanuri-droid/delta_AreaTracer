@@ -54,7 +54,7 @@ export function computeFloorPages(
   valsMap: Map<string, any>,
   baseId: string | null,
   targetId: string | null,
-  rowsPerPage: number = 27
+  rowsPerPage: number = 26
 ) {
   const floorRooms = rooms.filter(r => r.floorId === floor.id).filter(r => {
     const dept = departments.find(d => d.id === r.departmentId);
@@ -183,7 +183,7 @@ export function computeSummaryPages(
   baseStageId: string | null,
   targetStageId: string | null,
   medicalOnly: boolean,
-  maxPageRows: number = 28
+  maxPageRows: number = 27
 ) {
   if (stages.length < 1) return [];
 
