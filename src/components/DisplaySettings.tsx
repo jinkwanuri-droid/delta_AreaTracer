@@ -78,7 +78,7 @@ export default function DisplaySettings() {
             <div className="pt-3 border-t border-slate-100">
               <div className="flex items-center gap-2 mb-3">
                 <Eye size={15} className="text-indigo-500" />
-                <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tighter">표시할 단계 (최소 1개)</h4>
+                <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tighter">표시할 단계 (최소 1개)</h4>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
                 {stages.map(stage => {
@@ -88,14 +88,14 @@ export default function DisplaySettings() {
                       key={stage.id}
                       onClick={() => toggleStage(stage.id)}
                       className={clsx(
-                        "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[9.5px] font-bold transition-all border gap-1.5 h-[30px]",
+                        "flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[11.5px] font-bold transition-all border gap-1.5 h-[30px]",
                         isVisible 
                           ? "bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm ring-1 ring-indigo-50" 
                           : "bg-white text-slate-400 border-slate-100 opacity-85"
                       )}
                     >
                       <span className="truncate text-left flex-1">{stage.name}</span>
-                      {isVisible ? <Eye size={10} className="text-indigo-500 shrink-0" /> : <EyeOff size={10} className="shrink-0" />}
+                      {isVisible ? <Eye size={12} className="text-indigo-500 shrink-0" /> : <EyeOff size={12} className="shrink-0" />}
                     </button>
                   );
                 })}
@@ -106,7 +106,7 @@ export default function DisplaySettings() {
             <div className="pt-3 border-t border-slate-100">
               <div className="flex items-center gap-2 mb-3">
                 <GitCompare size={15} className="text-indigo-500" />
-                <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tighter">증감(DIFF) 비교 설정</h4>
+                <h4 className="text-[13px] font-black text-slate-800 uppercase tracking-tighter">증감(DIFF) 비교 설정</h4>
               </div>
 
               <div className="bg-slate-50/50 p-2.5 rounded-xl ring-1 ring-slate-100 flex flex-col gap-1">
